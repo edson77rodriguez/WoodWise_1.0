@@ -1,0 +1,131 @@
+.top-bar {
+    background-color: #333;
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.top-bar a {
+    color: white;
+    text-decoration: none;
+    margin-left: 15px;
+}
+
+.top-bar a:hover {
+    color: #ccc;
+}
+.top-bar {
+    background-color: #3498db;
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.top-bar a {
+    color: white;
+    text-decoration: none;
+    margin-left: 15px;
+}
+
+.top-bar a:hover {
+    color: #f1c40f;
+}
+.top-bar {
+    background-color: #2ecc71;
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.top-bar a {
+    color: white;
+    text-decoration: none;
+    margin-left: 15px;
+}
+
+.top-bar a:hover {
+    color: #9b59b6;
+}
+.sidebar {
+    background-color: #333;
+    color: white;
+    transition: width 0.3s ease;
+}
+
+.sidebar:hover {
+    width: 300px;
+}
+
+.sidebar .nav-link {
+    font-size: 16px;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #444;
+}
+
+.sidebar .nav-link i {
+    font-size: 18px;
+    margin-right: 10px;
+}
+.footer {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    padding: 10px;
+    text-align: center;
+    position: relative; /* Cambia a relative para que no se fije al bottom */
+    bottom: 0; /* Si quieres que se quede abajo, pero no fijo */
+    width: calc(100% - 280px); /* Ajusta el ancho según el tamaño de la barra lateral */
+    margin-left: 280px; /* Ajusta la posición según el tamaño de la barra lateral */
+}
+
+/* Para que el footer se mantenga abajo */
+.content {
+    min-height: calc(100vh - 60px - 40px); /* Ajusta según el tamaño del header y footer */
+}
+.table {
+    font-size: 0.9rem;
+}
+
+.table thead th {
+    background-color: #343a40;
+    color: white;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.badge {
+    font-size: 0.8em;
+    padding: 0.4em 0.6em;
+}
+/* Agrega transiciones suaves */
+.nav-link {
+    transition: all 0.3s ease;
+}
+
+/* Estilos para las tablas */
+.card-header {
+    background: linear-gradient(45deg, #2c3e50, #3498db);
+    border-radius: 5px 5px 0 0;
+}
+
+.table {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}

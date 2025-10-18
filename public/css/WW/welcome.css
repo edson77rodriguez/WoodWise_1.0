@@ -1,0 +1,753 @@
+:root {
+    --wood-primary: #2F4F4F;
+    --wood-secondary: #556B2F;
+    --wood-accent: #C8B560;
+    --wood-light: #F5F5DC;
+    --wood-dark: #1A2E22;
+    --wood-text: #333333;
+    --wood-bg-light: #F5F5DC;
+    --wood-white: #FFFFFF;
+    --wood-gradient: linear-gradient(135deg, #2F4F4F 0%, #556B2F 100%);
+    
+    /* Variable para el marquee. Facilita el mantenimiento de la animación. */
+    --marquee-card-width: 300px;
+    --marquee-gap: 2rem;
+    --marquee-items-unique: 3; /* Número de tarjetas únicas */
+}
+
+/* === 1. Global y Tipografía === */
+body {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--wood-text);
+    background-color: var(--wood-bg-light);
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: var(--wood-primary);
+}
+
+/* Sombra de texto global para mejorar contraste sobre fondos complejos */
+.navbar-brand, .nav-link, .hero-title, .hero-text, .footer h5 {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* === 2. Fondo (Video y Partículas) === */
+.video-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.video-background video {
+    min-width: 100%;
+    min-height: 100%;
+    object-fit: cover;
+    opacity: 0.7; /* Opacidad inicial */
+    transition: opacity 0.5s ease;
+}
+
+/* [REFACTORIZACIÓN JS->CSS] 
+   Se aplica opacidad reducida cuando el navbar tiene 'scrolled', usando el 
+   combinador de hermano general (~). Esto elimina la manipulación de estilo inline desde JS. */
+.scrolled ~ .video-background video {
+    opacity: 0.3;
+}
+
+.particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+}
+
+/* [ELIMINADO] Se eliminaron .particle y @keyframes floatParticle. 
+   Eran redundantes con Particles.js y menos eficientes (manipulación DOM vs Canvas). */
+
+
+/* === 3. Navbar === */
+.navbar {
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+    transition: all 0.4s ease;
+    background: var(--wood-gradient);
+    color: var(--wood-white);
+}
+
+.navbar-initial {
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    transition: all 0.4s ease;
+}
+
+.navbar.scrolled {
+    background: rgba(47, 79, 79, 0.95) !important;
+    backdrop-filter: blur(10px) !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+    padding: 0.8rem 0 !important;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 1px;
+    /* display: flex y align-items: center ya están en el HTML refactorizado (clase 'd-flex') */
+    font-size: 1.5rem;
+}
+
+.text-gradient {
+    background: linear-gradient(to right, var(--wood-accent), var(--wood-light));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.navbar-brand img {
+    transition: all 0.4s ease;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand:hover img {
+    transform: rotate(15deg) scale(1.1);
+}
+
+.nav-link {
+    font-weight: 600;
+    padding: 0.5rem 1.2rem;
+    margin: 0 0.3rem;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    color: var(--wood-white) !important;
+    position: relative;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+}
+
+.nav-link:before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--wood-accent);
+    transition: all 0.3s ease;
+    opacity: 0;
+}
+
+.nav-link:hover {
+    transform: translateY(-2px);
+}
+
+/* [REFACTORIZACIÓN DRY] Reglas combinadas para .active y .hover::before (eran idénticas) */
+.nav-link.active:before,
+.nav-link:hover:before {
+    width: 60%;
+    opacity: 1;
+}
+
+.nav-link.active {
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* (Nota: El 'margin-right: 8px' del icono ya fue reemplazado por utilidades 'me-1' en el HTML) */
+
+
+/* === 4. Hero Section === */
+.hero-section {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 6rem 0;
+    overflow: hidden;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(47, 79, 79, 0.3);
+    z-index: 0;
+}
+
+/* Esta clase no estaba en el HTML, pero la lógica del .hero-card sugiere que z-index: 1 es necesario */
+.hero-card {
+    background: rgba(245, 245, 220, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(200, 181, 96, 0.3);
+    position: relative; /* Asegurando contexto de apilamiento */
+    z-index: 1;
+}
+
+.hero-card:hover {
+    transform: translateY(-10px) scale(1.01);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+}
+
+.hero-img {
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.hero-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s ease;
+}
+
+.hero-img:hover img {
+    transform: scale(1.05);
+}
+
+.hero-img:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(58, 90, 64, 0.1), rgba(26, 46, 34, 0.4));
+}
+
+.hero-text-content {
+    padding: 3.5rem;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800; /* Playfair Display puede no tener 800; 700 es el estándar cargado */
+    color: var(--wood-primary);
+    margin-bottom: 1.8rem;
+    line-height: 1.2;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.hero-title span {
+    color: var(--wood-secondary);
+    position: relative;
+}
+
+.hero-title span:after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    bottom: 5px;
+    left: 0;
+    background: var(--wood-accent);
+    z-index: -1;
+    opacity: 0.6;
+}
+
+.hero-text {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    margin-bottom: 2.5rem;
+    color: var(--wood-text);
+}
+
+/* === 5. Botones Personalizados === */
+.btn-wood {
+    background: var(--wood-gradient);
+    color: var(--wood-white);
+    font-weight: 600;
+    padding: 0.9rem 2.2rem;
+    border-radius: 10px;
+    border: none;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 15px rgba(58, 90, 64, 0.3);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-wood:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: all 0.6s ease;
+}
+
+.btn-wood:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(58, 90, 64, 0.4);
+}
+
+.btn-wood:hover:before {
+    left: 100%;
+}
+
+.btn-outline-wood {
+    border: 2px solid var(--wood-primary);
+    color: var(--wood-primary);
+    font-weight: 600;
+    padding: 0.8rem 2.2rem; /* Ligeramente menos padding vertical que el btn-wood por el borde */
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    background: transparent;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+.btn-outline-wood:hover {
+    background: var(--wood-primary);
+    color: var(--wood-white);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(58, 90, 64, 0.2);
+}
+
+/* === 6. Features Section (Marquee) === */
+.features-section {
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+    padding: 4rem 0;
+    z-index: 1;
+}
+
+.features-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(245, 245, 220, 0.4);
+    backdrop-filter: blur(8px);
+    z-index: -1;
+    border-radius: 20px;
+    margin: 0 2rem; /* Asumiendo que esto es intencional para que no toque los bordes */
+}
+
+.features-carousel-container {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    padding: 2rem 0;
+    /* Efecto fade en los bordes para el marquee */
+    -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+}
+
+.features-carousel-track {
+    display: flex;
+    gap: var(--marquee-gap);
+    width: max-content;
+    animation: scroll 30s linear infinite;
+    will-change: transform;
+}
+
+/* Clase JS para pausar animación en hover/touch */
+.features-carousel-track.paused {
+    animation-play-state: paused;
+}
+
+.feature-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
+    padding: 2.5rem;
+    border-radius: 15px;
+    text-align: center;
+    width: var(--marquee-card-width); /* Usando variable para consistencia */
+    min-width: var(--marquee-card-width);
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(200, 181, 96, 0.3);
+    flex-shrink: 0;
+}
+
+.feature-card i {
+    font-size: 2.5rem;
+    color: var(--wood-accent);
+    margin-bottom: 1.5rem;
+    background: rgba(200, 181, 96, 0.1);
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.feature-card h3 {
+    color: var(--wood-primary);
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+}
+
+.feature-card p {
+    color: var(--wood-text);
+    font-size: 0.95rem;
+}
+
+@keyframes scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        /* [REFACTORIZACIÓN CÁLCULO] 
+           La animación debe moverse la distancia de los items ÚNICOS (3) + sus gaps (3).
+           El HTML duplica 3, por lo que el track tiene 6 items. El bucle se repite cada 3 items. */
+        transform: translateX(calc((var(--marquee-card-width) + var(--marquee-gap)) * var(--marquee-items-unique) * -1));
+    }
+}
+
+
+/* === 7. Footer === */
+.footer {
+    background: linear-gradient(135deg, #2F4F4F 0%, #1A2E22 100%);
+    color: #F5F5DC;
+    padding: 4rem 0 2rem;
+    position: relative;
+    overflow: hidden;
+    font-size: 0.95rem;
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #C8B560, rgba(255, 255, 255, 0.3), #C8B560);
+}
+
+.footer-brand-container {
+    margin-bottom: 2rem;
+}
+
+.footer-logo {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    font-family: 'Playfair Display', serif;
+    color: #F5F5DC;
+}
+
+.footer-logo span {
+    color: #C8B560;
+}
+
+.footer-description {
+    color: rgba(245, 245, 220, 0.9);
+    margin-bottom: 2rem;
+    line-height: 1.7;
+}
+
+.footer-column {
+    margin-bottom: 2rem;
+}
+
+.footer-title {
+    font-size: 1.2rem;
+    margin-bottom: 1.8rem;
+    position: relative;
+    display: inline-block;
+    font-family: 'Playfair Display', serif;
+    color: #F5F5DC;
+}
+
+.footer-title::after {
+    content: '';
+    position: absolute;
+    width: 60%;
+    height: 2px;
+    background: #C8B560;
+    bottom: -10px;
+    left: 0;
+    border-radius: 2px;
+}
+
+.footer-links,
+.footer-contact {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-links li {
+    margin-bottom: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.footer-links li:hover {
+    transform: translateX(5px);
+}
+
+.footer-link {
+    color: rgba(245, 245, 220, 0.9);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: block;
+    position: relative;
+    padding-left: 0;
+}
+
+.footer-link i {
+    color: #C8B560;
+    width: 20px;
+    text-align: center;
+}
+
+.footer-link:hover {
+    color: #FFFFFF;
+    padding-left: 5px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.2rem;
+    color: rgba(245, 245, 220, 0.9);
+}
+
+.contact-icon {
+    color: #C8B560;
+    margin-right: 15px;
+    margin-top: 3px;
+    font-size: 1.1rem;
+}
+
+.social-icons {
+    display: flex;
+    gap: 15px;
+    margin-top: 1.5rem;
+}
+
+.social-icons a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(200, 181, 96, 0.2);
+    border-radius: 50%;
+    color: #F5F5DC;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    font-size: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.social-icons a:hover {
+    transform: translateY(-3px) scale(1.1);
+    background: #C8B560;
+    color: #2F4F4F;
+}
+
+.footer-link::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 1px;
+    bottom: -2px;
+    left: 25px; /* Asume que el icono mide 20px + padding */
+    background-color: #C8B560;
+    transition: all 0.3s ease;
+}
+
+.footer-link:hover::before {
+    width: 20px;
+}
+
+/* [REFACTORIZACIÓN CONFLICTO] 
+   Definiciones de Copyright fusionadas. La anterior definición duplicada fue eliminada. */
+.copyright {
+    border-top: 1px solid rgba(200, 181, 96, 0.2); /* Borde dorado-ish de la paleta */
+    padding-top: 2rem;
+    margin-top: 2rem; /* Ajustado desde 3rem para consistencia */
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.copyright-text {
+    color: rgba(245, 245, 220, 0.8);
+    margin-bottom: 0.5rem;
+}
+
+.developer-credit {
+    color: rgba(245, 245, 220, 0.7);
+}
+
+.heart-icon {
+    color: #ff6b6b;
+}
+
+
+/* === 8. Animaciones Globales === */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0px); }
+}
+
+.floating {
+    animation: float 6s ease-in-out infinite;
+}
+
+.fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+/* === 9. Media Queries Consolidadas === */
+
+/* LG Breakpoint (Tablets grandes) */
+@media (max-width: 1199.98px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+}
+
+/* MD Breakpoint (Tablets) */
+@media (max-width: 991.98px) {
+    /* Fondo de video más oscuro en tablet/móvil para legibilidad del navbar colapsado */
+    .video-background video {
+        opacity: 0.4;
+    }
+    
+    /* Fondo para menú móvil colapsado */
+    .navbar-collapse {
+        background: rgba(47, 79, 79, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 1rem;
+        border-radius: 10px;
+        margin-top: 1rem;
+    }
+    
+    .hero-text-content {
+        padding: 2.5rem;
+    }
+    
+    .hero-title {
+        font-size: 2.2rem;
+    }
+    
+    .hero-text {
+        font-size: 1.1rem;
+    }
+
+    /* Footer centrado en móvil */
+    .footer {
+        text-align: center;
+    }
+    
+    .footer-title::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .footer-links li,
+    .contact-item,
+    .social-icons {
+        justify-content: center;
+    }
+    
+    .footer-link {
+        justify-content: center;
+    }
+    
+    .footer-link:hover {
+        padding-left: 0;
+    }
+    
+    .footer-link::before {
+        display: none; /* Desactivar efecto hover de subrayado que depende del padding-left */
+    }
+}
+
+/* SM Breakpoint (Móviles) */
+@media (max-width: 767.98px) {
+    .hero-section {
+        padding: 4rem 0; /* Menos padding vertical */
+    }
+    
+    .hero-text-content {
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .btn-group {
+        justify-content: center;
+    }
+    
+    .footer ul { /* Más espacio entre listas de footer en móvil */
+        margin-bottom: 2rem;
+    }
+
+    /* Marquee en móvil */
+    .features-carousel-track {
+        gap: 1rem;
+        animation-duration: 20s;
+        /* Actualizamos las variables para el cálculo de la animación */
+        --marquee-card-width: 250px;
+        --marquee-gap: 1rem;
+    }
+    
+    .feature-card {
+        min-width: 250px;
+        width: 250px;
+        padding: 1.5rem;
+    }
+}
+
+/* XS Breakpoint (Móviles pequeños) */
+@media (max-width: 575.98px) {
+    .hero-title {
+        font-size: 1.8rem;
+    }
+    
+    .btn-wood, .btn-outline-wood {
+        padding: 0.8rem 1.5rem;
+        font-size: 0.8rem;
+        width: 100%; /* Botones full-width en móvil pequeño para mejor toque */
+        margin-bottom: 0.5rem;
+    }
+
+    .btn-group {
+        flex-direction: column; /* Stackear botones verticalmente */
+    }
+}

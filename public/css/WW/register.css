@@ -1,0 +1,131 @@
+/* === 1. Estilos Base y Formularios === */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #3A5F0B, #6B8E23);
+}
+
+.card {
+    border: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.form-floating label {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.form-control, .form-select {
+    padding: 0.8rem;
+    font-size: 0.9rem;
+    min-height: 44px; /* WCAG: Tamaño táctil mínimo */
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #6B8E23;
+    box-shadow: 0 0 0 0.2rem rgba(107, 142, 35, 0.25);
+}
+
+.form-section-title {
+    color: var(--wood-accent);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+/* === 2. Componentes de Formulario === */
+
+.btn-primary {
+    background-color: #6B8E23;
+    border-color: #6B8E23;
+    font-size: 0.9rem;
+    min-height: 44px; /* WCAG: Tamaño táctil mínimo */
+}
+.btn-primary:hover {
+    background-color: #5A7720;
+    border-color: #5A7720;
+}
+
+/* Toggle de Password */
+.toggle-password {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    padding: 0 0.75rem;
+    cursor: pointer;
+    color: var(--wood-medium);
+    transition: color 0.2s ease;
+    z-index: 5; /* Asegura que esté sobre el label flotante */
+}
+.toggle-password:hover {
+    color: var(--wood-dark);
+}
+
+/* Estilos para el Select de Rol (Input Group) */
+.input-group-text {
+    border-right: none;
+    background-color: #f8f9fa !important;
+    border-color: #e9ecef; /* Sincronizar con el color del select */
+    transition: all 0.3s ease;
+}
+.form-select {
+    border-left: 0;
+    border-color: #e9ecef;
+    transition: all 0.3s ease;
+}
+/* Sincronizar el focus del input-group completo */
+.form-select:focus + .input-group-text,
+.form-select:focus {
+     border-color: #6B8E23;
+     box-shadow: 0 0 0 0.2rem rgba(107, 142, 35, 0.25);
+}
+.form-select:focus + .input-group-text {
+    box-shadow: none; /* Solo el select debe tener el shadow */
+}
+
+
+/* === 3. Media Queries Consolidadas === */
+
+/* Ajustes responsivos para móviles (sm y md) */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    /* [REFACTORIZACIÓN] Eliminados los !important para padding de card. 
+       El padding base 'p-4' del Blade maneja esto. */
+    
+    .form-control, .form-select, .input-group-text {
+        padding: 0.7rem;
+    }
+    
+    .alert {
+        font-size: 0.85rem;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* Corrección de accesibilidad (iOS Zoom) */
+@media (hover: none) and (max-width: 768px) {
+    /* Desactivar efectos hover innecesarios en táctil */
+    .btn-primary:hover, .toggle-password:hover {
+        transform: none;
+    }
+    
+    /* [ACCESIBILIDAD] 16px es el mínimo para prevenir el zoom automático en iOS */
+    input, select, textarea {
+        font-size: 16px !important; 
+    }
+}
+
+/* * --- CÓDIGO CSS ELIMINADO ---
+ * Se eliminaron ~110 líneas de CSS relacionadas con:
+ * 1. .logo-3d-container (Componente de Login, no usado aquí)
+ * 2. .logo-container (Componente alternativo, no usado aquí)
+ * 3. Múltiples media queries para .card-header img (Código muerto)
+ * 4. Keyframes @floatIn y @pulse (Pertenecen al logo)
+ * 5. Múltiples definiciones conflictivas de .card-header y .bg-gradient-primary.
+ */

@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../gym_dragons"
+		},
+		{
+			"path": "../MyNet_Empire"
+		}
+	],
+	"settings": {}
+}

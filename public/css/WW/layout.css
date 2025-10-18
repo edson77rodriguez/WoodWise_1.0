@@ -1,0 +1,454 @@
+/* Paleta profesional de verdes forestales (Fuente: Inter) */
+:root {
+    --wood-dark: #1a3a16;
+    --wood-medium: #4a3c27;
+    --wood-light: #e8d8b5;
+    --wood-accent: #4a7c30;
+    --wood-text: #2b2b2b;
+    --wood-bg-light: #f5f7f2;
+    --wood-bg-dark: #0f1a0c;
+    --wood-border-radius: 8px;
+    --wood-box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --wood-transition: all 0.2s ease;
+}
+
+/* === 1. Base y Tipografía === */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.5;
+    color: var(--wood-text);
+    background-color: var(--wood-bg-light);
+    overflow-x: hidden;
+    /* Estructura Sticky Footer (ya definida en el Blade HTML) */
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 1.25rem;
+    color: var(--wood-dark);
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+main {
+    flex: 1; /* Para el sticky footer */
+    padding-top: 3rem;
+    padding-bottom: 5rem;
+}
+
+.container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+
+/* === 2. Navbar Premium === */
+.navbar {
+    background: linear-gradient(135deg, var(--wood-dark), var(--wood-medium));
+    box-shadow: var(--wood-box-shadow);
+    padding: 0.8rem 0;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky; /* Sticky ya está en el HTML, pero lo reforzamos aquí */
+    top: 0;
+    z-index: 1030;
+}
+
+/* [CSS NUEVO] Clases de estado manejadas por JS (layout.js) */
+.navbar.is-at-top {
+    box-shadow: none;
+}
+.navbar.is-hidden {
+    transform: translateY(-100%);
+    box-shadow: var(--wood-box-shadow); /* Aseguramos sombra al reaparecer */
+}
+/* Fin de clases de estado */
+
+
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    transition: var(--wood-transition);
+    color: var(--wood-light) !important;
+}
+
+.navbar-brand:hover {
+    transform: translateY(-2px);
+    color: white !important;
+}
+
+.text-gradient {
+    background: linear-gradient(to right, var(--wood-light), #d4a762);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.navbar-brand img {
+    transition: transform 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.navbar-brand:hover img {
+    transform: rotate(15deg);
+}
+
+.nav-link {
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    margin: 0 0.3rem;
+    border-radius: var(--wood-border-radius);
+    transition: var(--wood-transition);
+    color: var(--wood-light) !important;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.nav-link i {
+    margin-right: 6px; /* Espacio para icono BI */
+}
+
+.nav-link.active {
+    background: var(--wood-accent);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    color: white !important;
+}
+
+/* Desactivamos el efecto :after de subrayado; es ruidoso y compite con el .active */
+/*
+.nav-link:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--wood-light);
+    transform: translateX(-100%);
+    transition: var(--wood-transition);
+}
+.nav-link:hover:after {
+    transform: translateX(0);
+}
+*/
+
+
+/* === 3. Footer Mejorado === */
+.footer {
+    background: linear-gradient(135deg, var(--wood-dark), var(--wood-bg-dark));
+    color: var(--wood-light);
+    padding: 4rem 0 2rem;
+    position: relative;
+    overflow: hidden;
+    font-size: 0.95rem;
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--wood-accent), rgba(255, 255, 255, 0.3), var(--wood-accent));
+}
+
+.footer-brand-container {
+    margin-bottom: 2rem;
+}
+
+.footer-logo {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--wood-light);
+}
+
+.footer-logo span {
+    color: var(--wood-accent);
+}
+
+.footer-description {
+    color: rgba(232, 216, 181, 0.9);
+    margin-bottom: 2rem;
+    line-height: 1.7;
+}
+
+.footer-column {
+    margin-bottom: 2rem;
+}
+
+.footer-title {
+    font-size: 1.2rem;
+    margin-bottom: 1.8rem;
+    position: relative;
+    display: inline-block;
+    color: var(--wood-light);
+}
+
+.footer-title::after {
+    content: '';
+    position: absolute;
+    width: 60%;
+    height: 2px;
+    background: var(--wood-accent);
+    bottom: -10px;
+    left: 0;
+    border-radius: 2px;
+}
+
+.footer-links,
+.footer-contact {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-links li {
+    margin-bottom: 0.8rem;
+    transition: var(--wood-transition);
+}
+
+.footer-links li:hover {
+    transform: translateX(5px);
+}
+
+.footer-link {
+    color: rgba(232, 216, 181, 0.9);
+    text-decoration: none;
+    transition: var(--wood-transition);
+    display: block;
+    position: relative;
+}
+
+.footer-link i {
+    color: var(--wood-accent);
+    width: 20px;
+    text-align: center;
+    margin-right: 8px;
+}
+
+.footer-link:hover {
+    color: white;
+    padding-left: 5px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.2rem;
+    color: rgba(232, 216, 181, 0.9);
+}
+
+.contact-icon {
+    color: var(--wood-accent);
+    margin-right: 15px;
+    margin-top: 3px;
+    font-size: 1.1rem;
+}
+
+.social-icons {
+    display: flex;
+    gap: 15px;
+    margin-top: 1.5rem;
+}
+
+.social-icons a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(74, 124, 48, 0.2);
+    border-radius: 50%;
+    color: var(--wood-light);
+    transition: var(--wood-transition);
+    font-size: 1rem;
+}
+
+.copyright {
+    border-top: 1px solid rgba(74, 124, 48, 0.2);
+    padding-top: 2rem;
+    margin-top: 2rem;
+    font-size: 0.9rem;
+}
+
+.copyright-text {
+    color: rgba(232, 216, 181, 0.8);
+    margin-bottom: 0.5rem;
+}
+
+.developer-credit {
+    color: rgba(232, 216, 181, 0.7);
+}
+
+.heart-icon {
+    color: #ff6b6b; /* Usamos el icono BI (corazón) definido en el Blade */
+}
+
+.footer-link::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 1px;
+    bottom: -2px;
+    left: 25px;
+    background-color: var(--wood-accent);
+    transition: var(--wood-transition);
+}
+
+.footer-link:hover::before {
+    width: 20px;
+}
+
+
+/* === 4. Animaciones y Utilidades === */
+
+/* [CONSOLIDACIÓN] Keyframes 'float' definidos una sola vez. */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.floating {
+    animation: float 3s ease-in-out infinite;
+}
+
+.wood-bg-gradient {
+    background: linear-gradient(135deg, var(--wood-medium), var(--wood-dark));
+}
+
+.wood-text-gradient {
+    background: linear-gradient(to right, var(--wood-light), var(--wood-accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.wood-divider {
+    height: 3px;
+    background: linear-gradient(to right, transparent, var(--wood-light), transparent);
+    border: none;
+    margin: 2rem 0;
+}
+
+.wood-badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem;
+    background: var(--wood-accent);
+    color: white;
+}
+
+.wood-shadow-sm { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+.wood-shadow { box-shadow: var(--wood-box-shadow); }
+.wood-shadow-lg { box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15); }
+
+
+/* === 5. Media Queries Consolidadas === */
+
+/* Desktop (LG) - Ajustes al navbar colapsado */
+@media (min-width: 992px) {
+    .navbar-collapse {
+        background: transparent;
+        margin-top: 0;
+        padding: 0;
+    }
+    
+    .nav-link {
+        margin: 0 0.25rem;
+    }
+    
+    main {
+        padding: 2rem 0 4rem;
+    }
+}
+
+/* Tablet (MD) y Móvil (SM) */
+@media (max-width: 991.98px) {
+    /* Fondo para menú móvil colapsado */
+    .navbar-collapse {
+        background: linear-gradient(135deg, var(--wood-dark), var(--wood-medium));
+        margin-top: 0.5rem;
+        border-radius: var(--wood-border-radius);
+        padding: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .nav-link {
+        margin: 0.15rem 0;
+    }
+    
+    /* Centrado del Footer en móvil */
+    .footer {
+        text-align: center;
+    }
+    .footer-title::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .footer-links li,
+    .contact-item,
+    .social-icons {
+        justify-content: center;
+    }
+    .footer-link {
+        justify-content: center;
+    }
+    .footer-link:hover {
+        padding-left: 0;
+    }
+    .footer-link::before {
+        display: none;
+    }
+}
+
+/* Tablet (MD) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .navbar-brand {
+        font-size: 1.25rem;
+    }
+    .nav-link {
+        padding: 0.5rem 0.75rem;
+    }
+    main {
+        padding: 1.5rem 0 3rem;
+    }
+    .container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+/* Interacciones Hover (Solo para dispositivos que lo soportan) */
+@media (hover: hover) {
+    .nav-link:hover:not(.active) {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .social-icons a:hover {
+        transform: translateY(-3px) scale(1.1);
+        background: var(--wood-accent);
+        color: var(--wood-dark);
+    }
+}

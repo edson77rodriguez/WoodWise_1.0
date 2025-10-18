@@ -1,0 +1,356 @@
+/*
+ * DASHBOARD TÉCNICO CSS REFACTORIZADO CON PALETA "SUCCULENT TONES"
+ * - Paleta de colores actualizada a "succulent tones" para un look más orgánico.
+ * - Estilos consistentes con la nueva paleta.
+ */
+
+/* === 1. Paleta de Colores "Succulent Tones" === */
+:root {
+    /* Paleta "Succulent Tones" (derivada de la imagen) */
+    --succulent-lightest: #DCEEE3; /* Verde muy claro */
+    --succulent-light: #B4D7BD;    /* Verde claro */
+    --succulent-medium-dark: #587968; /* Verde medio oscuro */
+    --succulent-medium: #698F74;   /* Verde medio */
+    --succulent-dark: #5A7E64;     /* Verde oscuro */
+    --succulent-accent: #B2D183;   /* Verde lima (el acento más brillante) */
+
+    /* Colores adicionales para UI (ajustados a la nueva paleta) */
+    --ui-text: #2D3E40;        /* Texto principal (casi negro) */
+    --ui-border: #E0EAE3;      /* Bordes sutiles */
+    --ui-background: #F8FCF9;  /* Fondo muy claro */
+
+    /* Colores para Modales y Alertas (adaptados para complementar la paleta) */
+    --ui-info: #4A90E2;        /* Azul brillante para información */
+    --ui-warning: #F5A623;     /* Naranja para advertencias */
+    --ui-danger: #D0021B;      /* Rojo para peligro */
+}
+
+/* === 2. Aplicación de la Paleta y Estilos Base === */
+.wood-bg-gradient { /* Ahora es un gradiente suculento */
+    background: linear-gradient(135deg, var(--succulent-medium-dark), var(--succulent-dark));
+}
+.text-forest-dark { color: var(--succulent-medium-dark); }
+.text-forest-medium { color: var(--succulent-medium); }
+.text-forest-light { color: var(--succulent-light); }
+.text-forest-accent { color: var(--succulent-accent); }
+.text-wood-dark { color: var(--ui-text); } /* Usamos el color de texto general */
+
+.bg-forest-dark { background-color: var(--succulent-dark); }
+.bg-forest-medium { background-color: var(--succulent-medium); }
+.bg-forest-light { background-color: var(--succulent-light); }
+.bg-forest-accent { background-color: var(--succulent-accent); }
+.bg-wood-light { background-color: var(--succulent-lightest); } /* El más claro para elementos suaves */
+
+
+/* === 3. Componentes de Página (Tarjetas, Tabla, Botones) === */
+.wood-card {
+    background-color: white;
+    border-radius: 12px;
+    border: none;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.wood-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+}
+
+.wood-card-header { /* Usa el gradiente suculento */
+    background: linear-gradient(135deg, var(--succulent-medium-dark), var(--succulent-dark));
+    color: white;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wood-card-footer {
+    background: var(--ui-background);
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--ui-border);
+}
+
+.wood-divider {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(88, 121, 104, 0.5), rgba(0, 0, 0, 0)); /* Color ajustado */
+}
+
+/* Sombras */
+.wood-shadow { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04); }
+.wood-shadow-sm { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03); }
+.wood-shadow-lg { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.08); }
+
+
+/* Tabla */
+.wood-table {
+    width: 100%;
+    margin-bottom: 0;
+}
+.wood-table thead th {
+    background-color: var(--succulent-dark); /* Color oscuro de la paleta */
+    color: white;
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border-bottom: 0;
+}
+.wood-table tbody td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--ui-border);
+    vertical-align: middle;
+    color: var(--ui-text);
+}
+.wood-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.wood-table tbody tr:hover {
+    background-color: rgba(180, 215, 189, 0.1); /* Hover suave */
+}
+
+/* Badge Personalizado */
+.wood-badge {
+    background-color: var(--succulent-accent); /* Acento principal */
+    color: var(--ui-text); /* Color de texto para que contraste */
+    padding: 0.35em 0.65em;
+    border-radius: 50rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.wood-badge.bg-info { background-color: var(--ui-info); color: white; }
+.wood-badge.bg-success { background-color: #38b44a; color: white; } /* Un verde de éxito estándar, ajustado */
+
+/* Buscador de Tabla */
+.wood-search-input {
+    max-width: 300px;
+}
+.wood-search-input .form-control {
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-color: var(--ui-border);
+    color: var(--ui-text);
+}
+.wood-search-input .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: none;
+    background: white;
+    color: var(--succulent-medium); /* Color del icono de búsqueda */
+    border-color: var(--ui-border);
+}
+.wood-search-input .form-control:focus {
+     border-color: var(--succulent-medium);
+     box-shadow: 0 0 0 0.25rem rgba(180, 215, 189, 0.25); /* Sombra de foco ajustada */
+}
+
+
+/* === 4. Botones === */
+.btn-wood {
+    background-color: var(--succulent-accent);
+    color: var(--ui-text); /* Texto oscuro para el botón brillante */
+    border: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn-wood:hover {
+    background-color: #9EC06D; /* Acento un poco más oscuro */
+    color: var(--ui-text);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn-wood-outline {
+    background-color: transparent;
+    color: var(--succulent-medium-dark);
+    border: 1px solid var(--succulent-medium);
+    transition: all 0.3s ease;
+}
+.btn-wood-outline:hover {
+    background-color: rgba(88, 121, 104, 0.1);
+    color: var(--succulent-dark);
+    border-color: var(--succulent-dark);
+}
+
+.btn-wood-action {
+    background-color: white;
+    color: var(--succulent-medium);
+    border: 1px solid var(--ui-border);
+    transition: all 0.2s ease;
+}
+.btn-wood-action:hover {
+    background-color: var(--ui-background);
+    color: var(--succulent-dark);
+    border-color: var(--succulent-medium);
+}
+
+.btn-pdf {
+    background-color: var(--ui-danger);
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+.btn-pdf:hover {
+    background-color: #a90214; /* Rojo más oscuro */
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-wood-light {
+    background-color: var(--ui-background);
+    color: var(--ui-text);
+    transition: all 0.3s ease;
+    border: 1px solid var(--ui-border);
+}
+.btn-wood-light:hover {
+    background-color: white;
+    color: var(--succulent-dark);
+    transform: translateY(-1px);
+}
+
+
+/* === 5. Estilos de Modales === */
+.wood-modal .modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.wood-modal-header {
+    padding: 1.5rem;
+    border-bottom: none;
+}
+.wood-modal-title {
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+}
+.wood-modal-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+.wood-modal-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.wood-modal-body {
+    padding: 1.5rem;
+    background: #FDFDFD;
+}
+
+.wood-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--ui-border);
+    background-color: var(--ui-background);
+}
+
+/* Colores de Header de Modal (Usando paleta unificada) */
+.wood-bg-primary { /* Modal de Nueva Parcela */
+    background: linear-gradient(135deg, var(--succulent-medium-dark), var(--succulent-dark));
+    color: white;
+}
+.wood-bg-info { /* Modal de Estimación */
+    background: linear-gradient(135deg, var(--ui-info), #5CA0EC);
+    color: white;
+}
+.wood-bg-warning { /* Modal de Turno de Corta */
+    background: linear-gradient(135deg, var(--ui-warning), #F8C56E);
+    color: var(--ui-text) !important; /* Texto oscuro para fondo claro */
+}
+.wood-bg-warning .wood-modal-subtitle { color: var(--ui-text); opacity: 0.8; }
+.wood-bg-warning .btn-close { filter: none; } /* Quitar filtro blanco */
+
+
+/* Botones de Modal (Usando paleta) */
+.btn-wood-info {
+    background-color: var(--ui-info);
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+.btn-wood-info:hover { background-color: #3C7DCF; color: white; }
+
+.btn-wood-warning {
+    background-color: var(--ui-warning);
+    color: var(--ui-text);
+    border: none;
+    transition: all 0.3s ease;
+}
+.btn-wood-warning:hover { background-color: #E29B1A; color: var(--ui-text); }
+
+
+/* === 6. Formularios Personalizados === */
+.wood-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--ui-text);
+}
+
+.wood-form-control,
+.wood-form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--ui-border);
+    border-radius: 8px;
+    transition: all 0.3s;
+    background-color: #fff;
+    color: var(--ui-text);
+}
+.wood-form-control::placeholder {
+    color: #999;
+    opacity: 1; /* Para Firefox */
+}
+.wood-form-select {
+    appearance: none; /* Elimina estilos nativos del select */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 0.65em 0.65em;
+}
+
+.wood-form-control:focus,
+.wood-form-select:focus {
+    border-color: var(--succulent-medium);
+    box-shadow: 0 0 0 3px rgba(180, 215, 189, 0.25); /* Sombra de foco ajustada */
+    outline: none;
+}
+
+/* Modo Oscuro (Opcional) */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #222;
+        color: #ddd;
+    }
+    .wood-card, .wood-form-control, .wood-form-select {
+        background-color: #2f2f2f;
+        border-color: #555;
+        color: #eee;
+    }
+    .wood-form-label { color: #ddd; }
+    .wood-modal-footer { border-top-color: rgba(255, 255, 255, 0.05); background-color: #2f2f2f; }
+    .wood-card-header, .wood-table thead th { background: var(--succulent-dark); }
+    .wood-card-footer { background: #2f2f2f; border-top-color: #555; }
+    .wood-search-input .btn { background: #2f2f2f; color: #eee; border-color: #555; }
+    .wood-table tbody td { color: #ddd; border-bottom-color: #333; }
+    .wood-badge { color: var(--ui-text); } /* Los badges podrían necesitar un ajuste si el texto oscuro no contrasta */
+    .btn-wood, .btn-wood:hover { color: var(--ui-text); } /* Asegurar texto oscuro en botones claros */
+    .wood-form-control::placeholder { color: #aaa; }
+    .wood-bg-warning {
+        background: linear-gradient(135deg, #a77e2c, #c08f3b);
+        color: white !important;
+    }
+    .wood-bg-warning .wood-modal-subtitle { color: white; }
+    .btn-wood-warning { color: white; }
+}

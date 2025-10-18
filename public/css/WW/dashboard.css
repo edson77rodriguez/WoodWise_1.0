@@ -1,0 +1,314 @@
+/* === 1. Variables Globales y Base === */
+:root {
+    /* Paleta de colores verde/café elegante */
+    --wood-primary: #3A5A40;       /* Verde bosque oscuro */
+    --wood-primary-dark: #344E41;  /* Verde más oscuro */
+    --wood-primary-light: #588157; /* Verde medio */
+    --wood-secondary: #A3B18A;     /* Verde claro */
+    --wood-accent: #DAD7CD;        /* Beige claro */
+    --wood-brown: #5E503F;         /* Café oscuro */
+    --wood-brown-light: #C6AC8F;   /* Café claro */
+    --wood-light: #F8F9FA;         /* Fondo claro */
+    --wood-dark: #1A1A1D;          /* Fondo oscuro */
+    --wood-text: #2B2D42;          /* Texto oscuro */
+    --wood-text-light: #8D99AE;    /* Texto claro */
+    --wood-text-on-dark: #EDF2F4;  /* Texto sobre fondo oscuro */
+    
+    --sidebar-width: 280px;
+    --navbar-height: 70px; /* Un poco más de altura para el navbar */
+    
+    /* Efecto glassmorphism */
+    --glass-blur: 8px;
+    --glass-opacity: 0.85;
+
+    /* NUEVA VARIABLE */
+    --sidebar-width-collapsed: 80px; /* Ancho del sidebar cuando está colapsado */
+}
+
+body {
+    font-family: 'Open Sans', 'Roboto Condensed', sans-serif;
+    background-color: var(--wood-light);
+    color: var(--wood-text);
+    min-height: 100vh;
+    transition: background 0.3s ease;
+}
+
+/* === 2. Sidebar (Sidenav) === */
+.sidenav {
+    width: var(--sidebar-width);
+    height: 100vh;
+    position: fixed;
+    left: 0; top: 0; z-index: 1040;
+    background: rgba(52, 78, 65, var(--glass-opacity)); /* --wood-primary-dark */
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+    /* MODIFICACIÓN: Se añade 'width' a la transición */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    overflow-x: hidden; /* NUEVO: Previene contenido desbordado al colapsar */
+}
+
+.sidenav-header {
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.sidenav-header .navbar-brand {
+    color: var(--wood-text-on-dark);
+    font-family: 'Playfair Display', serif; /* Usando la fuente del logo */
+    font-weight: 700;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.sidenav-header .navbar-brand img {
+    margin-right: 12px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    transition: transform 0.3s ease;
+}
+.sidenav-header .navbar-brand:hover img {
+    transform: scale(1.05);
+}
+/* MODIFICACIÓN: Se añade transición al texto del logo */
+.sidenav-header .navbar-brand span {
+    transition: opacity 0.2s ease;
+}
+
+
+.btn-close-sidenav {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    background: none; border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 1.25rem;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+.btn-close-sidenav:hover {
+    color: white;
+    transform: rotate(90deg);
+}
+
+.sidenav-inner { /* Contenedor de enlaces con scroll */
+    height: calc(100vh - 140px); /* Ajustado para header y footer */
+    overflow-y: auto;
+}
+
+.nav-item-header {
+    padding: 0.5rem 1.8rem;
+    margin-top: 1rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--wood-secondary);
+    letter-spacing: 1px;
+}
+
+.nav-item { margin: 0.3rem 0.8rem; }
+.nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    padding: 0.7rem 1rem;
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    position: relative;
+    text-decoration: none;
+    white-space: nowrap; /* NUEVO: Evita que el texto se rompa en varias líneas */
+}
+.nav-link:hover, .nav-link.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    transform: translateX(5px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.nav-link__icon {
+    background: white;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+.nav-link:hover .nav-link__icon, .nav-link.active .nav-link__icon {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.nav-link__text {
+    margin-left: 12px;
+    font-size: 0.9rem;
+    transition: opacity 0.2s ease; /* MODIFICACIÓN: Se añade transición */
+}
+
+.sidenav-footer {
+    padding: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+.sidenav-footer small {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+}
+
+/* === 2a. Sidebar Collapsible (Desktop) - LÓGICA NUEVA === */
+@media (min-width: 1200px) {
+    /* Solo se aplica en cuerpos de página con la clase de activación */
+    body.sidenav-hover-enabled .sidenav {
+        width: var(--sidebar-width-collapsed);
+    }
+    
+    /* Ocultamos el texto por defecto en estado colapsado */
+    body.sidenav-hover-enabled .sidenav .nav-link__text,
+    body.sidenav-hover-enabled .sidenav .nav-item-header,
+    body.sidenav-hover-enabled .sidenav .sidenav-header .navbar-brand span,
+    body.sidenav-hover-enabled .sidenav .sidenav-footer small {
+        opacity: 0;
+        pointer-events: none; /* Evita interacciones con el texto oculto */
+    }
+
+    /* Cuando el mouse pasa sobre el sidebar, se expande */
+    body.sidenav-hover-enabled .sidenav:hover {
+        width: var(--sidebar-width);
+        box-shadow: 8px 0 25px rgba(0, 0, 0, 0.15); /* Sombra más pronunciada al expandir */
+    }
+
+    /* Y el contenido de texto vuelve a aparecer */
+    body.sidenav-hover-enabled .sidenav:hover .nav-link__text,
+    body.sidenav-hover-enabled .sidenav:hover .nav-item-header,
+    body.sidenav-hover-enabled .sidenav:hover .sidenav-header .navbar-brand span,
+    body.sidenav-hover-enabled .sidenav:hover .sidenav-footer small {
+        opacity: 1;
+        /* Retraso para que el texto aparezca después de que el contenedor empiece a expandirse */
+        transition-delay: 0.1s; 
+    }
+
+    /* El contenido principal también se ajusta al estado colapsado */
+    body.sidenav-hover-enabled .main-content {
+        margin-left: var(--sidebar-width-collapsed);
+    }
+
+    /* Y se expande cuando el sidebar está en hover */
+    body.sidenav-hover-enabled .sidenav:hover + .main-content {
+        margin-left: var(--sidebar-width);
+    }
+}
+
+
+/* === 3. Contenido Principal y Navbar Superior === */
+.main-content {
+    margin-left: var(--sidebar-width);
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.content-wrapper { padding: 2rem; }
+
+.navbar-main {
+    height: var(--navbar-height);
+    z-index: 1030;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 0.5rem 2rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.navbar-toggler-sidebar {
+    background: none; border: none;
+    font-size: 1.25rem;
+    color: var(--wood-brown);
+}
+.breadcrumb-container { flex-grow: 1; }
+.breadcrumb { font-size: 0.85rem; margin-bottom: 0.1rem; }
+.breadcrumb-item a { color: var(--wood-text-light); text-decoration: none; }
+.breadcrumb-item a:hover { color: var(--wood-primary); }
+.breadcrumb-item.active { color: var(--wood-primary); font-weight: 600; }
+.page-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--wood-primary-dark);
+    margin: 0;
+}
+
+.navbar-user-menu { display: flex; gap: 0.5rem; align-items: center; }
+
+
+/* === 4. Widgets del Dashboard === */
+.welcome-card {
+    background: linear-gradient(135deg, var(--wood-primary-light), var(--wood-primary-dark));
+    border-radius: 12px;
+    color: white;
+}
+
+.stat-card {
+    border: none; border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+.stat-card .icon-shape {
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+}
+
+.btn-action {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 1.5rem 0.5rem;
+    border-radius: 12px; text-align: center;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: white; text-decoration: none;
+    color: var(--wood-text);
+}
+.btn-action:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    border-color: var(--wood-primary);
+}
+.action-icon {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    background-color: rgba(74, 124, 48, 0.1); /* bg-primary-light */
+}
+.action-text { font-weight: 600; }
+
+
+/* === 5. Responsividad (Mobile-First) === */
+@media (max-width: 1199.98px) { /* lg breakpoint */
+    .sidenav { 
+        width: var(--sidebar-width); /* Aseguramos el ancho correcto en móvil */
+        transform: translateX(-100%); 
+    }
+    .sidenav.show { transform: translateX(0); }
+    .main-content { margin-left: 0; }
+    
+    .sidebar-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1039;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        backdrop-filter: blur(2px);
+    }
+    .sidebar-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+}

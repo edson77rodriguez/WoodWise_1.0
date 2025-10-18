@@ -1,0 +1,216 @@
+<!-- Modal para crear parcela -->
+<div class="modal fade" id="createParcelaModal" tabindex="-1" aria-labelledby="createParcelaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-map-marked-alt me-2"></i>Nueva Parcela
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST" action="{{ route('parcelas.store') }}">
+                    @csrf
+                    <div class="mb-3">
+                        <label class="form-label">Nombre de la parcela</label>
+                        <input type="text" name="nom_parcela" class="form-control" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Ubicación</label>
+                            <input type="text" name="ubicacion" class="form-control" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Extensión (ha)</label>
+                            <input type="number" step="0.01" name="extension" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Dirección</label>
+                        <input type="text" name="direccion" class="form-control">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Código Postal</label>
+                            <input type="text" name="CP" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Productor</label>
+                            <select class="form-select" name="id_productor">
+                                <option value="" selected disabled>Seleccionar productor</option>
+                                <!-- Aquí irían los productores -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <button type="button" class="btn btn-outline-secondary me-md-2 rounded-pill"
+                                data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary rounded-pill">
+                            <i class="fas fa-save me-1"></i> Registrar Parcela
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modales para acciones por parcela -->
+@foreach($parcelas as $parcela)
+<!-- Modal para agregar troza -->
+<div class="modal fade" id="addTrozaModal{{ $parcela->id_parcela }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Nueva Troza en {{ $parcela->nom_parcela }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST" action="{{ route('trozas.store') }}">
+                    @csrf
+                    <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Longitud (m)</label>
+                            <input type="number" step="0.01" name="longitud" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Diámetro (m)</label>
+                            <input type="number" step="0.01" name="diametro" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Diámetro otro extremo (m)</label>
+                            <input type="number" step="0.01" name="diametro_otro_extremo" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Diámetro medio (m)</label>
+                            <input type="number" step="0.01" name="diametro_medio" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Densidad</label>
+                        <input type="number" step="0.01" name="densidad" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Especie</label>
+                        <select class="form-select" name="id_especie" required>
+                            <option value="" selected disabled>Seleccionar especie</option>
+                            <!-- Aquí irían las especies -->
+                        </select>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <button type="button" class="btn btn-outline-secondary me-md-2 rounded-pill"
+                                data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary rounded-pill">
+                            <i class="fas fa-check-circle me-1"></i> Registrar Troza
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para estimación -->
+<div class="modal fade" id="estimacionModal{{ $parcela->id_parcela }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-calculator me-2"></i>Estimación para {{ $parcela->nom_parcela }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST" action="{{ route('estimaciones.store') }}">
+                    @csrf
+                    <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
+                    <div class="mb-3">
+                        <label class="form-label">Seleccionar Troza</label>
+                        <select class="form-select" name="id_troza" required>
+                            <option value="" selected disabled>Seleccione una troza</option>
+                            @foreach($parcela->trozas as $troza)
+                            <option value="{{ $troza->id_troza }}">Troza #{{ $troza->id_troza }} ({{ $troza->longitud }}m x {{ $troza->diametro }}m)</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo de Estimación</label>
+                            <select class="form-select" name="id_tipo_e" required>
+                                <option value="" selected disabled>Seleccione un tipo</option>
+                                @foreach($tiposEstimacion as $tipo)
+                                <option value="{{ $tipo->id_tipo_e }}">{{ $tipo->desc_estimacion }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fórmula a Aplicar</label>
+                            <select class="form-select" name="id_formula" required>
+                                <option value="" selected disabled>Seleccione una fórmula</option>
+                                @foreach($formulas as $formula)
+                                <option value="{{ $formula->id_formula }}">{{ $formula->nom_formula }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cálculo (opcional)</label>
+                        <textarea class="form-control" name="calculo" rows="2"></textarea>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <button type="button" class="btn btn-outline-secondary me-md-2 rounded-pill"
+                                data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-info rounded-pill">
+                            <i class="fas fa-calculator me-1"></i> Calcular Estimación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para turno de corta -->
+<div class="modal fade" id="turnoModal{{ $parcela->id_parcela }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-warning text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-calendar-alt me-2"></i>Programar Turno de Corta para {{ $parcela->nom_parcela }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST" action="{{ route('turno_cortas.store') }}">
+                    @csrf
+                    <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
+                    <div class="mb-3">
+                        <label class="form-label">Código de Corta</label>
+                        <input type="text" name="codigo_corta" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha de Corta</label>
+                        <input type="date" name="fecha_corta" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notas adicionales</label>
+                        <textarea class="form-control" name="notas" rows="2"></textarea>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <button type="button" class="btn btn-outline-secondary me-md-2 rounded-pill"
+                                data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning rounded-pill">
+                            <i class="fas fa-calendar-check me-1"></i> Programar Turno
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@endforeach

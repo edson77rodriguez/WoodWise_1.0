@@ -1,0 +1,259 @@
+/* === 1. Definiciones Base y de Sección === */
+
+/* Colores de soporte (basados en los RGBA de los estilos inline) */
+.text-dark { color: var(--wood-dark); }
+.text-medium { color: var(--wood-medium); }
+.text-accent { color: var(--wood-accent); }
+.text-accent-dark { color: #b88b4a; } /* Color de innovación más visible */
+
+.about-section {
+    padding: 3rem 0;
+    position: relative;
+    /* Fondo extraído de estilos inline */
+    background-color: rgba(255, 255, 255, 0.9);
+    background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url('../img/wood-texture-bg.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    background-blend-mode: luminosity;
+}
+
+.about-title {
+    letter-spacing: 2px;
+}
+
+.about-subtitle {
+    max-width: 700px;
+}
+
+/* Divisor (Combinado de inline y CSS) */
+.divider {
+    height: 3px;
+    width: 80px;
+    background: var(--wood-accent);
+    margin: 0 auto;
+    transition: width 0.3s ease;
+}
+
+/* === 2. Carrusel y Contenido === */
+
+.carousel-content-wrapper {
+    background: white;
+    padding: 1.5rem;
+    min-height: 300px; /* Base móvil extraída de inline */
+    display: flex;
+    align-items: center;
+}
+
+.carousel-list {
+    list-style-position: inside;
+}
+
+.carousel-title {
+    font-size: 1.5rem; /* Base móvil extraída de inline */
+}
+
+/* Iconos del Carrusel (Combinado) */
+.icon-box {
+    width: 60px;
+    height: 60px;
+    background: rgba(107, 142, 35, 0.1); /* Verde acento 10% */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    transition: transform 0.3s ease;
+}
+.icon-box:hover {
+    transform: scale(1.1);
+}
+.carousel-icon {
+    color: var(--wood-accent);
+    font-size: 2.5rem; /* Base móvil extraída de inline */
+}
+
+/* Controles del Carrusel (Desktop) */
+.carousel-control-prev, 
+.carousel-control-next {
+    width: 15%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.carousel:hover .carousel-control-prev,
+.carousel:hover .carousel-control-next {
+    opacity: 0.5;
+}
+.carousel-control-prev:hover, 
+.carousel-control-next:hover {
+    opacity: 0.9 !important; /* Mantenemos este !important porque BS usa alta especificidad */
+}
+
+.carousel-control-prev-icon, 
+.carousel-control-next-icon {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    padding: 1.5rem;
+    background-size: 60%;
+}
+
+/* Indicadores del Carrusel (Móvil) */
+.carousel-indicators [data-bs-target] {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 5px;
+    border: none;
+    background-color: rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+.carousel-indicators .active {
+    background-color: var(--wood-accent);
+    transform: scale(1.3);
+}
+
+
+/* === 3. Tarjetas (Valores e Impacto) === */
+
+/* Tarjetas de Valores (Fondos extraídos de inline) */
+.value-card {
+    transition: all 0.3s ease;
+    padding: 0.75rem; /* Padding base */
+}
+.value-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+}
+.value-card__icon {
+    font-size: 1.25rem; /* Base móvil extraída de inline */
+}
+
+/* Clases de variante para los fondos (extraídos de inline) */
+.value-card--sustainability { background-color: rgba(107, 142, 35, 0.1); }
+.value-card--precision     { background-color: rgba(94, 48, 35, 0.1); }
+.value-card--innovation    { background-color: rgba(184, 139, 74, 0.1); }
+.value-card--commitment    { background-color: rgba(234, 226, 183, 0.3); }
+
+
+/* Tarjetas de Impacto */
+.impact-card {
+    background: white;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    height: 100%;
+}
+.impact-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+    border-bottom-color: var(--wood-accent);
+}
+
+/* === 4. Media Queries Consolidadas (Mobile-First) === */
+
+/* Tablet (md) y superior */
+@media (min-width: 768px) {
+    .divider {
+        width: 100px;
+        height: 4px;
+    }
+
+    .carousel-content-wrapper {
+        padding: 3rem;
+        min-height: 400px;
+    }
+
+    .carousel-title {
+        font-size: 1.8rem;
+    }
+
+    .carousel-icon {
+        font-size: 3rem;
+    }
+
+    .value-card {
+        padding: 1rem; /* Más padding en desktop */
+    }
+
+    .value-card__icon {
+        font-size: 1.5rem;
+    }
+    
+    .about-title {
+        letter-spacing: 3px;
+    }
+}
+
+/* Solo Tablet (md) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .impact-card {
+        margin-bottom: 1rem; /* Espacio entre filas en tablet */
+    }
+    .value-card {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Solo Móvil (hasta md) */
+@media (max-width: 991.98px) {
+    .about-section {
+        padding: 2rem 0;
+        background-attachment: scroll; /* Fixed attachment es costoso en móvil */
+    }
+    
+    .icon-box {
+        width: 50px;
+        height: 50px;
+        margin-bottom: 1rem;
+    }
+    
+    /* [REDUNDANCIA ELIMINADA] 
+       La regla CSS para ocultar .carousel-control-prev/next se eliminó. 
+       Las clases 'd-none d-md-flex' en el Blade ya manejan esto. Es la forma correcta. */
+
+    .carousel-indicators {
+        position: static;
+        margin: 1rem 0 0;
+    }
+}
+
+/* Móviles pequeños (sm) */
+@media (max-width: 575.98px) {
+    .about-section {
+        padding: 1.5rem 0;
+    }
+
+    /* Bootstrap display-5 ya es responsivo, pero ajustamos a la intención del inline original */
+    .about-title.display-5 {
+        font-size: 2rem; 
+    }
+    
+    .lead.about-subtitle {
+        font-size: 1rem;
+    }
+    
+    .carousel-indicators [data-bs-target] {
+        width: 8px;
+        height: 8px;
+        margin: 0 3px;
+    }
+}
+
+/* === 5. Optimizaciones === */
+
+/* Desactivar efectos hover en dispositivos táctiles (que no tienen hover) */
+@media (hover: none) {
+    .impact-card:hover,
+    .value-card:hover,
+    .icon-box:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    .impact-card:hover {
+        border-bottom-color: transparent;
+    }
+}
+
+.carousel-item {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}

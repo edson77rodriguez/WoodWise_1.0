@@ -1,0 +1,539 @@
+/*
+ * TEMA PRINCIPAL DE WOODWISE (Refactorizado con la paleta "Succulent Tones")
+ * - Paleta de colores aplicada a todo el tema, extraída de la imagen.
+ * - Eliminado todo el código CSS muerto (estilos de logo 3D, animaciones, etc.).
+ * - Estilos de página, modales, tablas y formularios organizados en un solo archivo.
+ */
+
+/* === 1. Paleta de Colores Unificada ("Succulent Tones") === */
+:root {
+    /* Tu nueva paleta "Succulent Tones" */
+    --succulent-lightest: #C3E0CE;  /* Verde muy claro, casi pastel */
+    --succulent-light: #A7CDAE;   /* Verde claro suave */
+    --succulent-medium: #5D7A68;   /* Verde medio, base para texto o elementos */
+    --succulent-dark: #3F5746;     /* Verde oscuro, para fondos o texto principal */
+    --succulent-accent: #86B28F;   /* Un verde ligeramente más vibrante para acentos */
+    --succulent-highlight: #A8CD7B; /* El verde más claro y vibrante, para highlights */
+
+    /* Mapeo a tus variables existentes para una integración fluida */
+    --forest-dark: var(--succulent-dark);
+    --forest-medium: var(--succulent-medium);
+    --forest-light: var(--succulent-light);
+    --forest-accent: var(--succulent-accent); /* Usaremos este para botones y acentos */
+    --wood-light: var(--succulent-lightest);  /* Para elementos que simulen madera clara o fondos */
+    --wood-dark: var(--succulent-medium);     /* Para elementos que simulen madera oscura o bordes */
+    --forest-bg: #F8FCF8; /* Un fondo muy ligero que complementa la paleta */
+    --forest-text: #2D3E40; /* Un gris oscuro para buen contraste con todos los verdes */
+    --forest-border: #D8E4DB; /* Un borde suave que complementa la paleta */
+
+    /* Paleta de UI (Manteniendo consistencia, remapeada si es necesario) */
+    --ui-info: #3E8DA8;            /* Un azul ligeramente más oscuro para info */
+    --ui-info-light: #5BAED6;
+    --ui-warning: #E0B95B;         /* Un amarillo/naranja suave de advertencia */
+    --ui-warning-light: #EBD292;
+    --ui-danger: #D65A5A;          /* Rojo de peligro */
+    --ui-danger-hover: #BF4747;
+
+    /* Variables de layout */
+    --wood-border-radius: 12px;
+    --wood-transition: all 0.3s ease-in-out;
+}
+
+
+/* === 2. Clases de Aplicación de Paleta === */
+.wood-bg-gradient {
+    background: linear-gradient(135deg, var(--forest-dark), var(--forest-medium));
+}
+.text-forest-dark { color: var(--forest-dark); }
+.text-forest-medium { color: var(--forest-medium); }
+.text-forest-light { color: var(--forest-light); }
+.text-forest-accent { color: var(--forest-accent); }
+.text-wood-dark { color: var(--wood-dark); }
+.bg-forest-dark { background-color: var(--forest-dark); }
+.bg-forest-medium { background-color: var(--forest-medium); }
+.bg-forest-light { background-color: var(--forest-light); }
+.bg-forest-accent { background-color: var(--forest-accent); }
+.bg-wood-light { background-color: var(--wood-light); }
+
+
+/* === 3. Componentes de Tarjeta y Layout === */
+.wood-card {
+    background-color: white;
+    border-radius: var(--wood-border-radius);
+    border: none;
+    overflow: hidden;
+    transition: var(--wood-transition);
+}
+.wood-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.wood-card-header {
+    background: linear-gradient(135deg, var(--forest-dark), var(--forest-medium));
+    color: white;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wood-card-footer {
+    background: var(--forest-bg);
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--forest-border);
+}
+
+.wood-divider {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), var(--forest-medium), rgba(0, 0, 0, 0));
+}
+
+/* Sombras */
+.wood-shadow { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); }
+.wood-shadow-sm { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
+.wood-shadow-lg { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.08); }
+
+/* Tarjetas de Información (Stats) */
+.wood-info-card {
+    border: none;
+    border-radius: var(--wood-border-radius);
+    background: white;
+    transition: var(--wood-transition);
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--wood-shadow-sm);
+}
+.wood-card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--wood-shadow);
+}
+.wood-icon-wrapper {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--wood-transition);
+}
+.wood-icon-wrapper .wood-icon { font-size: 1.5rem; }
+.wood-card-title {
+    color: var(--forest-dark);
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    position: relative;
+}
+.wood-card-title:after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 2px;
+    background: var(--wood-light);
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.wood-card-text {
+    color: var(--forest-text);
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+.wood-unit {
+    color: var(--wood-dark);
+    font-size: 0.9rem;
+    display: block;
+    margin-top: 0.25rem;
+    opacity: 0.7;
+}
+.wood-card-decoration {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(to right, var(--forest-medium), var(--succulent-highlight)); /* Usando el highlight para el decorado */
+    opacity: 0;
+    transition: var(--wood-transition);
+}
+.wood-card-hover:hover .wood-card-decoration { opacity: 1; }
+.wood-card-hover:hover .wood-icon-wrapper {
+    transform: scale(1.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Colores de fondo Iconos (ajustados a tu paleta) */
+.bg-wood-light-20 { background-color: rgba(195, 224, 206, 0.25); } /* rgba(succulent-lightest, 0.25) */
+.bg-wood-medium-20 { background-color: rgba(93, 122, 104, 0.15); } /* rgba(succulent-medium, 0.15) */
+.bg-wood-accent-20 { background-color: rgba(134, 178, 143, 0.15); } /* rgba(succulent-accent, 0.15) */
+
+
+/* === 4. Pestañas (Tabs) === */
+.wood-tabs {
+    border-bottom: 2px solid var(--forest-border);
+    gap: 0.5rem;
+}
+.wood-tab-btn {
+    position: relative;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    color: var(--forest-medium);
+    background-color: transparent;
+    border: none;
+    border-radius: var(--wood-border-radius) var(--wood-border-radius) 0 0;
+    transition: var(--wood-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin: 0;
+    opacity: 0.8;
+}
+.wood-tab-btn:hover {
+    color: var(--forest-dark);
+    opacity: 1;
+    background-color: var(--forest-bg);
+}
+.wood-tab-btn.active {
+    color: var(--forest-dark);
+    background-color: white;
+    opacity: 1;
+    border: none;
+    box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.03);
+}
+.wood-tab-btn.active:after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--succulent-highlight); /* Usando el highlight para la línea activa */
+}
+
+.wood-tab-content {
+    background-color: white;
+    border-radius: 0 0 12px 12px;
+    border: 1px solid var(--forest-border);
+    border-top: none;
+    padding: 1rem;
+}
+
+
+/* === 5. Tablas y Badges === */
+.wood-table {
+    width: 100%;
+    margin-bottom: 0;
+}
+.wood-table thead th {
+    background-color: var(--forest-dark);
+    color: white;
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border-bottom: 0;
+}
+.wood-table tbody td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--forest-border);
+    vertical-align: middle;
+}
+.wood-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.wood-table tbody tr:hover {
+    background-color: rgba(167, 205, 174, 0.08); /* rgba(succulent-light, 0.08) */
+}
+
+.wood-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: white; /* Color de texto para badges, ahora sobre forest-accent */
+    background-color: var(--forest-accent);
+    border-radius: 12px;
+}
+.wood-badge-secondary { background-color: var(--forest-medium); color: white; }
+.wood-badge-dark { background-color: var(--forest-dark); color: white; }
+.wood-badge.bg-info { background-color: var(--ui-info); color: white;}
+.wood-badge.bg-success { background-color: var(--succulent-highlight); color: var(--forest-dark);} /* Éxito con el highlight y texto oscuro */
+.wood-badge-warning { background-color: var(--ui-warning); color: var(--forest-dark); } /* Texto oscuro para warning si el fondo es claro */
+.wood-badge-success { background-color: var(--succulent-highlight); color: var(--forest-dark); } /* Texto oscuro para success si el fondo es claro */
+
+
+/* === 6. Formularios (Modales y Búsqueda) === */
+.wood-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--forest-text);
+}
+.wood-form-control,
+.wood-form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--forest-border);
+    border-radius: 8px;
+    transition: all 0.3s;
+    background-color: #fff;
+    color: var(--forest-text);
+}
+.wood-form-control:focus,
+.wood-form-select:focus {
+    border-color: var(--forest-medium);
+    box-shadow: 0 0 0 3px rgba(93, 122, 104, 0.15); /* rgba(succulent-medium, 0.15) */
+    outline: none;
+}
+.wood-form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+}
+
+.wood-search-input { max-width: 300px; }
+.wood-search-input .form-control {
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.wood-search-input .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: none;
+    background: white;
+    color: var(--forest-medium);
+    border-color: var(--forest-border);
+}
+.wood-search-input .form-control:focus + .btn {
+    border-color: var(--forest-medium);
+}
+
+/* === 7. Botones (Globales y de Acción) === */
+.btn-wood {
+    background-color: var(--succulent-highlight); /* Usando el highlight para el botón principal */
+    color: var(--forest-dark); /* Texto oscuro para contraste */
+    border: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn-wood:hover {
+    background-color: #9EC06D; /* Un poco más oscuro que succulent-highlight */
+    color: var(--forest-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn-wood-outline {
+    background-color: transparent;
+    color: var(--forest-medium);
+    border: 1px solid var(--forest-medium);
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+.btn-wood-outline:hover {
+    background-color: rgba(93, 122, 104, 0.1); /* rgba(succulent-medium, 0.1) */
+    color: var(--forest-dark);
+    border-color: var(--forest-dark);
+}
+
+.btn-wood-light {
+    background-color: var(--forest-bg);
+    color: var(--forest-text);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+    font-weight: 500;
+}
+.btn-wood-light:hover {
+    background-color: white;
+    color: var(--forest-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--wood-shadow-sm);
+}
+
+.btn-pdf {
+    background-color: var(--ui-danger);
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+.btn-pdf:hover {
+    background-color: var(--ui-danger-hover);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Botones de Acción de Tabla */
+.btn-wood-action {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-width: 1.5px;
+    border-style: solid;
+}
+.btn-view {
+    color: var(--forest-medium);
+    border-color: var(--forest-medium);
+    background-color: rgba(93, 122, 104, 0.05); /* rgba(succulent-medium, 0.05) */
+}
+.btn-view:hover { background-color: rgba(93, 122, 104, 0.1); }
+.btn-edit {
+    color: var(--ui-info);
+    border-color: var(--ui-info);
+    background-color: rgba(62, 141, 168, 0.05);
+}
+.btn-edit:hover { background-color: rgba(62, 141, 168, 0.1); }
+.btn-delete {
+    color: var(--ui-danger);
+    border-color: var(--ui-danger);
+    background-color: rgba(214, 90, 90, 0.05);
+}
+.btn-delete:hover { background-color: rgba(214, 90, 90, 0.1); }
+
+
+/* === 8. Estilos de Modales (Fusionados) === */
+.wood-modal .modal-content,
+.wood-edit-modal .modal-content,
+.wood-detail-modal .modal-content {
+    border-radius: var(--wood-border-radius);
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border: none;
+}
+.wood-modal-header,
+.wood-edit-header,
+.wood-detail-header {
+    padding: 1.5rem;
+    border-bottom: none;
+}
+.wood-modal-title,
+.wood-edit-title,
+.wood-detail-title {
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+    color: white;
+}
+.wood-modal-subtitle,
+.wood-edit-subtitle,
+.wood-detail-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    color: rgba(255, 255, 255, 0.9);
+}
+.wood-modal-icon,
+.wood-edit-icon,
+.wood-detail-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+.wood-modal-body {
+    padding: 1.5rem;
+}
+.wood-modal-footer,
+.wood-edit-footer,
+.wood-detail-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    border-top: 1px solid var(--forest-border);
+    background-color: var(--forest-bg);
+}
+.wood-detail-footer {
+    padding: 1.5rem;
+    background: transparent;
+}
+
+/* Colores de Header de Modal (Usando tu paleta "Succulent Tones") */
+.wood-bg-primary { background: linear-gradient(135deg, var(--forest-dark), var(--forest-medium)); }
+.wood-bg-info { background: linear-gradient(135deg, var(--ui-info), var(--ui-info-light)); }
+.wood-bg-warning { background: linear-gradient(135deg, var(--ui-warning), var(--ui-warning-light)); }
+.wood-bg-warning .wood-modal-title, .wood-bg-warning .wood-modal-subtitle { color: var(--forest-dark); }
+.wood-bg-warning .btn-close { filter: none; }
+
+
+/* Botones de Modal (Usando tu paleta) */
+.btn-wood-info {
+    background-color: var(--ui-info);
+    color: white;
+    border: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+.btn-wood-info:hover { background-color: #31728C; color: white; }
+.btn-wood-warning {
+    background-color: var(--ui-warning);
+    color: var(--forest-dark);
+    border: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+.btn-wood-warning:hover { background-color: #CBA548; color: var(--forest-dark); }
+.btn-wood-primary {
+    background-color: var(--forest-medium);
+    color: white;
+    border: none;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+.btn-wood-primary:hover { background-color: var(--forest-dark); }
+
+
+/* Estilos de Modal de Detalles */
+.wood-detail-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--forest-dark);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--forest-border);
+}
+.wood-detail-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.wood-detail-item { display: flex; justify-content: space-between; align-items: center; }
+.wood-detail-label { color: var(--forest-text); opacity: 0.8; font-size: 0.9rem; }
+.wood-detail-value { color: var(--forest-dark); font-weight: 600; text-align: right; }
+.wood-highlight { color: var(--succulent-highlight); font-size: 1.1rem; font-weight: 700; }
+
+
+/* === 9. Media Queries (Modo Oscuro) === */
+@media (prefers-color-scheme: dark) {
+    .wood-card, .wood-form-control, .wood-form-select {
+        background-color: #2a2a2a;
+        border-color: #444;
+        color: #eee;
+    }
+    .wood-form-label { color: #ddd; }
+    .wood-modal-footer, .wood-card-footer { border-top-color: rgba(255, 255, 255, 0.1); background-color: #2a2a2a;}
+    .wood-card-header, .wood-table thead th { background: var(--forest-dark); }
+    .wood-search-input .btn { background: #2a2a2a; color: #eee; border-color: #444; }
+    .wood-table tbody td { color: #ddd; border-bottom-color: #333; }
+    .wood-bg-warning .wood-modal-title, .wood-bg-warning .wood-modal-subtitle { color: var(--forest-dark); }
+    .wood-bg-warning { color: var(--forest-dark) !important; }
+    .btn-wood-warning { color: var(--forest-dark); }
+    .wood-tab-content { background-color: #2a2a2a; border-color: #444;}
+    .wood-tab-btn.active { background-color: #2a2a2a; }
+}

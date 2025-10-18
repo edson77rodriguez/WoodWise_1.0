@@ -1,0 +1,129 @@
+/* === 1. Estilos Base y de Sección === */
+.contact-section {
+    padding: 2rem 0;
+    position: relative;
+    background-color: var(--wood-bg-light);
+}
+
+/* Textos y bordes (Clases de utilidad) */
+.wood-text-dark { color: var(--wood-dark); }
+.wood-text-medium { color: var(--wood-medium); }
+.wood-text-accent { color: var(--wood-accent); }
+.wood-border-bottom { 
+    border-bottom: 2px solid var(--wood-light); 
+    padding-bottom: 0.5rem;
+}
+
+.divider {
+    height: 3px;
+    width: 80px;
+    background: var(--wood-accent);
+    margin: 0 auto 1rem;
+}
+
+/* === 2. Tarjetas === */
+.contact-info-card,
+.contact-form-card,
+.map-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(184, 139, 74, 0.2);
+    background-color: white;
+}
+
+/* Efectos hover solo en dispositivos con puntero fino (excluye táctiles) */
+@media (hover: hover) and (pointer: fine) {
+    .contact-info-card:hover,
+    .contact-form-card:hover,
+    .map-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+    }
+}
+
+/* === 3. Iconos === */
+.contact-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(107, 142, 35, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.social-icon {
+    width: 36px;
+    height: 36px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+.social-icon.facebook { background-color: #3b5998; }
+.social-icon.instagram { background: linear-gradient(45deg, #405DE6, #833AB4, #C13584, #E1306C, #FD1D1D); }
+.social-icon.whatsapp { background-color: #25D366; }
+.social-icon.linkedin { background-color: #0077B5; }
+
+
+/* === 4. Formulario === */
+.btn-wood {
+    background-color: var(--wood-accent);
+    color: white;
+    transition: all 0.3s ease;
+    border: none;
+    font-size: 1rem;
+}
+.btn-wood:hover {
+    background-color: var(--wood-dark);
+    color: white;
+}
+
+.wood-input {
+    border-color: var(--wood-light);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.wood-input:focus {
+    border-color: var(--wood-accent);
+    box-shadow: 0 0 0 0.2rem rgba(107, 142, 35, 0.25);
+}
+
+/* [REGLA AÑADIDA] Estilo para textarea (reemplaza inline style) */
+.form-floating textarea.wood-input {
+    min-height: 150px; /* Usar min-height es más robusto que height */
+}
+
+
+/* === 5. Mapa === */
+
+/* [REGLA AÑADIDA] Estilos para iframe (reemplaza inline style) */
+.map-card iframe {
+    border: 0;
+    border-radius: 8px; /* Coincide con el border-radius del layout */
+}
+
+
+/* === 6. Media Queries Consolidadas === */
+
+/* [REFACTORIZACIÓN] 
+   Eliminado el bloque @media (max-width: 767.98px). 
+   Las reglas de padding (p-4, py-3) que usaban !important fueron reemplazadas 
+   por clases de utilidad responsivas en el HTML (p-3 p-md-5, py-2 py-lg-3).
+   Esto es mucho más limpio y sigue la metodología de Bootstrap. 
+   Las reglas de tamaño de iconos que estaban aquí no son necesarias o pueden 
+   ser manejadas por las clases fs-*. (Si se necesitaran, aquí irían).
+*/
+
+/* Optimización para Tablets */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .contact-section {
+        padding: 3rem 0;
+    }
+    
+    .divider {
+        width: 100px;
+        height: 4px;
+    }
+}
