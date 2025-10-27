@@ -1,448 +1,689 @@
 @extends('layouts.app')
 
-{{-- [REFACTOR] 1. Cargar el CSS específico de esta página en el stack 'styles' (en el <head>) --}}
 @push('styles')
     <link href="{{ asset('css/WW/tecnico-dashboard.css') }}" rel="stylesheet">
 @endpush
 
-
 @section('content')
     <div class="container-fluid py-4">
-        <div class="row mb-5">
-            <div class="col-12">
-                <div class="card border-0 wood-shadow-lg">
-                    <div class="card-body p-4 wood-bg-gradient">
-                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <div>
-                                <h2 class="text-white mb-2"><i class="fas fa-tree me-2"></i> Panel del Técnico Forestal</h2>
-                                <p class="text-white opacity-8 mb-0">Gestión profesional de recursos maderables sostenibles</p>
+       <!-- Header Épico con Efectos Avanzados -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="epic-header-card">
+            <!-- Efecto de partículas -->
+            <div class="particles-container">
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+            </div>
+            
+            <!-- Contenido principal -->
+            <div class="header-content-wrapper">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-4">
+                    <!-- Lado izquierdo - Branding -->
+                    <div class="d-flex align-items-center">
+                        <div class="animated-logo">
+                            <div class="logo-core">
+                                <i class="fas fa-tree"></i>
                             </div>
-                            <button class="btn btn-wood-light rounded-pill wood-shadow px-4" data-bs-toggle="modal" data-bs-target="#createParcelaModal">
-                                <i class="fas fa-plus me-2"></i> Nueva Parcela
+                            <div class="logo-ring ring-1"></div>
+                            <div class="logo-ring ring-2"></div>
+                            <div class="logo-ring ring-3"></div>
+                        </div>
+                        <div class="header-text-content ms-4">
+                            <h1 class="header-title gradient-text">
+                                Panel del Técnico Forestal
+                                <span class="title-underline"></span>
+                            </h1>
+                            <p class="header-subtitle">
+                                <span class="typing-text">Gestión profesional de recursos maderables sostenibles</span>
+                            </p>
+                            <div class="header-stats">
+                                <div class="stat-chip">
+                                    <i class="fas fa-user-check me-1"></i>
+                                    <span>Técnico {{ $user->persona->nom ?? 'Usuario' }}</span>
+                                </div>
+                                <div class="stat-chip">
+                                    <i class="fas fa-id-card me-1"></i>
+                                    <span>{{ $tecnico->clave_tecnico }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lado derecho - Acciones -->
+                    <div class="header-actions">
+                        <button class="btn-epic-primary" data-bs-toggle="modal" data-bs-target="#createParcelaModal">
+                            <span class="btn-content">
+                                <i class="fas fa-plus btn-icon"></i>
+                                <span class="btn-text">Nueva Parcela</span>
+                            </span>
+                            <div class="btn-shine"></div>
+                        </button>
+                        
+                        <!-- Acciones rápidas -->
+                        <div class="quick-actions">
+                            <button class="quick-btn" data-bs-toggle="tooltip" title="Estadísticas">
+                                <i class="fas fa-chart-bar"></i>
+                            </button>
+                            <button class="quick-btn" data-bs-toggle="tooltip" title="Reportes">
+                                <i class="fas fa-file-alt"></i>
+                            </button>
+                            <button class="quick-btn" data-bs-toggle="tooltip" title="Configuración">
+                                <i class="fas fa-cog"></i>
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Efecto de borde animado -->
+            <div class="border-animation"></div>
         </div>
+    </div>
+</div>
 
-        <div class="row mb-5">
-            <div class="col-md-12">
-                <div class="wood-card wood-shadow">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon icon-shape icon-lg bg-forest-dark text-white rounded-circle me-4 wood-shadow-sm">
-                                <i class="fas fa-user-tie"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-forest-dark mb-1">Técnico {{ $user->persona->nom ?? 'Usuario' }}</h3>
-                                <div class="d-flex align-items-center flex-wrap gap-2">
-                                    <span class="badge bg-forest-light text-forest-dark">
-                                        <i class="fas fa-id-card me-1"></i> {{ $tecnico->cedula_p ?? 'No disponible' }}
-                                    </span>
-                                    <span class="badge bg-forest-accent text-white">
-                                        <i class="fas fa-key me-1"></i> {{ $tecnico->clave_tecnico }}
-                                    </span>
-                                </div>
-                            </div>
+       <!-- Dashboard de Métricas Épico -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="metrics-dashboard">
+            <!-- Efectos de fondo -->
+            <div class="dashboard-glow"></div>
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+            </div>
+
+            <!-- Header del Perfil Mejorado -->
+            <div class="profile-hero">
+                <div class="profile-main">
+                    <div class="avatar-3d">
+                        <div class="avatar-core">
+                            <i class="fas fa-user-tie"></i>
                         </div>
-
-                        <hr class="wood-divider my-4">
-
-                        <div class="row">
-                            <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
-                                <div class="wood-card h-100 wood-shadow-sm">
-                                    <div class="card-body text-center p-3">
-                                        <div class="icon icon-shape icon-md bg-forest-light text-forest-dark rounded-circle mb-3 mx-auto wood-shadow-sm">
-                                            <i class="fas fa-map-marked-alt"></i>
-                                        </div>
-                                        <h2 class="text-forest-dark mb-1">{{ $parcelas->total() }}</h2>
-                                        <p class="text-muted mb-0">Parcelas asignadas</p>
-                                    </div>
-                                </div>
+                        <div class="avatar-ring"></div>
+                        <div class="avatar-badge">
+                            <i class="fas fa-check"></i>
+                        </div>
+                    </div>
+                    <div class="profile-info">
+                        <h1 class="profile-title">
+                            Técnico <span class="gradient-name">{{ $user->persona->nom ?? 'Usuario' }}</span>
+                        </h1>
+                        <p class="profile-subtitle">Especialista en Gestión Forestal</p>
+                        
+                        <div class="profile-metadata">
+                            <div class="meta-item">
+                                <i class="fas fa-fingerprint"></i>
+                                <span>{{ $tecnico->cedula_p ?? 'No disponible' }}</span>
                             </div>
-
-                            <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
-                                <div class="wood-card h-100 wood-shadow-sm">
-                                    <div class="card-body text-center p-3">
-                                        <div class="icon icon-shape icon-md bg-forest-medium text-white rounded-circle mb-3 mx-auto wood-shadow-sm">
-                                            <i class="fas fa-cut"></i>
-                                        </div>
-                                        <h2 class="text-forest-dark mb-1">{{ $totalTrozas }}</h2>
-                                        <p class="text-muted mb-0">Trozas registradas</p>
-                                    </div>
-                                </div>
+                            <div class="meta-item">
+                                <i class="fas fa-key"></i>
+                                <span>{{ $tecnico->clave_tecnico }}</span>
                             </div>
-
-                            <div class="col-lg-3 col-md-6 mb-3 mb-md-0">
-                                <div class="wood-card h-100 wood-shadow-sm">
-                                    <div class="card-body text-center p-3">
-                                        <div class="icon icon-shape icon-md bg-forest-accent text-white rounded-circle mb-3 mx-auto wood-shadow-sm">
-                                            <i class="fas fa-calculator"></i>
-                                        </div>
-                                        <h2 class="text-forest-dark mb-1">{{ $totalEstimaciones ?? 0 }}</h2> {{-- Asegúrate de pasar esta var --}}
-                                        <p class="text-muted mb-0">Estimaciones</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-lg-3 col-md-6">
-                                <div class="wood-card h-100 wood-shadow-sm">
-                                    <div class="card-body text-center p-3">
-                                        <div class="icon icon-shape icon-md bg-forest-dark text-white rounded-circle mb-3 mx-auto wood-shadow-sm">
-                                            <i class="fas fa-cubes"></i>
-                                        </div>
-                                        <h2 class="text-forest-dark mb-1">{{ number_format($totalVolumenMaderable ?? 0, 2) }} m³</h2> {{-- Asegúrate de pasar esta var --}}
-                                        <p class="text-muted mb-0">Volumen total</p>
-                                    </div>
-                                </div>
+                            <div class="meta-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>Activo ahora</span>
                             </div>
                         </div>
                     </div>
                 </div>
+                <div class="profile-stats-preview">
+                    <div class="preview-item">
+                        <span class="preview-value">{{ $parcelas->total() }}</span>
+                        <span class="preview-label">Parcelas</span>
+                    </div>
+                    <div class="preview-item">
+                        <span class="preview-value">{{ $totalTrozas }}</span>
+                        <span class="preview-label">Trozas</span>
+                    </div>
+                    <div class="preview-item">
+                        <span class="preview-value">{{ $totalVolumenMaderable ?? 0 }}m³</span>
+                        <span class="preview-label">Volumen</span>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="row">
-            <div class="col-12">
-                <div class="wood-card wood-shadow">
-                    <div class="wood-card-header">
-                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <h5 class="mb-0 text-white"><i class="fas fa-map me-2"></i>Parcelas Asignadas</h5>
-                            <div class="input-group wood-search-input">
-                                <input type="text" class="form-control" placeholder="Buscar parcela...">
-                                <button class="btn btn-wood-outline" type="button"><i class="fas fa-search"></i></button>
-                            </div>
+            <!-- Grid de Métricas Animadas -->
+            <div class="metrics-grid">
+                <!-- Métrica 1: Parcelas -->
+                <div class="metric-card" data-aos="fade-up">
+                    <div class="metric-header">
+                        <div class="metric-icon-wrapper">
+                            <div class="metric-icon-bg"></div>
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <div class="metric-trend positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>12%</span>
                         </div>
                     </div>
+                    <div class="metric-content">
+                        <h3 class="metric-value" data-count="{{ $parcelas->total() }}">0</h3>
+                        <p class="metric-label">Parcelas Asignadas</p>
+                        <div class="metric-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: 100%"></div>
+                            </div>
+                            <span class="progress-text">Completo</span>
+                        </div>
+                    </div>
+                    <div class="metric-footer">
+                        <span class="metric-info">
+                            <i class="fas fa-info-circle"></i>
+                            Gestión activa
+                        </span>
+                    </div>
+                </div>
 
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="wood-table">
-                                <thead>
-                                <tr>
-                                    <th class="text-uppercase ps-4">Nombre</th>
-                                    <th class="text-uppercase">Productor</th>
-                                    <th class="text-uppercase">Ubicación</th>
-                                    <th class="text-uppercase">Extensión (ha)</th>
-                                    <th class="text-uppercase">Trozas</th>
-                                    <th class="text-uppercase">Estimaciones</th>
-                                    <th class="text-uppercase">Volumen (m³)</th>
-                                    <th class="text-uppercase text-end pe-4">Acciones</th>
+                <!-- Métrica 2: Trozas -->
+                <div class="metric-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="metric-header">
+                        <div class="metric-icon-wrapper">
+                            <div class="metric-icon-bg"></div>
+                            <i class="fas fa-cut"></i>
+                        </div>
+                        <div class="metric-trend warning">
+                            <i class="fas fa-minus"></i>
+                            <span>5%</span>
+                        </div>
+                    </div>
+                    <div class="metric-content">
+                        <h3 class="metric-value" data-count="{{ $totalTrozas }}">0</h3>
+                        <p class="metric-label">Trozas Registradas</p>
+                        <div class="metric-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: 75%"></div>
+                            </div>
+                            <span class="progress-text">75% capacidad</span>
+                        </div>
+                    </div>
+                    <div class="metric-footer">
+                        <span class="metric-info">
+                            <i class="fas fa-clock"></i>
+                            Actualizado hoy
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Métrica 3: Estimaciones -->
+                <div class="metric-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="metric-header">
+                        <div class="metric-icon-wrapper">
+                            <div class="metric-icon-bg"></div>
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="metric-trend positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>23%</span>
+                        </div>
+                    </div>
+                    <div class="metric-content">
+                        <h3 class="metric-value" data-count="{{ $totalEstimaciones ?? 0 }}">0</h3>
+                        <p class="metric-label">Estimaciones Realizadas</p>
+                        <div class="metric-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: 60%"></div>
+                            </div>
+                            <span class="progress-text">60% del objetivo</span>
+                        </div>
+                    </div>
+                    <div class="metric-footer">
+                        <span class="metric-info">
+                            <i class="fas fa-chart-line"></i>
+                            En crecimiento
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Métrica 4: Volumen -->
+                <div class="metric-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="metric-header">
+                        <div class="metric-icon-wrapper">
+                            <div class="metric-icon-bg"></div>
+                            <i class="fas fa-cubes"></i>
+                        </div>
+                        <div class="metric-trend excellent">
+                            <i class="fas fa-rocket"></i>
+                            <span>45%</span>
+                        </div>
+                    </div>
+                    <div class="metric-content">
+                        <h3 class="metric-value" data-count="{{ number_format($totalVolumenMaderable ?? 0, 1) }}">0.0</h3>
+                        <p class="metric-label">Volumen Total (m³)</p>
+                        <div class="metric-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: 85%"></div>
+                            </div>
+                            <span class="progress-text">85% récord</span>
+                        </div>
+                    </div>
+                    <div class="metric-footer">
+                        <span class="metric-info">
+                            <i class="fas fa-trophy"></i>
+                            Récord personal
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+           
+        </div>
+    </div>
+</div>
+       <!-- Tabla de Parcelas Épica -->
+<div class="row">
+    <div class="col-12">
+        <div class="advanced-table-container">
+            <!-- Header Avanzado -->
+            <div class="table-hero-header">
+                <div class="header-content">
+                    <div class="header-brand">
+                        <div class="table-icon-animated">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <div class="icon-pulse"></div>
+                        </div>
+                        <div class="header-text">
+                            <h2 class="table-title">Parcelas Asignadas</h2>
+                            <p class="table-subtitle">Gestión integral de recursos forestales</p>
+                        </div>
+                    </div>
+                    
+                    <div class="header-controls">
+                        <!-- Búsqueda Avanzada -->
+                        <div class="search-advanced">
+                            <div class="search-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <input type="text" class="search-input" placeholder="Buscar parcela, productor, ubicación...">
+                            <div class="search-actions">
+                                <button class="search-clear" type="button">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Filtros Avanzados -->
+                        <div class="filters-group">
+                            <div class="dropdown filter-dropdown">
+                                <button class="btn-filter" data-bs-toggle="dropdown">
+                                    <i class="fas fa-filter"></i>
+                                    Filtros
+                                    <span class="filter-badge">3</span>
+                                </button>
+                                <div class="dropdown-menu filter-menu">
+                                    <div class="filter-section">
+                                        <h6>Estado</h6>
+                                        <div class="filter-options">
+                                            <label class="filter-checkbox">
+                                                <input type="checkbox" checked>
+                                                <span class="checkmark"></span>
+                                                Activas
+                                            </label>
+                                            <label class="filter-checkbox">
+                                                <input type="checkbox">
+                                                <span class="checkmark"></span>
+                                                Inactivas
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="filter-section">
+                                        <h6>Extensión</h6>
+                                        <div class="range-inputs">
+                                            <input type="number" placeholder="Mín" class="form-control">
+                                            <span>-</span>
+                                            <input type="number" placeholder="Máx" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div class="filter-actions">
+                                        <button class="btn-apply">Aplicar</button>
+                                        <button class="btn-reset">Limpiar</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="btn-export">
+                                <i class="fas fa-download"></i>
+                                Exportar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stats Rápidas -->
+                <div class="table-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">{{ $parcelas->total() }}</span>
+                        <span class="stat-label">Total Parcelas</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ $totalTrozas }}</span>
+                        <span class="stat-label">Trozas Totales</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ number_format($totalVolumenMaderable ?? 0, 1) }}m³</span>
+                        <span class="stat-label">Volumen Total</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ $parcelas->count() }}</span>
+                        <span class="stat-label">Mostrando</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenedor de Tabla -->
+            <div class="table-wrapper">
+                <div class="table-scroll-container">
+                    <table class="advanced-data-table">
+                        <thead class="table-header-sticky">
+                            <tr>
+                                <th class="column-parcela">
+                                    <div class="column-header">
+                                        <span>Parcela</span>
+                                        <button class="sort-btn" data-sort="name">
+                                            <i class="fas fa-sort"></i>
+                                        </button>
+                                    </div>
+                                </th>
+                                <th class="column-productor">
+                                    <div class="column-header">
+                                        <span>Productor</span>
+                                        <button class="sort-btn" data-sort="producer">
+                                            <i class="fas fa-sort"></i>
+                                        </button>
+                                    </div>
+                                </th>
+                                <th class="column-ubicacion">
+                                    <div class="column-header">
+                                        <span>Ubicación</span>
+                                    </div>
+                                </th>
+                                <th class="column-extension">
+                                    <div class="column-header">
+                                        <span>Extensión</span>
+                                        <button class="sort-btn" data-sort="extension">
+                                            <i class="fas fa-sort"></i>
+                                        </button>
+                                    </div>
+                                </th>
+                                <th class="column-arboles">
+                                    <div class="column-header">
+                                        <i class="fas fa-tree"></i>
+                                        <span>Árboles</span>
+                                    </div>
+                                </th>
+                                <th class="column-trozas">
+                                    <div class="column-header">
+                                        <i class="fas fa-cut"></i>
+                                        <span>Trozas</span>
+                                    </div>
+                                </th>
+                                <th class="column-estimaciones">
+                                    <div class="column-header">
+                                        <i class="fas fa-calculator"></i>
+                                        <span>Estimaciones</span>
+                                    </div>
+                                </th>
+                                <th class="column-volumen">
+                                    <div class="column-header">
+                                        <i class="fas fa-cubes"></i>
+                                        <span>Volumen</span>
+                                        <button class="sort-btn" data-sort="volume">
+                                            <i class="fas fa-sort"></i>
+                                        </button>
+                                    </div>
+                                </th>
+                                <th class="column-actions">
+                                    <div class="column-header">
+                                        <span>Acciones</span>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($parcelas as $index => $parcela)
+                                <tr class="table-data-row" data-parcela-id="{{ $parcela->id_parcela }}">
+                                    <!-- Columna Parcela -->
+                                    <td class="cell-parcela">
+                                        <div class="parcela-card">
+                                            <div class="parcela-avatar">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                                <div class="parcela-status active"></div>
+                                            </div>
+                                            <div class="parcela-info">
+                                                <h6 class="parcela-name">{{ $parcela->nom_parcela }}</h6>
+                                                <div class="parcela-meta">
+                                                    <span class="parcela-code">#{{ $parcela->id_parcela }}</span>
+                                                    <span class="parcela-badge">Activa</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Columna Productor -->
+                                    <td class="cell-productor">
+                                        @if($parcela->productor && $parcela->productor->persona)
+                                            <div class="producer-card">
+                                                <div class="producer-avatar">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                                <div class="producer-info">
+                                                    <span class="producer-name">{{ $parcela->productor->persona->nom }}</span>
+                                                    <span class="producer-id">{{ $parcela->productor->persona->cedula }}</span>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="empty-state-cell">
+                                                <i class="fas fa-user-slash"></i>
+                                                <span>No asignado</span>
+                                            </div>
+                                        @endif
+                                    </td>
+
+                                    <!-- Columna Ubicación -->
+                                    <td class="cell-ubicacion">
+                                        <div class="location-cell">
+                                            <i class="fas fa-location-dot"></i>
+                                            <span class="location-text">{{ $parcela->ubicacion }}</span>
+                                        </div>
+                                    </td>
+
+                                    <!-- Columna Extensión -->
+                                    <td class="cell-extension">
+                                        <div class="extension-display">
+                                            <div class="extension-value">{{ $parcela->extension }}</div>
+                                            <div class="extension-unit">hectáreas</div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Columna Árboles -->
+                                    <td class="cell-arboles">
+                                        <div class="metric-cell trees">
+                                            <div class="metric-icon">
+                                                <i class="fas fa-tree"></i>
+                                            </div>
+                                            <div class="metric-content">
+                                                <span class="metric-value">{{ $parcela->arboles_count ?? 0 }}</span>
+                                                <div class="metric-progress">
+                                                    <div class="progress-bar" style="width: {{ min(($parcela->arboles_count ?? 0) / 50 * 100, 100) }}%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Columna Trozas -->
+                                    <td class="cell-trozas">
+                                        <div class="metric-cell trozas">
+                                            <div class="metric-icon">
+                                                <i class="fas fa-cut"></i>
+                                            </div>
+                                            <div class="metric-content">
+                                                <span class="metric-value">{{ $parcela->trozas_count }}</span>
+                                                <div class="metric-progress">
+                                                    <div class="progress-bar" style="width: {{ min($parcela->trozas_count / 30 * 100, 100) }}%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Columna Estimaciones -->
+                                    <td class="cell-estimaciones">
+                                        <div class="metric-cell estimations">
+                                            <div class="metric-icon">
+                                                <i class="fas fa-calculator"></i>
+                                            </div>
+                                            <div class="metric-content">
+                                                <span class="metric-value">{{ $parcela->estimaciones_count ?? 0 }}</span>
+                                                <div class="metric-progress">
+                                                    <div class="progress-bar" style="width: {{ min(($parcela->estimaciones_count ?? 0) / 20 * 100, 100) }}%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Columna Volumen -->
+                                    <td class="cell-volumen">
+                                        <div class="volume-display">
+                                            <div class="volume-value">
+                                                {{ number_format($parcela->trozas->sum('volumen') ?? 0, 2) }}
+                                            </div>
+                                            <div class="volume-unit">m³</div>
+                                            <div class="volume-trend up">
+                                                <i class="fas fa-arrow-up"></i>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Columna Acciones -->
+                                        <td class="cell-actions">
+                                            <div class="advanced-actions">
+                                                <!-- Grupo PDF -->
+                                                <div class="action-group">
+                                                    <a href="{{ url('/T/parcelas/' . $parcela->id_parcela . '/export-pdf') }}" 
+                                                       class="action-btn pdf" 
+                                                       data-bs-toggle="tooltip" title="Exportar PDF">
+                                                        <i class="fas fa-file-pdf"></i>
+                                                    </a>
+                                                </div>
+
+                                                <!-- Grupo Troza + Estimación Troza -->
+                                                <div class="action-group">
+                                                    <button class="action-btn cut" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#addTrozaModal{{ $parcela->id_parcela }}"
+                                                            data-bs-toggle="tooltip" title="Nueva Troza">
+                                                        <i class="fas fa-cut"></i>
+                                                    </button>
+                                                    <button class="action-btn calc" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#estimacionTrozaModal{{ $parcela->id_parcela }}"
+                                                            data-bs-toggle="tooltip" title="Estimación de Troza">
+                                                        <i class="fas fa-cube"></i>
+                                                    </button>
+                                                </div>
+
+                                                <!-- Grupo Árbol + Estimación Árbol -->
+                                                <div class="action-group">
+                                                    <button class="action-btn tree" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#addArbolModal{{ $parcela->id_parcela }}"
+                                                            data-bs-toggle="tooltip" title="Nuevo Árbol">
+                                                        <i class="fas fa-tree"></i>
+                                                    </button>
+                                                    <button class="action-btn calc" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#estimacionArbolModal{{ $parcela->id_parcela }}"
+                                                            data-bs-toggle="tooltip" title="Estimación de Árbol">
+                                                        <i class="fas fa-tree"></i>
+                                                    </button>
+                                                </div>
+
+                                                <!-- Grupo Ver Detalles -->
+                                                <div class="action-group">
+                                                    <a href="{{ route('parcelas.show', $parcela->id_parcela) }}" 
+                                                       class="action-btn view" 
+                                                       data-bs-toggle="tooltip" title="Ver Detalles">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </td>
                                 </tr>
-                                </thead>
-                                <tbody>
-                                @forelse($parcelas as $parcela)
-                                    <tr>
-                                        <td class="ps-4">
-                                            <div class="d-flex align-items-center">
-                                                <div class="icon icon-shape icon-sm bg-forest-light text-forest-dark rounded-circle me-3 wood-shadow-sm">
-                                                    <i class="fas fa-map"></i>
-                                                </div>
-                                                <div>
-                                                    <h6 class="mb-0 text-forest-dark">{{ $parcela->nom_parcela }}</h6>
-                                                    <small class="text-muted">Código: {{ $parcela->id_parcela }}</small>
-                                                </div>
+                            @empty
+                                <tr>
+                                    <td colspan="9">
+                                        <div class="empty-table-state">
+                                            <div class="empty-icon">
+                                                <i class="fas fa-map-marked-alt"></i>
                                             </div>
-                                        </td>
-                                        <td>
-                                            @if($parcela->productor && $parcela->productor->persona)
-                                                <div class="d-flex align-items-center">
-                                                    <div class="icon icon-shape icon-sm bg-wood-light text-wood-dark rounded-circle me-2">
-                                                        <i class="fas fa-user"></i>
-                                                    </div>
-                                                    <div>
-                                                        <span class="d-block">{{ $parcela->productor->persona->nom }}</span>
-                                                        <small class="text-muted">{{ $parcela->productor->persona->cedula }}</small>
-                                                    </div>
-                                                </div>
-                                            @else
-                                                <span class="text-muted">No asignado</span>
-                                            @endif
-                                        </td>
-                                        <td><span class="text-forest-medium">{{ $parcela->ubicacion }}</span></td>
-                                        <td><span class="text-forest-medium">{{ $parcela->extension }}</span></td>
-                                        <td><span class="wood-badge">{{ $parcela->trozas_count }}</span></td>
-                                        <td><span class="wood-badge bg-info">{{ $parcela->estimaciones_count ?? 0 }}</span></td>
-                                        <td><span class="wood-badge bg-success">{{ number_format($parcela->volumen_maderable ?? 0, 2) }} m³</span></td>
-                                        <td class="pe-4">
-                                            {{-- [UX] Acciones verticales más limpias para tablas densas --}}
-                                            <div class="vertical-actions">
-                                                <a href="{{ route('parcelas.export.pdf', $parcela->id_parcela) }}" class="btn btn-sm btn-pdf mb-2 w-100 text-start" data-bs-tooltip="tooltip" title="Exportar a PDF">
-                                                    <i class="fas fa-file-pdf fa-fw me-2"></i> Exportar PDF
-                                                </a>
-                                                <button class="btn btn-sm btn-wood-action mb-2 w-100 text-start" data-bs-toggle="modal" data-bs-target="#addTrozaModal{{ $parcela->id_parcela }}" data-bs-tooltip="tooltip" title="Agregar troza">
-                                                    <i class="fas fa-plus fa-fw me-2"></i> Agregar Troza
-                                                </button>
-                                                <button class="btn btn-sm btn-wood-action mb-2 w-100 text-start" data-bs-toggle="modal" data-bs-target="#estimacionModal{{ $parcela->id_parcela }}" data-bs-tooltip="tooltip" title="Realizar estimación">
-                                                    <i class="fas fa-calculator fa-fw me-2"></i> Estimación
-                                                </button>
-                                                <a href="{{ route('parcelas.show', $parcela->id_parcela) }}" class="btn btn-sm btn-wood-action w-100 text-start" data-bs-tooltip="tooltip" title="Ver detalles">
-                                                    <i class="fas fa-eye fa-fw me-2"></i> Ver Detalles
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center py-5">
-                                            <div class="text-center">
-                                                <i class="fas fa-map-marked-alt fa-4x text-forest-light mb-4"></i>
-                                                <h5 class="text-forest-medium mb-3">No tienes parcelas asignadas</h5>
-                                                <button class="btn btn-wood rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#createParcelaModal">
-                                                    <i class="fas fa-plus me-2"></i> Asignar Parcela
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    @if($parcelas->hasPages())
-                        <div class="wood-card-footer">
-                            {{ $parcelas->links() }}
-                        </div>
-                    @endif
+                                            <h4>No hay parcelas asignadas</h4>
+                                            <p>Comienza creando tu primera parcela para gestionar los recursos forestales</p>
+                                            <button class="btn-create-parcela" data-bs-toggle="modal" data-bs-target="#createParcelaModal">
+                                                <i class="fas fa-plus"></i>
+                                                Crear Primera Parcela
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
-    </div>
 
-    {{-- (Los modales se quedan como estaban, pero usando la nueva estructura de clases CSS) --}}
-
-    <div class="modal fade wood-modal" id="createParcelaModal" tabindex="-1" aria-labelledby="createParcelaLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 wood-modal-content">
-                <div class="modal-header wood-modal-header wood-bg-primary text-white">
-                    <div class="d-flex align-items-center">
-                        <div class="wood-modal-icon me-3"><i class="fas fa-map-marked-alt"></i></div>
-                        <div>
-                            <h5 class="modal-title wood-modal-title">Nueva Parcela</h5>
-                            <p class="wood-modal-subtitle mb-0">Ingresa los datos de la nueva parcela</p>
-                        </div>
+            <!-- Footer de Tabla -->
+            @if($parcelas->hasPages())
+                <div class="table-footer">
+                    <div class="footer-info">
+                        Mostrando {{ $parcelas->firstItem() ?? 0 }}-{{ $parcelas->lastItem() ?? 0 }} de {{ $parcelas->total() }} parcelas
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="footer-pagination">
+                        {{ $parcelas->links() }}
+                    </div>
+                    <div class="footer-actions">
+                        <select class="page-size-select">
+                            <option value="10">10 por página</option>
+                            <option value="25">25 por página</option>
+                            <option value="50">50 por página</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="modal-body p-4 wood-modal-body">
-                    <form method="POST" action="{{ route('parcelas.store') }}">
-                        @csrf
-                        <div class="mb-3">
-                            <label class="wood-form-label">Nombre de la parcela</label>
-                            <input type="text" name="nom_parcela" class="wood-form-control" required>
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-md-8 mb-3">
-                                <label class="wood-form-label">Ubicación</label>
-                                <input type="text" name="ubicacion" class="wood-form-control" required>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="wood-form-label">Extensión (ha)</label>
-                                <input type="number" step="0.01" name="extension" class="wood-form-control" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="wood-form-label">Productor</label>
-                            <select class="wood-form-select" name="id_productor" required>
-                                <option value="" selected disabled>Seleccione un productor</option>
-                                @foreach ($productores as $productor)
-                                    <option value="{{ $productor->id_productor }}">
-                                        {{ $productor->persona->nom }} ({{ $productor->persona->cedula }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="wood-form-label">Dirección</label>
-                            <input type="text" name="direccion" class="wood-form-control">
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-md-6 mb-3">
-                                <label class="wood-form-label">Código Postal</label>
-                                <input type="text" name="CP" class="wood-form-control">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="wood-form-label">Especie Principal</label>
-                                <select class="wood-form-select" name="id_especie" required>
-                                    <option value="" selected disabled>Seleccione una especie</option>
-                                    @foreach ($especies as $especie)
-                                        <option value="{{ $especie->id_especie }}">{{ $especie->nom_cientifico }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                        <div class="wood-modal-footer mt-4">
-                            <button type="button" class="btn btn-wood-outline" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancelar</button>
-                            <button type="submit" class="btn btn-wood"><i class="fas fa-save me-1"></i> Registrar Parcela</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+            @endif
         </div>
     </div>
+</div>
 
+    <!-- Los modales permanecen similares pero con clases modernizadas -->
+    @include('partials.modals.parcela-create')
     @foreach($parcelas as $parcela)
-        <div class="modal fade wood-modal" id="addTrozaModal{{ $parcela->id_parcela }}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content border-0 wood-modal-content">
-                    <div class="modal-header wood-modal-header wood-bg-primary">
-                        <div class="d-flex align-items-center">
-                            <div class="wood-modal-icon me-3"><i class="fas fa-tree"></i></div>
-                            <div>
-                                <h5 class="modal-title wood-modal-title text-white">Nueva Troza</h5>
-                                <p class="wood-modal-subtitle mb-0">Parcela: {{ $parcela->nom_parcela }}</p>
-                            </div>
-                        </div>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body p-4 wood-modal-body">
-                        <form method="POST" action="{{ route('trozas.store') }}">
-                            @csrf
-                            <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
-                            <div class="row g-3">
-                                <div class="col-md-6"><label class="wood-form-label">Longitud (m)</label><input type="number" step="0.01" name="longitud" class="wood-form-control" required></div>
-                                <div class="col-md-6"><label class="wood-form-label">Diámetro (m)</label><input type="number" step="0.01" name="diametro" class="wood-form-control" required></div>
-                                <div class="col-md-6"><label class="wood-form-label">Diámetro otro extremo (m)</label><input type="number" step="0.01" name="diametro_otro_extremo" class="wood-form-control"></div>
-                                <div class="col-md-6"><label class="wood-form-label">Diámetro medio (m)</label><input type="number" step="0.01" name="diametro_medio" class="wood-form-control"></div>
-                                <div class="col-md-6"><label class="wood-form-label">Densidad</label><input type="number" step="0.01" name="densidad" class="wood-form-control" required></div>
-                                <div class="col-md-6">
-                                    <label class="wood-form-label">Especie</label>
-                                    <select class="wood-form-select" name="id_especie" required>
-                                        <option value="" selected disabled>Seleccione una especie</option>
-                                        @foreach ($especies as $especie)
-                                            <option value="{{ $especie->id_especie }}">{{ $especie->nom_cientifico }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="wood-modal-footer mt-4">
-                                <button type="button" class="btn btn-wood-outline" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancelar</button>
-                                <button type="submit" class="btn btn-wood"><i class="fas fa-check-circle me-1"></i> Registrar Troza</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal fade wood-modal" id="estimacionModal{{ $parcela->id_parcela }}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 wood-modal-content">
-                    <div class="modal-header wood-modal-header wood-bg-info">
-                        <div class="d-flex align-items-center">
-                            <div class="wood-modal-icon me-3"><i class="fas fa-calculator"></i></div>
-                            <div>
-                                <h5 class="modal-title wood-modal-title text-white">Estimación Volumétrica</h5>
-                                <p class="wood-modal-subtitle mb-0">Parcela: {{ $parcela->nom_parcela }}</p>
-                            </div>
-                        </div>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body p-4 wood-modal-body">
-                        <form method="POST" action="{{ route('estimaciones.store') }}">
-                            @csrf
-                            <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
-                            <div class="mb-3">
-                                <label class="wood-form-label">Seleccionar Troza</label>
-                                <select class="wood-form-select" name="id_troza" required>
-                                    <option value="" selected disabled>Seleccione una troza</option>
-                                    {{-- NOTA DE RENDIMIENTO: Esta consulta N+1 debe ser eager-loaded en el controlador. --}}
-                                    @foreach($parcela->trozas as $troza)
-                                        <option value="{{ $troza->id_troza }}">Troza #{{ $troza->id_troza }} ({{ $troza->longitud }}m x {{ $troza->diametro }}m)</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="wood-form-label">Tipo de Estimación</label>
-                                    <select class="wood-form-select" name="id_tipo_e" required>
-                                        <option value="" selected disabled>Seleccione un tipo</option>
-                                        @foreach($tiposEstimacion as $tipo)
-                                            <option value="{{ $tipo->id_tipo_e }}">{{ $tipo->desc_estimacion }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="wood-form-label">Fórmula a Aplicar</label>
-                                    <select class="wood-form-select" name="id_formula" required>
-                                        <option value="" selected disabled>Seleccione una fórmula</option>
-                                        @foreach($formulas as $formula)
-                                            <option value="{{ $formula->id_formula }}">{{ $formula->nom_formula }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <label class="wood-form-label">Cálculo (m³)</label>
-                                <input type="number" step="0.0001" class="wood-form-control" name="calculo" required>
-                            </div>
-                            <div class="wood-modal-footer mt-4">
-                                <button type="button" class="btn btn-wood-outline" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancelar</button>
-                                <button type="submit" class="btn btn-wood-info"><i class="fas fa-calculator me-1"></i> Calcular Estimación</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal fade wood-modal" id="turnoModal{{ $parcela->id_parcela }}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 wood-modal-content">
-                    <div class="modal-header wood-modal-header wood-bg-warning">
-                        <div class="d-flex align-items-center">
-                            <div class="wood-modal-icon me-3"><i class="fas fa-calendar-alt"></i></div>
-                            <div>
-                                <h5 class="modal-title wood-modal-title text-dark">Programar Turno de Corta</h5>
-                                <p class="wood-modal-subtitle text-dark opacity-75 mb-0">Parcela: {{ $parcela->nom_parcela }}</p>
-                            </div>
-                        </div>
-                        <button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body p-4 wood-modal-body">
-                        <form method="POST" action="{{ route('turno_cortas.store') }}">
-                            @csrf
-                            <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="wood-form-label">Código de Corta</label>
-                                    <input type="text" name="codigo_corta" class="wood-form-control" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="wood-form-label">Fecha de Corta</label>
-                                    <input type="date" name="fecha_corta" class="wood-form-control" required>
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <label class="wood-form-label">Notas adicionales</label>
-                                <textarea class="wood-form-control" name="notas" rows="3"></textarea>
-                            </div>
-                            <div class="wood-modal-footer mt-4">
-                                <button type="button" class="btn btn-wood-outline" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancelar</button>
-                                <button type="submit" class="btn btn-wood-warning"><i class="fas fa-calendar-check me-1"></i> Programar Turno</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @include('partials.modals.arbol-create', ['parcela' => $parcela])
+        @include('partials.modals.troza-create', ['parcela' => $parcela])
+        @include('partials.modals.estimacion-troza', ['parcela' => $parcela])
+        @include('partials.modals.estimacion-arbol', ['parcela' => $parcela])
     @endforeach
-
 @endsection
 
-{{-- [REFACTOR] 2. Script de Tooltips movido al stack 'scripts' (carga al final del <body>) --}}
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Inicializar tooltips de Bootstrap
+        // Tooltips
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+
+        // Efectos hover modernos
+        document.querySelectorAll('.modern-stat-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
     });
 </script>
 @endpush
-
-{{-- [REFACTOR] 3. El bloque <style> completo ha sido eliminado de aquí y movido a 'tecnico-dashboard.css' --}}

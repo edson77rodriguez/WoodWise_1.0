@@ -7,9 +7,11 @@ use App\Models\Parcela;
 use App\Models\Productor;
 use App\Models\Especie;
 use App\Models\Troza;
+use App\Models\Arbol;
 use App\Models\Formula;
 use App\Models\Tipo_Estimacion;
 use App\Models\Estimacion;
+use App\Models\Estimacion1;
 use Illuminate\Support\Facades\Auth;
 
 class ParcelaController extends Controller
@@ -20,54 +22,124 @@ class ParcelaController extends Controller
         $this->middleware('auth');
         $this->middleware(function ($request, $next) {
             if (Auth::user()->persona->rol->nom_rol !== 'Administrador' && Auth::user()->persona->rol->nom_rol !== 'Tecnico') {
-                // Redirige a la vista 'denegado' con un código HTTP 403 (Forbidden)
                 return response()->view('denegado', [], 403);
-
-                // Opcional: Si prefieres usar abort (mostrará la vista 403 personalizada)
-                // abort(403, 'No tienes permisos de administrador');
             }
             return $next($request);
         });
     }
 
+    public function show($id)
+    {
+        $parcela = Parcela::with([
+            'trozas.especie',
+            'trozas.estimacion', // 👈 Cargar estimaciones de trozas
+            'arboles.especie',
+            'arboles.estimaciones1', // 👈 Cargar estimaciones de árboles
+            'turnosCorta'
+        ])->withCount([
+            'trozas',
+            'arboles',
+            'turnosCorta'
+        ])->findOrFail($id);
+
+        return view('parcelas.show', [
+            'parcela' => $parcela,
+            'especies' => Especie::all(),
+            'tiposEstimacion' => Tipo_Estimacion::all(),
+            'formulas' => Formula::all(),
+            'productores' => Productor::all()
+        ]);
+    }
+
+    // Método para guardar árbol
+    public function storeArbol(Request $request)
+    {
+        $validatedData = $request->validate([
+            'id_parcela' => 'required|exists:parcelas,id_parcela',
+            'altura_total' => 'required|numeric|min:0.1|max:100',
+            'diametro_pecho' => 'required|numeric|min:0.01|max:5',
+            'id_especie' => 'required|exists:especies,id_especie',
+            'observaciones' => 'nullable|string|max:500',
+        ]);
+
+        $arbol = Arbol::create($validatedData);
+
+        return redirect()->route('parcelas.show', $request->id_parcela)
+            ->with('success', 'Árbol registrado exitosamente.');
+    }
+
+    // Método para actualizar árbol
+    public function updateArbol(Request $request, $id_arbol)
+    {
+        $arbol = Arbol::findOrFail($id_arbol);
+        
+        $validatedData = $request->validate([
+            'altura_total' => 'required|numeric|min:0.1|max:100',
+            'diametro_pecho' => 'required|numeric|min:0.01|max:5',
+            'id_especie' => 'required|exists:especies,id_especie',
+            'activo' => 'required|boolean',
+            'observaciones' => 'nullable|string|max:500',
+        ]);
+
+        $arbol->update($validatedData);
+
+        return redirect()->route('parcelas.show', $arbol->id_parcela)
+            ->with('success', 'Árbol actualizado exitosamente.');
+    }
+
+    // Método para eliminar árbol
+    public function destroyArbol($id_arbol)
+    {
+        $arbol = Arbol::findOrFail($id_arbol);
+        $id_parcela = $arbol->id_parcela;
+        $arbol->delete();
+
+        return redirect()->route('parcelas.show', $id_parcela)
+            ->with('success', 'Árbol eliminado exitosamente.');
+    }
+
+    // Método para guardar estimación de árbol
+    public function storeEstimacionArbol(Request $request)
+    {
+        $validatedData = $request->validate([
+            'id_parcela' => 'required|exists:parcelas,id_parcela',
+            'id_arbol' => 'required|exists:arboles,id_arbol',
+            'id_tipo_e' => 'required|exists:tipo_estimaciones,id_tipo_e',
+            'id_formula' => 'required|exists:formulas,id_formula',
+            'calculo' => 'required|numeric|min:0',
+        ]);
+
+        // Crear la estimación1 asociada al árbol (usando el modelo correcto para árboles)
+        $estimacion = Estimacion1::create([
+            'id_arbol' => $validatedData['id_arbol'],
+            'id_tipo_e' => $validatedData['id_tipo_e'],
+            'id_formula' => $validatedData['id_formula'],
+            'calculo' => $validatedData['calculo'],
+        ]);
+
+        return redirect()->route('parcelas.show', $request->id_parcela)
+            ->with('success', 'Estimación para árbol creada exitosamente.');
+    }
+
+    // ... (los demás métodos existentes se mantienen igual)
     public function trozaedit($id_parcela)
-{
-    // Obtén solo las trozas de la parcela específica
-    $trozas = Troza::where('id_parcela', $id_parcela)->get();
-    $especies = Especie::all();
-    $parcela = Parcela::findOrFail($id_parcela);
+    {
+        $trozas = Troza::where('id_parcela', $id_parcela)->get();
+        $especies = Especie::all();
+        $parcela = Parcela::findOrFail($id_parcela);
 
-    return view('partials.modals.edit_troza', compact('parcela', 'especies', 'trozas'));
-}
-
-
-public function show($id)
-{
-    $parcela = Parcela::with([
-        'trozas.especie', 
-        'estimaciones.tipoEstimacion', 
-        'estimaciones.formula',
-        'estimaciones.troza',
-        'turnosCorta'
-    ])->findOrFail($id);
-
-    return view('parcelas.show', [
-        'parcela' => $parcela,
-        'especies' => Especie::all(),
-        'tiposEstimacion' => Tipo_Estimacion::all(),
-        'formulas' => Formula::all(),
-        'productores' => Productor::all() // 👈 aquí lo agregas
-    ]);
-}
+        return view('partials.modals.edit_troza', compact('parcela', 'especies', 'trozas'));
+    }
 
     public function index()
     {
         $parcelas = Parcela::all();
-        $productores = Productor::all(); // Obtener todos los productores para el select
-        $especies=Especie::all();
+        $productores = Productor::all();
+        $especies = Especie::all();
         return view('parcelas.index1', compact('parcelas', 'productores','especies'));
     }
-        public function updateTroza(Request $request, $id_troza)
+
+    public function updateTroza(Request $request, $id_troza)
     {
         $troza = Troza::findOrFail($id_troza);
         
@@ -85,7 +157,6 @@ public function show($id)
             ->with('success', 'Troza actualizada exitosamente.');
     }
 
-    // Función para actualizar una estimación
     public function updateEstimacion(Request $request, $id_estimacion)
     {
         $estimacion = Estimacion::findOrFail($id_estimacion);
@@ -99,15 +170,12 @@ public function show($id)
 
         $estimacion->update($validatedData);
 
-        // Obtenemos el id_parcela a través de la troza relacionada
         $id_parcela = $estimacion->troza->id_parcela;
 
         return redirect()->route('parcelas.show', $id_parcela)
             ->with('success', 'Estimación actualizada exitosamente.');
     }
-    /**
-     * Guardar una nueva parcela.
-     */
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([
@@ -124,9 +192,6 @@ public function show($id)
         return redirect()->route('parcelas.index')->with('register', 'Parcela agregada exitosamente.');
     }
 
-    /**
-     * Actualizar parcela.
-     */
     public function update(Request $request, int $id_parcela)
     {
         $parcela = Parcela::findOrFail($id_parcela);
@@ -145,9 +210,6 @@ public function show($id)
         return redirect()->route('parcelas.index')->with('modify', 'Parcela actualizada exitosamente.');
     }
 
-    /**
-     * Eliminar parcela.
-     */
     public function destroy(int $id_parcela)
     {
         $parcela = Parcela::findOrFail($id_parcela);

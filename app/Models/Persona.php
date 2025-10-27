@@ -29,9 +29,9 @@ class Persona extends Model
     ];
     public $incrementing = true;
  public function tecnico()
-    {
-        return $this->hasOne(Tecnico::class, 'id_persona');
-    }
+{
+    return $this->hasOne(Tecnico::class, 'id_persona');
+}
     public function productor()
 {
     return $this->hasOne(Productor::class, 'id_persona');

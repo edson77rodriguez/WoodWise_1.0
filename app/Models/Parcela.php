@@ -42,6 +42,13 @@ public function estimacion()
         return $this->belongsToMany(Tecnico::class, 'asigna_parcelas', 'id_parcela', 'id_tecnico');
     }
 
+    // Relación con asignaciones (tabla asigna_parcelas)
+    public function asignaciones()
+    {
+        return $this->hasMany(Asigna_Parcela::class, 'id_parcela');
+    }
+
+
  
 // En Parcela.php
 public function estimaciones()

@@ -82,7 +82,23 @@ Route::middleware(['auth'])->group(function() {
 
     // Rutas para técnicos
 Route::prefix('T')->group(function () {
-    Route::get('/index', [TecnicoDashboardController::class, 'index'])->name('tecnico.dashboard');
+    Route::get('/dashboard', [TecnicoDashboardController::class, 'index'])->name('tecnico.dashboard');
+
+     // PARCELAS
+    Route::post('/parcelas', [TecnicoDashboardController::class, 'parcelaStore'])->name('parcelas.store');
+
+    // TROZAS
+    Route::post('/trozas', [TecnicoDashboardController::class, 'trozaStore'])->name('trozas.store');
+
+  
+      // ÁRBOLES
+    Route::post('/arboles', [TecnicoDashboardController::class, 'arbolStore'])->name('arboles.store');
+    
+    // ESTIMACIONES
+    Route::post('/estimaciones', [TecnicoDashboardController::class, 'estimacionStore'])->name('estimaciones.store');
+    Route::post('/estimaciones-arbol', [TecnicoDashboardController::class, 'estimacionArbolStore'])->name('estimaciones.arbol.store');
+     // EXPORTACIÓN
+    Route::get('/parcelas/{id}/export-pdf', [TecnicoDashboardController::class, 'exportParcelaToPdf'])->name('parcelas.export.pdf');
     });
    Route::put('/gestion/trozas/{id_troza}', [ParcelaController::class, 'updateTroza'])->name('gestion.trozas.update');
 
