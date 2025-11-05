@@ -240,34 +240,41 @@
                 </div>
 
                 <!-- Métrica 4: Volumen -->
-                <div class="metric-card" data-aos="fade-up" data-aos-delay="300">
-                    <div class="metric-header">
-                        <div class="metric-icon-wrapper">
-                            <div class="metric-icon-bg"></div>
-                            <i class="fas fa-cubes"></i>
-                        </div>
-                        <div class="metric-trend excellent">
-                            <i class="fas fa-rocket"></i>
-                            <span>45%</span>
-                        </div>
+                            <div class="metric-card" data-aos="fade-up" data-aos-delay="300">
+                <div class="metric-header">
+                    <div class="metric-icon-wrapper">
+                        <div class="metric-icon-bg"></div>
+                        <i class="fas fa-cubes"></i>
                     </div>
-                    <div class="metric-content">
-                        <h3 class="metric-value" data-count="{{ number_format($totalVolumenMaderable ?? 0, 1) }}">0.0</h3>
-                        <p class="metric-label">Volumen Total (m³)</p>
-                        <div class="metric-progress">
-                            <div class="progress-track">
-                                <div class="progress-fill" style="width: 85%"></div>
-                            </div>
-                            <span class="progress-text">85% récord</span>
-                        </div>
-                    </div>
-                    <div class="metric-footer">
-                        <span class="metric-info">
-                            <i class="fas fa-trophy"></i>
-                            Récord personal
-                        </span>
+                    <div class="metric-trend excellent">
+                        <i class="fas fa-rocket"></i>
+                        <span>45%</span>
                     </div>
                 </div>
+                <div class="metric-content">
+                    {{-- 
+                    AQUÍ ESTÁ LA CORRECCIÓN:
+                    Quitamos number_format() del 'data-count'.
+                    El script de animación usará el número puro (ej. 1234.5)
+                    y el '0.0' es solo el valor inicial antes de que el script se ejecute.
+                    --}}
+                    <h3 class="metric-value" data-count="{{ $totalVolumenMaderable ?? 0 }}">0.0</h3>
+                    
+                    <p class="metric-label">Volumen Total (m³)</p>
+                    <div class="metric-progress">
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: 85%"></div>
+                        </div>
+                        <span class="progress-text">85% récord</span>
+                    </div>
+                </div>
+                <div class="metric-footer">
+                    <span class="metric-info">
+                        <i class="fas fa-trophy"></i>
+                        Récord personal
+                    </span>
+                </div>
+            </div>
             </div>
 
            
@@ -530,32 +537,38 @@
                                     </td>
 
                                     <!-- Columna Estimaciones -->
+                                    {{-- DESPUÉS (Suma estimaciones + estimaciones1) --}}
                                     <td class="cell-estimaciones">
+                                        @php
+                                            // Sumamos ambos conteos que nos da el controlador
+                                            $total_estimaciones_parcela = ($parcela->estimaciones_count ?? 0) + ($parcela->estimaciones1_count ?? 0);
+                                        @endphp
                                         <div class="metric-cell estimations">
                                             <div class="metric-icon">
                                                 <i class="fas fa-calculator"></i>
                                             </div>
                                             <div class="metric-content">
-                                                <span class="metric-value">{{ $parcela->estimaciones_count ?? 0 }}</span>
+                                                <span class="metric-value">{{ $total_estimaciones_parcela }}</span>
                                                 <div class="metric-progress">
-                                                    <div class="progress-bar" style="width: {{ min(($parcela->estimaciones_count ?? 0) / 20 * 100, 100) }}%"></div>
+                                                    {{-- Usamos el nuevo total para la barra de progreso --}}
+                                                    <div class="progress-bar" style="width: {{ min(($total_estimaciones_parcela) / 20 * 100, 100) }}%"></div>
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
 
-                                    <!-- Columna Volumen -->
-                                    <td class="cell-volumen">
-                                        <div class="volume-display">
-                                            <div class="volume-value">
-                                                {{ number_format($parcela->trozas->sum('volumen') ?? 0, 2) }}
-                                            </div>
-                                            <div class="volume-unit">m³</div>
-                                            <div class="volume-trend up">
-                                                <i class="fas fa-arrow-up"></i>
-                                            </div>
-                                        </div>
-                                    </td>
+                             <td>
+                                    @php
+                                        // El volumen total de la parcela es la suma de sus dos tipos de estimaciones
+                                        $volumen_parcela = ($parcela->estimaciones_sum_calculo ?? 0) + 
+                                                        ($parcela->estimaciones1_sum_calculo ?? 0);
+                                    @endphp
+                                    <span class="modern-badge bg-success" 
+                                        data-bs-toggle="tooltip" 
+                                        title="Volumen total (Suma de Estimaciones)">
+                                        <i class="fas fa-cubes me-1"></i>{{ number_format($volumen_parcela, 2) }}
+                                    </span>
+                                </td>
 
                                     <!-- Columna Acciones -->
                                         <td class="cell-actions">

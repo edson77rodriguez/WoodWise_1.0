@@ -81,36 +81,6 @@ Route::middleware(['auth'])->group(function() {
     ->name('tecnicos.dashboard');
 
     // Rutas para técnicos
-Route::prefix('T')->group(function () {
-    Route::get('/dashboard', [TecnicoDashboardController::class, 'index'])->name('tecnico.dashboard');
-
-     // PARCELAS
-    Route::post('/parcelas', [TecnicoDashboardController::class, 'parcelaStore'])->name('parcelas.store');
-
-    // TROZAS
-    Route::post('/trozas', [TecnicoDashboardController::class, 'trozaStore'])->name('trozas.store');
-
-  
-      // ÁRBOLES
-    Route::post('/arboles', [TecnicoDashboardController::class, 'arbolStore'])->name('arboles.store');
-    
-    // ESTIMACIONES
-    Route::post('/estimaciones', [TecnicoDashboardController::class, 'estimacionStore'])->name('estimaciones.store');
-    Route::post('/estimaciones-arbol', [TecnicoDashboardController::class, 'estimacionArbolStore'])->name('estimaciones.arbol.store');
-     // EXPORTACIÓN
-    Route::get('/parcelas/{id}/export-pdf', [TecnicoDashboardController::class, 'exportParcelaToPdf'])->name('parcelas.export.pdf');
-    });
-   Route::put('/gestion/trozas/{id_troza}', [ParcelaController::class, 'updateTroza'])->name('gestion.trozas.update');
-
-Route::put('/gestion/estimaciones/{id_estimacion}', [ParcelaController::class, 'updateEstimacion'])->name('gestion.estimaciones.update');
-Route::post('/tecnico/arboles', [TecnicoDashboardController::class, 'storeArbol'])->name('tecnico.arboles.store');
-Route::post('/tecnico/estimaciones-arbol', [TecnicoDashboardController::class, 'storeEstimacionArbol'])->name('tecnico.estimaciones1.store');
-Route::get('/parcelas/{id}/detalle', [ParcelaController::class, 'show'])->name('parcelas.show');    Route::get('/estimaciones/formulas/{tipoId}', [EstimacionController::class, 'getFormulasByTipo'])
-     ->name('estimaciones.formulas');
-Route::get('/parcelas/{id_parcela}/export-pdf', [TecnicoDashboardController::class, 'exportParcelaToPdf'])
-    ->name('parcelas.export.pdf')
-    ->middleware('auth');
-Route::put('/trozas/{id_troza}', [TrozaController::class, 'update1'])->name('trozas.update1');
 
 
 

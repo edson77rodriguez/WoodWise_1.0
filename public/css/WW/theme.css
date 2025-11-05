@@ -135,10 +135,20 @@
 
 /* === STATS CARDS MEJORADAS === */
 .parcela-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     gap: 1.5rem;
     margin-bottom: 2rem;
+}
+
+/* Grid para las tarjetas de estadísticas */
+.parcela-stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+    margin-bottom: 1.5rem;
 }
 
 .parcela-stat-card {
@@ -294,51 +304,137 @@
     background: white;
 }
 
-/* === TABLAS MEJORADAS === */
-.parcela-table-modern {
+/* === ESTRUCTURA DE CONTENEDORES Y TABLAS === */
+
+/* Grid de Pestañas */
+.parcela-tabs-modern {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Contenedor del contenido de pestañas */
+.wood-tab-content {
+    width: 100%;
+    flex: 1;
+}
+
+/* Panel de pestaña */
+.tab-pane {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Contenedor de la tabla */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    background: var(--glass-bg);
+    border-radius: 1rem;
+    box-shadow: var(--glass-shadow);
+    margin: 0;
+    padding: 1rem;
+}
+
+/* Base de la tabla */
+.parcela-table-modern,
+.wood-table {
+    width: 100%;
+    margin: 0;
     border-collapse: separate;
     border-spacing: 0;
-    background: white;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    background: transparent;
 }
 
-.parcela-table-modern thead {
-    background: linear-gradient(135deg, var(--emerald-500), var(--emerald-700));
+/* 3. Headers Pegajosos (Sticky) */
+.parcela-table-modern thead,
+.wood-table thead {
+    background: var(--gradient-primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-.parcela-table-modern thead th {
-    padding: 1.5rem 1.25rem;
-    font-weight: 700;
-    font-size: 0.8rem;
+.parcela-table-modern thead th,
+.wood-table thead th {
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 1.25rem;
+    border: none;
+    white-space: nowrap;
+    background: var(--gradient-primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: white;
-    border: none;
 }
 
-.parcela-table-modern tbody tr {
-    transition: all 0.3s ease;
-    border-bottom: 1px solid #f1f5f9;
+/* 4. Estilos del Cuerpo de la Tabla */
+.parcela-table-modern tbody td,
+.wood-table tbody td {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--emerald-100);
+    vertical-align: middle;
+    background: var(--glass-bg);
+    color: #374151;
+    font-weight: 500;
 }
 
-.parcela-table-modern tbody tr:last-child {
+/* Ajustes para las columnas */
+.parcela-table-modern th:first-child,
+.parcela-table-modern td:first-child,
+.wood-table th:first-child,
+.wood-table td:first-child {
+    padding-left: 1.5rem;
+}
+
+.parcela-table-modern th:last-child,
+.parcela-table-modern td:last-child,
+.wood-table th:last-child,
+.wood-table td:last-child {
+    padding-right: 1.5rem;
+}
+
+/* Última fila sin borde */
+.parcela-table-modern tbody tr:last-child td,
+.wood-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-.parcela-table-modern tbody tr:hover {
-    background: #f8fafc;
-    transform: translateX(4px);
+/* 5. Hover y Efectos */
+.parcela-table-modern tbody tr:hover,
+.wood-table tbody tr:hover {
+    background: var(--emerald-50);
 }
 
-.parcela-table-modern tbody td {
-    padding: 1.25rem 1.25rem;
-    vertical-align: middle;
-    border: none;
-    color: #374151;
-    font-weight: 500;
+/* Columna de acciones */
+.parcela-table-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    min-width: max-content;
+}
+
+/* 6. Scrollbar Personalizado */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: var(--emerald-50);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--emerald-200);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: var(--emerald-300);
 }
 
 /* Celdas especiales */

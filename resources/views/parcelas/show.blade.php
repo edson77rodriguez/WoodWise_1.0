@@ -39,95 +39,11 @@
             box-shadow: var(--glass-shadow);
         }
         
-        .parcela-table-modern {
-            margin-top: 1rem;
-            background: var(--glass-bg);
-            border-radius: 1rem;
-            overflow-x: auto;
-            box-shadow: var(--glass-shadow);
-            width: 100%;
-            min-width: 800px; /* Asegura un ancho mínimo para la tabla */
-        }
-        
-        /* Contenedor de la tabla con scroll horizontal */
-        .table-responsive {
-            overflow-x: auto;
-            padding: 1rem;
-            margin: -1rem;  /* Compensa el padding para mantener alineación */
-            width: calc(100% + 2rem);  /* Compensa los márgenes negativos */
-        }
-        
         /* Ajustes para el contenedor del tab */
         .parcela-tab-content {
             padding: 2rem;
             background: var(--glass-bg);
             border-radius: 0 0 1rem 1rem;
-        }
-        
-        .parcela-table-modern thead {
-            background: var(--gradient-primary);
-        }
-        
-        .parcela-table-modern thead th {
-            color: white;
-            font-weight: 600;
-            padding: 1.25rem 1rem;
-            border: none;
-            white-space: nowrap;  /* Evita que los encabezados se rompan */
-            background: var(--gradient-primary);
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-        
-        .parcela-table-modern tbody td {
-            padding: 1.25rem 1rem;
-            border-bottom: 1px solid var(--emerald-100);
-            vertical-align: middle;
-            background: var(--glass-bg);
-        }
-        
-        /* Ajustes para las columnas */
-        .parcela-table-modern th:first-child,
-        .parcela-table-modern td:first-child {
-            padding-left: 1.5rem;
-        }
-        
-        .parcela-table-modern th:last-child,
-        .parcela-table-modern td:last-child {
-            padding-right: 1.5rem;
-        }
-        
-        /* Mejorar la visualización de la columna de acciones */
-        .parcela-table-actions {
-            display: flex;
-            gap: 0.5rem;
-            justify-content: flex-end;
-            min-width: max-content;  /* Evita que los botones se apilen */
-        }
-        
-        /* Hover suave para las filas */
-        .parcela-table-modern tbody tr:hover {
-            background: var(--emerald-50);
-        }
-        
-        /* Scrollbar personalizado para la tabla */
-        .table-responsive::-webkit-scrollbar {
-            height: 8px;
-        }
-        
-        .table-responsive::-webkit-scrollbar-track {
-            background: var(--emerald-50);
-            border-radius: 4px;
-        }
-        
-        .table-responsive::-webkit-scrollbar-thumb {
-            background: var(--emerald-200);
-            border-radius: 4px;
-        }
-        
-        .table-responsive::-webkit-scrollbar-thumb:hover {
-            background: var(--emerald-300);
         }
         
         .parcela-action-btn {
@@ -259,10 +175,10 @@
                     </div>
                 </div>
 
-            <div class="tab-content wood-tab-content" id="parcelaTabsContent">
+            <div class="tab-content wood-tab-content w-100" id="parcelaTabsContent">
                 
                 <!-- Tab de Árboles -->
-                <div class=" parcela-tabs-modern tab-pane fade show active" id="arboles" role="tabpanel">
+                <div class="tab-pane fade show active w-100" id="arboles" role="tabpanel">
                     @if($parcela->arboles && $parcela->arboles->count() > 0)
                     <div class="table-responsive">
                         <table class="parcela-table-modern wood-table">

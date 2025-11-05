@@ -48,7 +48,6 @@ public function estimacion()
         return $this->hasMany(Asigna_Parcela::class, 'id_parcela');
     }
 
-
  
 // En Parcela.php
 public function estimaciones()
@@ -56,10 +55,26 @@ public function estimaciones()
     return $this->hasManyThrough(
         Estimacion::class,
         Troza::class,
-        'id_parcela', // Foreign key on trozas table
-        'id_troza',   // Foreign key on estimaciones table
-        'id_parcela', // Local key on parcelas table
-        'id_troza'    // Local key on trozas table
+        'id_parcela', // Clave foránea en la tabla 'trozas'
+        'id_troza',   // Clave foránea en la tabla 'estimaciones'
+        'id_parcela', // Clave local en la tabla 'parcelas'
+        'id_troza'    // Clave local en la tabla 'trozas'
+    );
+}
+
+/**
+ * AÑADE esta nueva relación para Estimacion1 (vía Arbol).
+ * Es necesaria para los conteos.
+ */
+public function estimaciones1()
+{
+    return $this->hasManyThrough(
+        Estimacion1::class,
+        Arbol::class,
+        'id_parcela', // Clave foránea en la tabla 'arboles'
+        'id_arbol',   // Clave foránea en la tabla 'estimaciones1'
+        'id_parcela', // Clave local en la tabla 'parcelas'
+        'id_arbol'    // Clave local en la tabla 'arboles'
     );
 }
 public function arboles()

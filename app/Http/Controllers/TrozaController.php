@@ -10,16 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class TrozaController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-        $this->middleware(function ($request, $next) {
-            if (Auth::user()->persona->rol->nom_rol !== 'Administrador' ) {
-                return response()->view('denegado', [], 403);
-            }
-            return $next($request);
-        });
-    }
+   
 
     /**
      * Listar trozas con paginación y búsqueda
