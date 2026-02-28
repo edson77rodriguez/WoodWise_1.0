@@ -77,15 +77,47 @@ Route::middleware(['auth'])->group(function() {
     Route::resource('estimaciones', EstimacionController::class);
     Route::get('/estimaciones/formulas-por-tipo/{tipoId}', [EstimacionController::class, 'getFormulasByTipo']);
     Route::get('/catalogo-especies', [EspecieController::class, 'catalogo'])->name('especies.catalogo');
-    Route::get('/tecnicos/dashboard', [TecnicoController::class, 'dashboard'])
-    ->name('tecnicos.dashboard');
 
-    // Rutas para técnicos
+// =====================================================================
+// RUTAS PARA TÉCNICOS FORESTALES
+// =====================================================================
+Route::prefix('T')->middleware(['auth'])->group(function () {
+    // Dashboard principal del técnico
+    Route::get('/index', [TecnicoDashboardController::class, 'index'])
+        ->name('tecnico.dashboard');
 
+    // Detalle de parcela
+    Route::get('/parcelas/{id_parcela}/detalle', [TecnicoDashboardController::class, 'parcelaDetalle'])
+        ->name('tecnico.parcela.detalle');
 
+    // Crear nueva parcela
+    Route::post('/parcelas', [TecnicoDashboardController::class, 'parcelaStore'])
+        ->name('tecnico.parcela.store');
 
+    // Crear troza
+    Route::post('/trozas', [TecnicoDashboardController::class, 'trozaStore'])
+        ->name('tecnico.troza.store');
 
+    // Crear árbol
+    Route::post('/arboles', [TecnicoDashboardController::class, 'arbolStore'])
+        ->name('tecnico.arbol.store');
 
+    // Crear estimación de troza
+    Route::post('/estimaciones', [TecnicoDashboardController::class, 'estimacionStore'])
+        ->name('tecnico.estimacion.store');
+
+    // Crear estimación de árbol
+    Route::post('/estimaciones-arbol', [TecnicoDashboardController::class, 'estimacionArbolStore'])
+        ->name('tecnico.estimacion-arbol.store');
+
+    // Exportar PDF de parcela
+    Route::get('/parcelas/{id_parcela}/export-pdf', [TecnicoDashboardController::class, 'exportParcelaToPdf'])
+        ->name('tecnico.parcela.pdf');
+});
+
+// =====================================================================
+// RUTAS PARA PRODUCTORES
+// =====================================================================
 Route::prefix('P')->middleware(['auth'])->group(function () {
     Route::get('/index', [ProductorDashboardController::class, 'index'])
         ->name('productor.dashboard');

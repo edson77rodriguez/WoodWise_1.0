@@ -15,7 +15,7 @@
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4 wood-modal-body">
-                        <form method="POST" action="{{ route('estimaciones.arbol.store') }}">
+                        <form method="POST" action="{{ route('tecnico.estimacion-arbol.store') }}">
                             @csrf
                             <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
                             <div class="mb-3">
@@ -25,12 +25,12 @@
                                     @foreach($parcela->arboles as $arbol)
                                         <option value="{{ $arbol->id_arbol }}">
                                             Árbol #{{ $arbol->id_arbol }} - {{ $arbol->especie->nom_cientifico ?? 'Sin especie' }} 
-                                            ({{ $arbol->altura_total }}m x {{ $arbol->diametro_pecho }}m)
+                                            (H: {{ $arbol->altura_total }}m, DAP: {{ $arbol->diametro_pecho }}m)
                                         </option>
                                     @endforeach
                                 </select>
-                                @if($parcela->arboles_count == 0)
-                                    <small class="text-warning">No hay árboles registrados en esta parcela.</small>
+                                @if($parcela->arboles->count() == 0)
+                                    <small class="text-warning">No hay árboles registrados. Primero registre un árbol.</small>
                                 @endif
                             </div>
                             <div class="row g-3">
@@ -44,18 +44,15 @@
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="wood-form-label">Fórmula</label>
+                                    <label class="wood-form-label">Fórmula de Biomasa</label>
                                     <select class="wood-form-select" name="id_formula" required>
                                         <option value="" selected disabled>Seleccione una fórmula</option>
-                                        @foreach($formulas as $formula)
+                                        @foreach($formulas->whereIn('nom_formula', ['Biomasa Pinus montezumae', 'Biomasa Quercus crassifolia', 'Biomasa Quercus rugosa', 'Biomasa Pinus pseudostrobus']) as $formula)
                                             <option value="{{ $formula->id_formula }}">{{ $formula->nom_formula }}</option>
                                         @endforeach
                                     </select>
+                                    <small class="text-muted">El trigger calculará biomasa y carbono automáticamente.</small>
                                 </div>
-                            </div>
-                            <div class="mt-3">
-                                <label class="wood-form-label">Cálculo (m³)</label>
-                                <input type="number" step="0.0001" class="wood-form-control" name="calculo" required min="0">
                             </div>
                             <div class="wood-modal-footer mt-4">
                                 <button type="button" class="btn btn-wood-outline" data-bs-dismiss="modal">

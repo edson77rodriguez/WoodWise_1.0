@@ -13,7 +13,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 wood-modal-body">
-                <form method="POST" action="{{ route('parcelas.store') }}">
+                <form method="POST" action="{{ route('tecnico.parcela.store') }}">
                     @csrf
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -42,17 +42,8 @@
                             <input type="text" name="CP" class="wood-form-control" required placeholder="C.P.">
                         </div>
                         <div class="col-12">
-                            <label class="wood-form-label">Dirección</label>
-                            <textarea name="direccion" class="wood-form-control" rows="3" placeholder="Dirección completa"></textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="wood-form-label">Especie principal *</label>
-                            <select name="id_especie" class="wood-form-select" required>
-                                <option value="" selected disabled>Seleccione una especie...</option>
-                                @foreach($especies as $especie)
-                                    <option value="{{ $especie->id_especie }}">{{ $especie->nom_cientifico }}</option>
-                                @endforeach
-                            </select>
+                            <label class="wood-form-label">Dirección *</label>
+                            <textarea name="direccion" class="wood-form-control" rows="3" placeholder="Dirección completa" required></textarea>
                         </div>
                     </div>
 

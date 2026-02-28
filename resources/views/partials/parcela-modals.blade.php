@@ -112,7 +112,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form method="POST" action="{{ route('tecnico.estimaciones.store') }}" class="modern-form" id="estimacionForm{{ $parcela->id_parcela }}">
+                <form method="POST" action="{{ route('tecnico.estimacion.store') }}" class="modern-form" id="estimacionForm{{ $parcela->id_parcela }}">
                     @csrf
                     <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
                     
@@ -274,7 +274,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form method="POST" action="{{ route('tecnico.estimaciones-arbol.store') }}" class="modern-form">
+                <form method="POST" action="{{ route('tecnico.estimacion-arbol.store') }}" class="modern-form">
                     @csrf
                     <div class="row g-3">
                         <div class="col-12">

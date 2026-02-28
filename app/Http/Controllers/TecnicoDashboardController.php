@@ -13,6 +13,7 @@ use App\Models\Formula;
 use App\Models\Tipo_Estimacion;
 use App\Models\TurnoCorta;
 use App\Models\Asigna_Parcela;
+use App\Models\Tecnico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,8 +22,32 @@ use PDF;
 class TecnicoDashboardController extends Controller
 {
     protected $tecnico;
-    
-    
+
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+            
+            if (!$user || !$user->persona) {
+                return redirect()->route('login');
+            }
+
+            // Verificar que el usuario es técnico
+            if ($user->persona->rol->nom_rol !== 'Tecnico') {
+                return response()->view('denegado', [], 403);
+            }
+
+            // Obtener el técnico asociado a la persona
+            $this->tecnico = Tecnico::where('id_persona', $user->persona->id_persona)->first();
+
+            if (!$this->tecnico) {
+                return response()->view('denegado', ['message' => 'No tienes un perfil de técnico configurado'], 403);
+            }
+
+            return $next($request);
+        });
+    }
 
     public function index()
     {
@@ -32,90 +57,131 @@ class TecnicoDashboardController extends Controller
     /**
      * Dashboard principal del técnico - ACTUALIZADO CON ÁRBOLES
      */
- // En App/Http/Controllers/TecnicoDashboardController.php
+    public function dashboard()
+    {
+        // --- 1. IDs de Origen ---
+        $parcelaIds = Asigna_Parcela::where('id_tecnico', $this->tecnico->id_tecnico)
+                                    ->pluck('id_parcela');
 
-// En App/Http/Controllers/TecnicoDashboardController.php
+        // --- 2. IDs Intermedios ---
+        $trozaIds = Troza::whereIn('id_parcela', $parcelaIds)->pluck('id_troza');
+        $arbolIds = Arbol::whereIn('id_parcela', $parcelaIds)->pluck('id_arbol');
 
-public function dashboard()
-{
-   
+        // --- 3. Cálculos TOTALES (para las "Stat Cards") ---
+        $totalTrozas = $trozaIds->count();
+        $totalArboles = $arbolIds->count();
 
-    // --- 1. IDs de Origen (Correcto) ---
-    $parcelaIds = Asigna_Parcela::where('id_tecnico', $this->tecnico->id_tecnico)
-                                ->pluck('id_parcela');
+        // Total Estimaciones
+        $countEstimaciones = Estimacion::whereIn('id_troza', $trozaIds)->count();
+        $countEstimaciones1 = Estimacion1::whereIn('id_arbol', $arbolIds)->count();
+        $totalEstimaciones = $countEstimaciones + $countEstimaciones1;
 
-    // --- 2. IDs Intermedios (Correcto) ---
-    $trozaIds = Troza::whereIn('id_parcela', $parcelaIds)->pluck('id_troza');
-    $arbolIds = Arbol::whereIn('id_parcela', $parcelaIds)->pluck('id_arbol');
+        // Volumen Total Maderable
+        $volumenEstimaciones = Estimacion::whereIn('id_troza', $trozaIds)->sum('calculo');
+        $volumenEstimaciones1 = Estimacion1::whereIn('id_arbol', $arbolIds)->sum('calculo');
+        $totalVolumenMaderable = $volumenEstimaciones + $volumenEstimaciones1;
 
-    // --- 3. Cálculos TOTALES (para las "Stat Cards") ---
-    // (Total Trozas y Árboles)
-    $totalTrozas = $trozaIds->count();
-    $totalArboles = $arbolIds->count();
+        // Biomasa y Carbono totales
+        $totalBiomasa = Estimacion::whereIn('id_troza', $trozaIds)->sum('biomasa')
+                      + Estimacion1::whereIn('id_arbol', $arbolIds)->sum('biomasa');
+        $totalCarbono = Estimacion::whereIn('id_troza', $trozaIds)->sum('carbono')
+                      + Estimacion1::whereIn('id_arbol', $arbolIds)->sum('carbono');
 
-    // (Total Estimaciones)
-    $countEstimaciones = Estimacion::whereIn('id_troza', $trozaIds)->count();
-    $countEstimaciones1 = Estimacion1::whereIn('id_arbol', $arbolIds)->count();
-    $totalEstimaciones = $countEstimaciones + $countEstimaciones1;
+        // --- 4. Consulta PAGINADA (para la tabla) ---
+        $parcelas = Parcela::with(['productor.persona', 'trozas.especie', 'arboles.especie'])
+            ->whereIn('id_parcela', $parcelaIds)
+            ->withCount([
+                'trozas',
+                'arboles',
+                'estimaciones',
+                'estimaciones1'
+            ])
+            ->paginate(10);
 
-    // (Volumen Total Maderable - LA CORRECCIÓN CLAVE)
-    $volumenEstimaciones = Estimacion::whereIn('id_troza', $trozaIds)->sum('calculo');
-    $volumenEstimaciones1 = Estimacion1::whereIn('id_arbol', $arbolIds)->sum('calculo');
-    
-    // El volumen total es SÓLO la suma de las estimaciones
-    $totalVolumenMaderable = $volumenEstimaciones + $volumenEstimaciones1;
-    
-    // --- 4. Consulta PAGINADA (para la tabla) ---
-    // (HEMOS ELIMINADO withSum('trozas', 'volumen') de aquí)
-    $parcelas = Parcela::with(['productor.persona'])
-        ->whereIn('id_parcela', $parcelaIds)
-        ->withCount([
-            'trozas', 
-            'arboles', 
-            'estimaciones',
-            'estimaciones1'
-        ])
-        ->paginate(10); // NOTA: 'withSum' para trozas se ha quitado.
+        // --- 5. Optimización N+1 para SUMAS ANIDADAS ---
+        $paginatedParcelaIds = $parcelas->pluck('id_parcela');
 
-    // --- 5. Optimización N+1 para SUMAS ANIDADAS (Correcto) ---
-    // Esto carga las sumas de 'calculo' para las 10 parcelas de la página
-    $paginatedParcelaIds = $parcelas->pluck('id_parcela');
+        $estimacionSums = Estimacion::join('trozas', 'estimaciones.id_troza', '=', 'trozas.id_troza')
+            ->whereIn('trozas.id_parcela', $paginatedParcelaIds)
+            ->groupBy('trozas.id_parcela')
+            ->selectRaw('trozas.id_parcela, sum(estimaciones.calculo) as total_calculo')
+            ->pluck('total_calculo', 'id_parcela');
 
-    $estimacionSums = Estimacion::join('trozas', 'estimaciones.id_troza', '=', 'trozas.id_troza')
-        ->whereIn('trozas.id_parcela', $paginatedParcelaIds)
-        ->groupBy('trozas.id_parcela')
-        ->selectRaw('trozas.id_parcela, sum(estimaciones.calculo) as total_calculo')
-        ->pluck('total_calculo', 'id_parcela');
+        $estimacion1Sums = Estimacion1::join('arboles', 'estimaciones1.id_arbol', '=', 'arboles.id_arbol')
+            ->whereIn('arboles.id_parcela', $paginatedParcelaIds)
+            ->groupBy('arboles.id_parcela')
+            ->selectRaw('arboles.id_parcela, sum(estimaciones1.calculo) as total_calculo')
+            ->pluck('total_calculo', 'id_parcela');
 
-    $estimacion1Sums = Estimacion1::join('arboles', 'estimaciones1.id_arbol', '=', 'arboles.id_arbol')
-        ->whereIn('arboles.id_parcela', $paginatedParcelaIds)
-        ->groupBy('arboles.id_parcela')
-        ->selectRaw('arboles.id_parcela, sum(estimaciones1.calculo) as total_calculo')
-        ->pluck('total_calculo', 'id_parcela');
+        $parcelas->each(function ($parcela) use ($estimacionSums, $estimacion1Sums) {
+            $parcela->estimaciones_sum_calculo = $estimacionSums->get($parcela->id_parcela, 0);
+            $parcela->estimaciones1_sum_calculo = $estimacion1Sums->get($parcela->id_parcela, 0);
+        });
 
-    // Adjuntamos las sumas a la colección paginada
-    $parcelas->each(function ($parcela) use ($estimacionSums, $estimacion1Sums) {
-        $parcela->estimaciones_sum_calculo = $estimacionSums->get($parcela->id_parcela, 0);
-        $parcela->estimaciones1_sum_calculo = $estimacion1Sums->get($parcela->id_parcela, 0);
-    });
+        // --- 6. Enviar Datos a la Vista ---
+        $data = [
+            'parcelas' => $parcelas,
+            'totalTrozas' => $totalTrozas,
+            'totalArboles' => $totalArboles,
+            'totalEstimaciones' => $totalEstimaciones,
+            'totalVolumenMaderable' => $totalVolumenMaderable,
+            'totalBiomasa' => $totalBiomasa,
+            'totalCarbono' => $totalCarbono,
+            'user' => Auth::user(),
+            'tecnico' => $this->tecnico,
+            'productores' => Productor::with('persona')->get(),
+            'especies' => Especie::all(),
+            'tiposEstimacion' => Tipo_Estimacion::all(),
+            'formulas' => Formula::all(),
+        ];
 
-    // --- 6. Enviar Datos a la Vista (Correcto) ---
-    $data = [
-        'parcelas' => $parcelas,
-        'totalTrozas' => $totalTrozas,
-        'totalArboles' => $totalArboles,
-        'totalEstimaciones' => $totalEstimaciones,
-        'totalVolumenMaderable' => $totalVolumenMaderable, // Corregido
-        'user' => Auth::user(),
-        'tecnico' => $this->tecnico,
-        'productores' => Productor::with('persona')->get(),
-        'especies' => Especie::all(),
-        'tiposEstimacion' => Tipo_Estimacion::all(),
-        'formulas' => Formula::all(),
-    ];
+        return view('T.index', $data);
+    }
 
-    return view('T.index', $data);
-}
+    /**
+     * VER DETALLE DE PARCELA
+     */
+    public function parcelaDetalle($id_parcela)
+    {
+        // Verificar que la parcela pertenece al técnico
+        $parcela = $this->verifyParcelaOwnership($id_parcela);
+
+        $parcela = Parcela::with([
+            'productor.persona',
+            'trozas.especie',
+            'trozas.estimaciones.tipoEstimacion',
+            'trozas.estimaciones.formula',
+            'arboles.especie',
+            'arboles.estimaciones1.tipoEstimacion',
+            'arboles.estimaciones1.formula',
+        ])->findOrFail($id_parcela);
+
+        // Calcular totales
+        $totalVolumenTrozas = $parcela->trozas->flatMap->estimaciones->sum('calculo');
+        $totalBiomasaTrozas = $parcela->trozas->flatMap->estimaciones->sum('biomasa');
+        $totalCarbonoTrozas = $parcela->trozas->flatMap->estimaciones->sum('carbono');
+
+        $totalVolumenArboles = $parcela->arboles->flatMap->estimaciones1->sum('calculo');
+        $totalBiomasaArboles = $parcela->arboles->flatMap->estimaciones1->sum('biomasa');
+        $totalCarbonoArboles = $parcela->arboles->flatMap->estimaciones1->sum('carbono');
+
+        $data = [
+            'parcela' => $parcela,
+            'totalVolumenTrozas' => $totalVolumenTrozas,
+            'totalBiomasaTrozas' => $totalBiomasaTrozas,
+            'totalCarbonoTrozas' => $totalCarbonoTrozas,
+            'totalVolumenArboles' => $totalVolumenArboles,
+            'totalBiomasaArboles' => $totalBiomasaArboles,
+            'totalCarbonoArboles' => $totalCarbonoArboles,
+            'user' => Auth::user(),
+            'tecnico' => $this->tecnico,
+            'especies' => Especie::all(),
+            'tiposEstimacion' => Tipo_Estimacion::all(),
+            'formulas' => Formula::all(),
+        ];
+
+        return view('T.parcela-detalle', $data);
+    }
 
     /**
      * CREAR NUEVA PARCELA
@@ -133,7 +199,6 @@ public function dashboard()
             'extension' => 'required|numeric|min:0.01',
             'direccion' => 'required|string|max:255',
             'CP' => 'required|string|max:10',
-            'id_especie' => 'required|exists:especies,id_especie'
         ]);
 
         try {
@@ -317,21 +382,66 @@ public function dashboard()
     }
 
     /**
-     * EXPORTACIÓN DE DATOS - TÉCNICO
+     * EXPORTACIÓN DE DATOS - REPORTE PDF PROFESIONAL
      */
     public function exportParcelaToPdf($id_parcela)
     {
-        $parcela = Parcela::with(['productor.persona', 'trozas.especie', 'arboles.especie'])
-            ->withCount(['trozas', 'arboles'])
-            ->findOrFail($id_parcela);
+        // Verificar que la parcela pertenece al técnico
+        $this->verifyParcelaOwnership($id_parcela);
 
-        // Calcular volumen maderable
-        $volumen_maderable = $parcela->trozas->sum('volumen');
+        $parcela = Parcela::with([
+            'productor.persona',
+            'trozas.especie',
+            'trozas.estimaciones.tipoEstimacion',
+            'trozas.estimaciones.formula',
+            'arboles.especie',
+            'arboles.estimaciones1.tipoEstimacion',
+            'arboles.estimaciones1.formula',
+        ])->findOrFail($id_parcela);
 
-        $parcela->volumen_maderable = $volumen_maderable;
+        // Calcular totales de TROZAS
+        $totalVolumenTrozas = $parcela->trozas->flatMap->estimaciones->sum('calculo');
+        $totalBiomasaTrozas = $parcela->trozas->flatMap->estimaciones->sum('biomasa');
+        $totalCarbonoTrozas = $parcela->trozas->flatMap->estimaciones->sum('carbono');
 
-        $pdf = PDF::loadView('pdf.parcela', compact('parcela'));
+        // Calcular totales de ÁRBOLES
+        $totalVolumenArboles = $parcela->arboles->flatMap->estimaciones1->sum('calculo');
+        $totalBiomasaArboles = $parcela->arboles->flatMap->estimaciones1->sum('biomasa');
+        $totalCarbonoArboles = $parcela->arboles->flatMap->estimaciones1->sum('carbono');
 
-        return $pdf->download('reporte_parcela_'.$parcela->nom_parcela.'_'.now()->format('Ymd').'.pdf');
+        // Totales generales
+        $totales = [
+            'volumen' => $totalVolumenTrozas + $totalVolumenArboles,
+            'biomasa' => $totalBiomasaTrozas + $totalBiomasaArboles,
+            'carbono' => $totalCarbonoTrozas + $totalCarbonoArboles,
+            'trozas' => $parcela->trozas->count(),
+            'arboles' => $parcela->arboles->count(),
+            'estimaciones' => $parcela->trozas->flatMap->estimaciones->count() 
+                            + $parcela->arboles->flatMap->estimaciones1->count(),
+        ];
+
+        // Estadísticas adicionales
+        $estadisticas = [
+            'volumen_trozas' => $totalVolumenTrozas,
+            'volumen_arboles' => $totalVolumenArboles,
+            'biomasa_trozas' => $totalBiomasaTrozas,
+            'biomasa_arboles' => $totalBiomasaArboles,
+            'carbono_trozas' => $totalCarbonoTrozas,
+            'carbono_arboles' => $totalCarbonoArboles,
+            'altura_promedio' => $parcela->arboles->avg('altura_total') ?? 0,
+            'dap_promedio' => $parcela->arboles->avg('diametro_pecho') ?? 0,
+        ];
+
+        $pdf = PDF::loadView('pdf.parcela-tecnico', [
+            'parcela' => $parcela,
+            'totales' => $totales,
+            'estadisticas' => $estadisticas,
+            'tecnico' => $this->tecnico,
+            'fecha_generacion' => now(),
+        ]);
+
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->download('Reporte_Parcela_'.$parcela->nom_parcela.'_'.now()->format('Y-m-d').'.pdf');
     }
 }

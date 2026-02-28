@@ -16,7 +16,7 @@
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4 wood-modal-body">
-                        <form method="POST" action="{{ route('estimaciones.store') }}">
+                        <form method="POST" action="{{ route('tecnico.estimacion.store') }}">
                             @csrf
                             <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
                             <div class="mb-3">
@@ -24,33 +24,32 @@
                                 <select class="wood-form-select" name="id_troza" required>
                                     <option value="" selected disabled>Seleccione una troza</option>
                                     @foreach($parcela->trozas as $troza)
-                                        <option value="{{ $troza->id_troza }}">Troza #{{ $troza->id_troza }} ({{ $troza->longitud }}m x {{ $troza->diametro }}m)</option>
+                                        <option value="{{ $troza->id_troza }}">Troza #{{ $troza->id_troza }} - {{ $troza->especie->nom_cientifico ?? 'N/A' }} ({{ $troza->longitud }}m)</option>
                                     @endforeach
                                 </select>
+                                @if($parcela->trozas->count() == 0)
+                                    <small class="text-warning">No hay trozas registradas. Primero registre una troza.</small>
+                                @endif
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="wood-form-label">Tipo de Estimación</label>
                                     <select class="wood-form-select" name="id_tipo_e" required>
-                                        <option value="" selected disabled>Seleccione un tipo</option>
-                                        @foreach($tiposEstimacion as $tipo)
-                                            <option value="{{ $tipo->id_tipo_e }}">{{ $tipo->desc_estimacion }}</option>
+                                        @foreach($tiposEstimacion->where('desc_estimacion', 'Volumen Maderable') as $tipo)
+                                            <option value="{{ $tipo->id_tipo_e }}" selected>{{ $tipo->desc_estimacion }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="wood-form-label">Fórmula a Aplicar</label>
+                                    <label class="wood-form-label">Fórmula Volumétrica</label>
                                     <select class="wood-form-select" name="id_formula" required>
                                         <option value="" selected disabled>Seleccione una fórmula</option>
-                                        @foreach($formulas as $formula)
+                                        @foreach($formulas->whereIn('nom_formula', ['Formula de Huber', 'Formula de Smalian', 'formula Tronco Cono', 'Formula Newton']) as $formula)
                                             <option value="{{ $formula->id_formula }}">{{ $formula->nom_formula }}</option>
                                         @endforeach
                                     </select>
+                                    <small class="text-muted">El trigger calculará volumen, biomasa y carbono automáticamente.</small>
                                 </div>
-                            </div>
-                            <div class="mt-3">
-                                <label class="wood-form-label">Cálculo (m³)</label>
-                                <input type="number" step="0.0001" class="wood-form-control" name="calculo" required>
                             </div>
                             <div class="wood-modal-footer mt-4">
                                 <button type="button" class="btn btn-wood-outline" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancelar</button>

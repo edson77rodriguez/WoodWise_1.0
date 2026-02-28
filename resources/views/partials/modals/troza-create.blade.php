@@ -15,7 +15,7 @@
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4 wood-modal-body">
-                        <form method="POST" action="{{ route('trozas.store') }}">
+                        <form method="POST" action="{{ route('tecnico.troza.store') }}">
                             @csrf
                             <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
                             <div class="row g-3">

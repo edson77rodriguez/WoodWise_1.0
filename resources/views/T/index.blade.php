@@ -63,17 +63,56 @@
                             <div class="btn-shine"></div>
                         </button>
                         
-                        <!-- Acciones rápidas -->
-                        <div class="quick-actions">
-                            <button class="quick-btn" data-bs-toggle="tooltip" title="Estadísticas">
-                                <i class="fas fa-chart-bar"></i>
+                        <!-- Menú de Usuario Dropdown -->
+                        <div class="user-menu-wrapper">
+                            <button class="user-menu-trigger" id="userMenuBtn" type="button">
+                                <div class="user-avatar">
+                                    <span>{{ substr($user->persona->nom ?? 'U', 0, 1) }}{{ substr($user->persona->ap ?? '', 0, 1) }}</span>
+                                </div>
+                                <div class="user-info-mini">
+                                    <span class="user-name">{{ $user->persona->nom ?? 'Usuario' }}</span>
+                                    <span class="user-role">Técnico Forestal</span>
+                                </div>
+                                <i class="fas fa-chevron-down dropdown-arrow"></i>
                             </button>
-                            <button class="quick-btn" data-bs-toggle="tooltip" title="Reportes">
-                                <i class="fas fa-file-alt"></i>
-                            </button>
-                            <button class="quick-btn" data-bs-toggle="tooltip" title="Configuración">
-                                <i class="fas fa-cog"></i>
-                            </button>
+                            
+                            <div class="user-dropdown-menu" id="userDropdown">
+                                <div class="dropdown-header">
+                                    <div class="user-avatar-large">
+                                        <span>{{ substr($user->persona->nom ?? 'U', 0, 1) }}{{ substr($user->persona->ap ?? '', 0, 1) }}</span>
+                                    </div>
+                                    <div class="user-details">
+                                        <span class="name">{{ $user->persona->nom ?? '' }} {{ $user->persona->ap ?? '' }}</span>
+                                        <span class="email">{{ $user->email }}</span>
+                                        <span class="badge-role"><i class="fas fa-leaf me-1"></i>Técnico Forestal</span>
+                                    </div>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <a href="{{ route('perfil.index') }}" class="dropdown-item">
+                                    <i class="fas fa-user"></i>
+                                    <span>Mi Perfil</span>
+                                </a>
+                                <a href="{{ route('especies.catalogo') }}" class="dropdown-item">
+                                    <i class="fas fa-seedling"></i>
+                                    <span>Catálogo de Especies</span>
+                                </a>
+                                <button class="dropdown-item" data-bs-toggle="tooltip" title="Próximamente">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Configuración</span>
+                                </button>
+                                <button class="dropdown-item" data-bs-toggle="tooltip" title="Próximamente">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span>Estadísticas</span>
+                                </button>
+                                <div class="dropdown-divider"></div>
+                                <form action="{{ route('logout') }}" method="POST" class="dropdown-form">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item logout-item">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span>Cerrar Sesión</span>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -162,7 +201,7 @@
                         </div>
                     </div>
                     <div class="metric-content">
-                        <h3 class="metric-value" data-count="{{ $parcelas->total() }}">0</h3>
+                        <h3 class="metric-value">{{ $parcelas->total() }}</h3>
                         <p class="metric-label">Parcelas Asignadas</p>
                         <div class="metric-progress">
                             <div class="progress-track">
@@ -192,7 +231,7 @@
                         </div>
                     </div>
                     <div class="metric-content">
-                        <h3 class="metric-value" data-count="{{ $totalTrozas }}">0</h3>
+                        <h3 class="metric-value">{{ $totalTrozas }}</h3>
                         <p class="metric-label">Trozas Registradas</p>
                         <div class="metric-progress">
                             <div class="progress-track">
@@ -222,7 +261,7 @@
                         </div>
                     </div>
                     <div class="metric-content">
-                        <h3 class="metric-value" data-count="{{ $totalEstimaciones ?? 0 }}">0</h3>
+                        <h3 class="metric-value">{{ $totalEstimaciones ?? 0 }}</h3>
                         <p class="metric-label">Estimaciones Realizadas</p>
                         <div class="metric-progress">
                             <div class="progress-track">
@@ -252,14 +291,7 @@
                     </div>
                 </div>
                 <div class="metric-content">
-                    {{-- 
-                    AQUÍ ESTÁ LA CORRECCIÓN:
-                    Quitamos number_format() del 'data-count'.
-                    El script de animación usará el número puro (ej. 1234.5)
-                    y el '0.0' es solo el valor inicial antes de que el script se ejecute.
-                    --}}
-                    <h3 class="metric-value" data-count="{{ $totalVolumenMaderable ?? 0 }}">0.0</h3>
-                    
+                        <h3 class="metric-value">{{ number_format($totalVolumenMaderable ?? 0, 2) }}</h3>
                     <p class="metric-label">Volumen Total (m³)</p>
                     <div class="metric-progress">
                         <div class="progress-track">
@@ -616,7 +648,7 @@
 
                                                 <!-- Grupo Ver Detalles -->
                                                 <div class="action-group">
-                                                    <a href="{{ route('parcelas.show', $parcela->id_parcela) }}" 
+                                                    <a href="{{ route('tecnico.parcela.detalle', $parcela->id_parcela) }}" 
                                                        class="action-btn view" 
                                                        data-bs-toggle="tooltip" title="Ver Detalles">
                                                         <i class="fas fa-eye"></i>
@@ -688,6 +720,54 @@
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
 
+        // User Dropdown Menu
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userDropdown = document.getElementById('userDropdown');
+        
+        if (userMenuBtn && userDropdown) {
+            // Mover dropdown al body para evitar problemas de z-index
+            document.body.appendChild(userDropdown);
+            
+            function positionDropdown() {
+                const rect = userMenuBtn.getBoundingClientRect();
+                userDropdown.style.position = 'fixed';
+                userDropdown.style.top = (rect.bottom + 10) + 'px';
+                userDropdown.style.right = (window.innerWidth - rect.right) + 'px';
+                userDropdown.style.left = 'auto';
+            }
+            
+            userMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                positionDropdown();
+                userMenuBtn.classList.toggle('active');
+                userDropdown.classList.toggle('show');
+            });
+            
+            // Reposicionar en scroll/resize
+            window.addEventListener('scroll', function() {
+                if (userDropdown.classList.contains('show')) {
+                    positionDropdown();
+                }
+            });
+            window.addEventListener('resize', positionDropdown);
+            
+            // Cerrar al hacer clic fuera
+            document.addEventListener('click', function(e) {
+                if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                    userMenuBtn.classList.remove('active');
+                    userDropdown.classList.remove('show');
+                }
+            });
+            
+            // Cerrar con ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    userMenuBtn.classList.remove('active');
+                    userDropdown.classList.remove('show');
+                }
+            });
+        }
+
         // Efectos hover modernos
         document.querySelectorAll('.modern-stat-card').forEach(card => {
             card.addEventListener('mouseenter', function() {
@@ -697,6 +777,101 @@
                 this.style.transform = 'translateY(0)';
             });
         });
+
+        // =============== BÚSQUEDA EN TIEMPO REAL ===============
+        const searchInput = document.querySelector('.search-input');
+        const tableRows = document.querySelectorAll('.advanced-data-table tbody tr');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                tableRows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            });
+            
+            // Botón limpiar búsqueda
+            const clearBtn = document.querySelector('.search-clear');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function() {
+                    searchInput.value = '';
+                    searchInput.dispatchEvent(new Event('input'));
+                });
+            }
+        }
+
+        // =============== FILTROS FUNCIONALES ===============
+        const filterCheckboxes = document.querySelectorAll('.filter-checkbox input');
+        const rangeInputs = document.querySelectorAll('.range-inputs input');
+        const applyBtn = document.querySelector('.btn-apply');
+        const resetBtn = document.querySelector('.btn-reset');
+        
+        if (applyBtn) {
+            applyBtn.addEventListener('click', function() {
+                const minExt = parseFloat(document.querySelector('.range-inputs input:first-child')?.value) || 0;
+                const maxExt = parseFloat(document.querySelector('.range-inputs input:last-child')?.value) || Infinity;
+                
+                tableRows.forEach(row => {
+                    const extCell = row.querySelector('td:nth-child(4)'); // Columna de extensión
+                    if (extCell) {
+                        const ext = parseFloat(extCell.textContent) || 0;
+                        if (ext >= minExt && ext <= maxExt) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    }
+                });
+                
+                // Cerrar dropdown
+                const dropdown = document.querySelector('.filter-dropdown .dropdown-menu');
+                if (dropdown) {
+                    bootstrap.Dropdown.getInstance(document.querySelector('.btn-filter'))?.hide();
+                }
+            });
+        }
+        
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                filterCheckboxes.forEach(cb => cb.checked = true);
+                rangeInputs.forEach(input => input.value = '');
+                tableRows.forEach(row => row.style.display = '');
+            });
+        }
+
+        // =============== EXPORTAR A CSV ===============
+        const exportBtn = document.querySelector('.btn-export');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', function() {
+                const table = document.querySelector('.advanced-data-table');
+                if (!table) return;
+                
+                let csv = [];
+                const headers = [];
+                table.querySelectorAll('thead th').forEach(th => {
+                    headers.push('"' + th.textContent.trim().replace(/"/g, '""') + '"');
+                });
+                csv.push(headers.join(','));
+                
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    if (row.style.display === 'none') return;
+                    const cols = [];
+                    row.querySelectorAll('td').forEach(td => {
+                        let text = td.textContent.trim().replace(/\s+/g, ' ').replace(/"/g, '""');
+                        cols.push('"' + text + '"');
+                    });
+                    csv.push(cols.join(','));
+                });
+                
+                const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'parcelas_tecnico_' + new Date().toISOString().slice(0,10) + '.csv';
+                link.click();
+            });
+        }
     });
 </script>
 @endpush
