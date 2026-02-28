@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('estimaciones1', function (Blueprint $table) {
             $table->id('id_estimacion1');
              $table->unsignedBigInteger('id_tipo_e');
-            $table->unsignedBigInteger('id_formula');
+            $table->unsignedBigInteger('id_formula')->nullable(); // Nullable para Volumen Maderable que no usa fórmula específica
             $table->double('calculo');
                         $table->double('area_basal')->default(0);
 
