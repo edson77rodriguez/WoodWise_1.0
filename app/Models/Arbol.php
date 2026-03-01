@@ -21,10 +21,18 @@ class Arbol extends Model
     {
         return $this->belongsTo(Especie::class, 'id_especie');
     }
-   public function estimaciones1()
-{
-    return $this->hasMany(Estimacion1::class, 'id_arbol');
-}
+    
+    public function estimaciones1()
+    {
+        return $this->hasMany(Estimacion1::class, 'id_arbol');
+    }
+    
+    // Alias para compatibilidad
+    public function estimaciones()
+    {
+        return $this->hasMany(Estimacion1::class, 'id_arbol');
+    }
+    
     public function parcela()
     {
         return $this->belongsTo(Parcela::class, 'id_parcela');

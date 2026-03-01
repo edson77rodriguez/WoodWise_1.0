@@ -119,26 +119,27 @@ Route::prefix('T')->middleware(['auth'])->group(function () {
 // RUTAS PARA PRODUCTORES
 // =====================================================================
 Route::prefix('P')->middleware(['auth'])->group(function () {
+    // Dashboard principal
     Route::get('/index', [ProductorDashboardController::class, 'index'])
         ->name('productor.dashboard');
 
-    Route::get('/exportar-general', [ProductorDashboardController::class, 'exportarGeneral'])
-        ->name('exportar.general');
+    // Crear nueva parcela
+    Route::post('/parcelas', [ProductorDashboardController::class, 'parcelaStore'])
+        ->name('productor.parcela.store');
 
-    Route::get('/parcelas/export', [ProductorDashboardController::class, 'exportarParcelas'])
-        ->name('parcelas.export');
+    // Registrar turno de corta
+    Route::post('/turnos', [ProductorDashboardController::class, 'turnoStore'])
+        ->name('productor.turno.store');
 
-    Route::get('/trozas/export', [ProductorDashboardController::class, 'exportarTrozas'])
-        ->name('trozas.export');
+    // Detalle de parcela
+    Route::get('/parcelas/{id_parcela}/detalle', [ProductorDashboardController::class, 'parcelaDetalle'])
+        ->name('productor.parcela.detalle');
 
-    Route::get('/estimaciones/export', [ProductorDashboardController::class, 'exportarEstimaciones'])
-        ->name('estimaciones.export');
+    // Exportar PDF de parcela individual
+    Route::get('/parcelas/{id_parcela}/pdf', [ProductorDashboardController::class, 'exportParcelaPdf'])
+        ->name('productor.parcela.pdf');
 
-    Route::get('/parcela/{id}/pdf', [ProductorDashboardController::class, 'generarPdfParcela'])
-        ->name('parcela.pdf');
-
-    Route::get('/troza/{id}/pdf', [ProductorDashboardController::class, 'generarPdfTroza'])
-        ->name('troza.pdf');
-    Route::get('/estimacion/{id}/pdf', [ProductorDashboardController::class, 'generarPdfEstimacion'])
-        ->name('estimacion.pdf');
+    // Exportar reporte general
+    Route::get('/reporte-general', [ProductorDashboardController::class, 'exportarGeneral'])
+        ->name('productor.reporte.general');
 });
