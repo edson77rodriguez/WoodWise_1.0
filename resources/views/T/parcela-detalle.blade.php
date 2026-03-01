@@ -332,9 +332,9 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Especie</th>
-                                    <th>Long.</th>
-                                    <th>Diám.</th>
-                                    <th>Densidad</th>
+                                    <th>Long. (m)</th>
+                                    <th>Diám. (m)</th>
+                                    <th>Densidad (ton/m³)</th>
                                 </tr>
                             </thead>
                             <tbody>

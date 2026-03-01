@@ -618,7 +618,7 @@
                             </td>
                             <td class="text-right">
                                 <span class="value-highlight">{{ number_format($arbol->diametro_pecho ?? 0, 2) }}</span>
-                                <span class="unit">cm</span>
+                                <span class="unit">m</span>
                             </td>
                             <td class="text-right">
                                 <span class="value-highlight">{{ number_format($volArbol, 4) }}</span>
@@ -674,11 +674,11 @@
                             </td>
                             <td class="text-right">
                                 <span class="value-highlight">{{ number_format($troza->diametro ?? 0, 2) }}</span>
-                                <span class="unit">cm</span>
+                                <span class="unit">m</span>
                             </td>
                             <td class="text-right">
                                 <span class="value-highlight">{{ number_format($troza->diametro_otro_extremo ?? 0, 2) }}</span>
-                                <span class="unit">cm</span>
+                                <span class="unit">m</span>
                             </td>
                             <td class="text-right">
                                 <span class="value-highlight">{{ number_format($volTroza, 4) }}</span>

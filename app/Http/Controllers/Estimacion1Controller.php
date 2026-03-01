@@ -60,6 +60,37 @@ $estimaciones = Estimacion1::with(['tipoEstimacion', 'formula', 'arbol.especie',
     }
 
     /**
+     * Obtener fórmula por árbol/especie (para AJAX - auto-relleno)
+     * Mapeo: especie_id → formula_id
+     */
+    public function getFormulaByArbol($arbolId)
+    {
+        $arbol = Arbol::with('especie')->find($arbolId);
+        
+        if (!$arbol) {
+            return response()->json(['error' => 'Árbol no encontrado'], 404);
+        }
+
+        // Mapeo especie → fórmula
+        $especieToFormula = [
+            1 => 8, // Pinus pseudostrobus
+            2 => 7, // Quercus rugosa
+            3 => 5, // Pinus montezumae
+            4 => 6, // Quercus crassifolia
+        ];
+
+        $formulaId = $especieToFormula[$arbol->id_especie] ?? null;
+        $formula = $formulaId ? Formula::find($formulaId) : null;
+
+        return response()->json([
+            'arbol' => $arbol,
+            'especie' => $arbol->especie,
+            'formula_id' => $formulaId,
+            'formula' => $formula,
+        ]);
+    }
+
+    /**
      * Almacenar nueva estimación
      */
     public function store(Request $request)

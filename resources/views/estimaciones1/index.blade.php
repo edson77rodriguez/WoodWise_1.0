@@ -69,7 +69,7 @@
                         <tr>
                             <th class="py-3 ps-4">Estimación</th>
                             <th class="py-3">Árbol de Origen</th>
-                            <th class="py-3">Resultado</th>
+                            <th class="py-3">Biomasa / Carbono</th>
                             <th class="py-3 pe-4 text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -79,15 +79,15 @@
                             <td class="ps-4">
                                 <p class="fw-bold mb-1">ID: <span class="font-monospace">{{ $estimacion->id_estimacion1 }}</span></p>
                                 <p class="mb-1"><span class="badge rounded-pill text-white bg-type">{{ $estimacion->tipoEstimacion->desc_estimacion }}</span></p>
-                                <small class="text-muted" title="Fórmula usada">{{ $estimacion->formula->nom_formula }}</small>
+                                <small class="text-muted" title="Fórmula usada">{{ $estimacion->formula->nom_formula ?? 'Sin fórmula' }}</small>
                             </td>
                             <td>
                                 <p class="mb-1"><i class="fas fa-tree me-2" style="color: var(--succulent-medium);"></i>Árbol ID: {{ $estimacion->arbol->id_arbol ?? 'N/A' }}</p>
                                 <p class="mb-0 text-muted"><i class="fas fa-seedling me-2"></i>{{ $estimacion->arbol->especie->nom_comun ?? 'N/A' }} / <i class="fas fa-draw-polygon ms-1 me-2"></i>{{ $estimacion->arbol->parcela->nom_parcela ?? 'N/A' }}</p>
                             </td>
                             <td>
-                                <span class="data-value">{{ number_format($estimacion->calculo, 4) }}</span>
-                                <span class="data-label">{{ $estimacion->tipoEstimacion->unidad_medida }}</span>
+                                <p class="mb-1"><span class="data-label">Biomasa:</span> <span class="data-value">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 2) }} kg</span></p>
+                                <p class="mb-0"><span class="data-label">Carbono:</span> <span class="data-value">{{ number_format($estimacion->carbono ?? 0, 2) }} kg</span></p>
                             </td>
                             <td class="pe-4 text-center">
                                 <div class="btn-group" role="group">
@@ -132,15 +132,18 @@
                         <h6>Parámetros de Entrada</h6>
                         <hr class="mt-1">
                         <p><strong class="text-muted">Tipo de Estimación:</strong> {{ $estimacion->tipoEstimacion->desc_estimacion }}</p>
-                        <p><strong class="text-muted">Fórmula Utilizada:</strong> {{ $estimacion->formula->nom_formula }}</p>
+                        <p><strong class="text-muted">Fórmula Utilizada:</strong> {{ $estimacion->formula->nom_formula ?? 'Sin fórmula' }}</p>
                         <p><strong class="text-muted">Árbol de Origen (ID):</strong> {{ $estimacion->arbol->id_arbol }}</p>
+                        <p><strong class="text-muted">Área Basal:</strong> {{ number_format($estimacion->area_basal ?? 0, 4) }} m²</p>
                     </div>
                     <div class="col-md-6">
-                        <h6>Resultado y Origen</h6>
+                        <h6>Resultados Calculados</h6>
                         <hr class="mt-1">
-                        <p><strong class="text-muted">Resultado:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->calculo, 4) }} {{ $estimacion->tipoEstimacion->unidad_medida }}</span></p>
-                         <p><strong class="text-muted">Especie:</strong> {{ $estimacion->arbol->especie->nom_comun ?? 'N/A' }}</p>
-                         <p><strong class="text-muted">Parcela:</strong> {{ $estimacion->arbol->parcela->nom_parcela ?? 'N/A' }}</p>
+                        <p><strong class="text-muted">Biomasa:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 2) }} kg</span></p>
+                        <p><strong class="text-muted">Carbono:</strong> <span class="fs-5 fw-bold text-primary">{{ number_format($estimacion->carbono ?? 0, 2) }} kg</span></p>
+                        <hr>
+                        <p><strong class="text-muted">Especie:</strong> {{ $estimacion->arbol->especie->nom_comun ?? 'N/A' }}</p>
+                        <p><strong class="text-muted">Parcela:</strong> {{ $estimacion->arbol->parcela->nom_parcela ?? 'N/A' }}</p>
                     </div>
                 </div>
             </div>
@@ -166,16 +169,16 @@
                         <label>Tipo de Estimación*</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <select name="id_formula" class="form-select" required>
-                            @foreach ($formulas as $formula)<option value="{{ $formula->id_formula }}" {{ $formula->id_formula == $estimacion->id_formula ? 'selected' : '' }}>{{ $formula->nom_formula }}</option>@endforeach
-                        </select>
-                        <label>Fórmula*</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                        <select name="id_arbol" class="form-select" required>
-                           @foreach ($arboles as $arbol)<option value="{{ $arbol->id_arbol }}" {{ $arbol->id_arbol == $estimacion->id_arbol ? 'selected' : '' }}>#{{$arbol->id_arbol}} - {{ $arbol->especie->nom_comun }}</option>@endforeach
+                        <select name="id_arbol" class="form-select edit-arbol-select" data-formula-select="editFormula{{ $estimacion->id_estimacion1 }}" required>
+                           @foreach ($arboles as $arbol)<option value="{{ $arbol->id_arbol }}" data-especie="{{ $arbol->id_especie }}" {{ $arbol->id_arbol == $estimacion->id_arbol ? 'selected' : '' }}>#{{$arbol->id_arbol}} - {{ $arbol->especie->nom_comun }}</option>@endforeach
                         </select>
                         <label>Árbol*</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <select name="id_formula" id="editFormula{{ $estimacion->id_estimacion1 }}" class="form-select" required>
+                            @foreach ($formulas as $formula)<option value="{{ $formula->id_formula }}" {{ $formula->id_formula == $estimacion->id_formula ? 'selected' : '' }}>{{ $formula->nom_formula }}</option>@endforeach
+                        </select>
+                        <label>Fórmula* (auto-seleccionada)</label>
                     </div>
                     <div class="d-flex justify-content-end mt-4">
                         <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
@@ -199,25 +202,30 @@
                  <form method="POST" action="{{ route('estimaciones1.store') }}">
                     @csrf
                     <div class="form-floating mb-3">
-                        <select name="id_tipo_e" class="form-select" required>
-                            <option value="" disabled selected>Selecciona un tipo...</option>
-                            @foreach ($tiposEstimacion as $tipo)<option value="{{ $tipo->id_tipo_e }}">{{ $tipo->desc_estimacion }}</option>@endforeach
+                        <select name="id_tipo_e" id="createTipoE" class="form-select" required>
+                            @foreach ($tiposEstimacion as $tipo)
+                                <option value="{{ $tipo->id_tipo_e }}" {{ $loop->first ? 'selected' : '' }}>{{ $tipo->desc_estimacion }}</option>
+                            @endforeach
                         </select>
                         <label>Tipo de Estimación*</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <select name="id_formula" class="form-select" required>
-                            <option value="" disabled selected>Selecciona una fórmula...</option>
-                            @foreach ($formulas as $formula)<option value="{{ $formula->id_formula }}">{{ $formula->nom_formula }}</option>@endforeach
-                        </select>
-                        <label>Fórmula*</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                        <select name="id_arbol" class="form-select" required>
+                        <select name="id_arbol" id="createArbol" class="form-select" required>
                             <option value="" disabled selected>Selecciona un árbol...</option>
-                            @foreach ($arboles as $arbol)<option value="{{ $arbol->id_arbol }}">#{{$arbol->id_arbol}} - {{ $arbol->especie->nom_comun }} ({{ $arbol->parcela->nom_parcela }})</option>@endforeach
+                            @foreach ($arboles as $arbol)
+                                <option value="{{ $arbol->id_arbol }}" data-especie="{{ $arbol->id_especie }}">#{{$arbol->id_arbol}} - {{ $arbol->especie->nom_comun }} ({{ $arbol->parcela->nom_parcela }})</option>
+                            @endforeach
                         </select>
                         <label>Árbol*</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <select name="id_formula" id="createFormula" class="form-select" required>
+                            <option value="" disabled selected>Selecciona un árbol primero...</option>
+                            @foreach ($formulas as $formula)
+                                <option value="{{ $formula->id_formula }}">{{ $formula->nom_formula }}</option>
+                            @endforeach
+                        </select>
+                        <label>Fórmula* (auto-seleccionada)</label>
                     </div>
                     <div class="d-flex justify-content-end mt-4">
                         <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
@@ -238,6 +246,56 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar Tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
     tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+    // Mapeo especie → fórmula (debe coincidir con el backend)
+    const especieToFormula = {
+        1: 8, // Pinus pseudostrobus
+        2: 7, // Quercus rugosa
+        3: 5, // Pinus montezumae
+        4: 6  // Quercus crassifolia
+    };
+
+    // Función para auto-seleccionar fórmula
+    function autoSelectFormula(arbolSelect, formulaSelect) {
+        const selectedOption = arbolSelect.options[arbolSelect.selectedIndex];
+        const especieId = parseInt(selectedOption.dataset.especie);
+        const formulaId = especieToFormula[especieId];
+
+        if (formulaId) {
+            formulaSelect.value = formulaId;
+            
+            // Destacar visualmente que se auto-seleccionó
+            formulaSelect.style.borderColor = 'var(--succulent-medium)';
+            formulaSelect.style.boxShadow = '0 0 0 0.2rem rgba(124, 144, 112, 0.25)';
+            
+            setTimeout(() => {
+                formulaSelect.style.borderColor = '';
+                formulaSelect.style.boxShadow = '';
+            }, 1500);
+        }
+    }
+
+    // Auto-seleccionar fórmula en modal de CREAR
+    const createArbolSelect = document.getElementById('createArbol');
+    const createFormulaSelect = document.getElementById('createFormula');
+
+    if (createArbolSelect && createFormulaSelect) {
+        createArbolSelect.addEventListener('change', function() {
+            autoSelectFormula(this, createFormulaSelect);
+        });
+    }
+
+    // Auto-seleccionar fórmula en modales de EDITAR
+    document.querySelectorAll('.edit-arbol-select').forEach(arbolSelect => {
+        const formulaSelectId = arbolSelect.dataset.formulaSelect;
+        const formulaSelect = document.getElementById(formulaSelectId);
+        
+        if (formulaSelect) {
+            arbolSelect.addEventListener('change', function() {
+                autoSelectFormula(this, formulaSelect);
+            });
+        }
+    });
 
     // Lógica de Eliminación
     document.querySelectorAll('.js-delete-btn').forEach(button => {

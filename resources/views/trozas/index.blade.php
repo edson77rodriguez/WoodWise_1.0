@@ -84,7 +84,7 @@
                             </td>
                             <td>
                                 <p class="mb-1"><span class="data-label">Volumen:</span> <span class="data-value">{{ number_format($troza->volumen ?? 0, 4) }} m³</span></p>
-                                <p class="mb-0"><span class="data-label">Densidad:</span> <span class="data-value">{{ number_format($troza->densidad, 2) }}</span></p>
+                                <p class="mb-0"><span class="data-label">Densidad:</span> <span class="data-value">{{ number_format($troza->densidad, 2) }} ton/m³</span></p>
                             </td>
                             <td>
                                 <p class="mb-1"><i class="fas fa-seedling me-2" style="color: var(--succulent-medium);"></i>{{ $troza->especie->nom_comun }}</p>
@@ -141,7 +141,7 @@
                         <h6>Propiedades Calculadas y Origen</h6>
                         <hr class="mt-1">
                         <p><strong class="text-muted">Volumen Estimado:</strong> {{ number_format($troza->volumen ?? 0, 4) }} m³</p>
-                        <p><strong class="text-muted">Densidad:</strong> {{ number_format($troza->densidad, 2) }}</p>
+                        <p><strong class="text-muted">Densidad:</strong> {{ number_format($troza->densidad, 2) }} ton/m³</p>
                         <p><strong class="text-muted">Especie:</strong> {{ $troza->especie->nom_comun }}</p>
                         <p><strong class="text-muted">Parcela:</strong> {{ $troza->parcela->nom_parcela }}</p>
                     </div>
@@ -170,7 +170,7 @@
                         <div class="col-md-6 mb-3"><div class="form-floating"><input type="number" step="0.01" name="diametro_otro_extremo" class="form-control" value="{{ $troza->diametro_otro_extremo }}" placeholder="0.00"><label>Diámetro Otro Extremo (m)</label></div></div>
                         <div class="col-md-6 mb-3"><div class="form-floating"><input type="number" step="0.01" name="diametro_medio" class="form-control" value="{{ $troza->diametro_medio }}" placeholder="0.00"><label>Diámetro Medio (m)</label></div></div>
                     </div>
-                    <div class="mb-3"><div class="form-floating"><input type="number" step="0.01" name="densidad" class="form-control" value="{{ $troza->densidad }}" required placeholder="0.00"><label>Densidad*</label></div></div>
+                    <div class="mb-3"><div class="form-floating"><input type="number" step="0.01" name="densidad" class="form-control" value="{{ $troza->densidad }}" required placeholder="0.00"><label>Densidad (ton/m³)*</label></div></div>
                     <div class="row">
                         <div class="col-md-6 mb-3"><div class="form-floating"><select name="id_especie" class="form-select" required>@foreach ($especies as $especie)<option value="{{ $especie->id_especie }}" {{ $troza->id_especie == $especie->id_especie ? 'selected' : '' }}>{{ $especie->nom_comun }}</option>@endforeach</select><label>Especie*</label></div></div>
                         <div class="col-md-6 mb-3"><div class="form-floating"><select name="id_parcela" class="form-select" required>@foreach ($parcelas as $parcela)<option value="{{ $parcela->id_parcela }}" {{ $troza->id_parcela == $parcela->id_parcela ? 'selected' : '' }}>{{ $parcela->nom_parcela }}</option>@endforeach</select><label>Parcela*</label></div></div>
@@ -204,7 +204,7 @@
                         <div class="col-md-6 mb-3"><div class="form-floating"><input type="number" step="0.01" name="diametro_otro_extremo" class="form-control" placeholder="0.00"><label>Diámetro Otro Extremo (m)</label></div></div>
                         <div class="col-md-6 mb-3"><div class="form-floating"><input type="number" step="0.01" name="diametro_medio" class="form-control" placeholder="0.00"><label>Diámetro Medio (m)</label></div></div>
                     </div>
-                    <div class="mb-3"><div class="form-floating"><input type="number" step="0.01" name="densidad" class="form-control" required placeholder="0.00"><label>Densidad*</label></div></div>
+                    <div class="mb-3"><div class="form-floating"><input type="number" step="0.01" name="densidad" class="form-control" required placeholder="0.00"><label>Densidad (ton/m³)*</label></div></div>
                     <div class="row">
                         <div class="col-md-6 mb-3"><div class="form-floating"><select name="id_especie" class="form-select" required><option value="" disabled selected>Selecciona...</option>@foreach ($especies as $especie)<option value="{{ $especie->id_especie }}">{{ $especie->nom_comun }}</option>@endforeach</select><label>Especie*</label></div></div>
                         <div class="col-md-6 mb-3"><div class="form-floating"><select name="id_parcela" class="form-select" required><option value="" disabled selected>Selecciona...</option>@foreach ($parcelas as $parcela)<option value="{{ $parcela->id_parcela }}">{{ $parcela->nom_parcela }}</option>@endforeach</select><label>Parcela*</label></div></div>

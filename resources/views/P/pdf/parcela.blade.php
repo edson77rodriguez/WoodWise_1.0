@@ -343,7 +343,7 @@
                 <th style="width: 60px;">No.</th>
                 <th>Especie</th>
                 <th style="width: 80px;">Altura (m)</th>
-                <th style="width: 80px;">DAP (cm)</th>
+                <th style="width: 80px;">DAP (m)</th>
                 <th style="width: 100px;">Volumen (m³)</th>
             </tr>
         </thead>
@@ -400,10 +400,10 @@
             <tr>
                 <td><strong>#{{ $troza->id_troza }}</strong></td>
                 <td><span class="badge">{{ $troza->especie->nom_comun ?? 'N/A' }}</span></td>
-                <td>{{ number_format($troza->longitud ?? 0, 2) }}</td>
-                <td>{{ number_format($troza->diametro ?? 0, 2) }} cm</td>
-                <td>{{ number_format($troza->diametro_otro_extremo ?? 0, 2) }} cm</td>
-                <td>{{ number_format($volTroza, 4) }}</td>
+                <td>{{ number_format($troza->longitud ?? 0, 2) }} m</td>
+                <td>{{ number_format($troza->diametro ?? 0, 2) }} m</td>
+                <td>{{ number_format($troza->diametro_otro_extremo ?? 0, 2) }} m</td>
+                <td>{{ number_format($volTroza, 4) }} m³</td>
             </tr>
             @endforeach
         </tbody>

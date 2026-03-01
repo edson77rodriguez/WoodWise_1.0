@@ -592,8 +592,8 @@
                         <th class="center" style="width: 12%;">Longitud (m)</th>
                         <th class="center" style="width: 12%;">Diám. (m)</th>
                         <th class="center" style="width: 12%;">D. Medio (m)</th>
-                        <th class="center" style="width: 12%;">D. Otro Ext.</th>
-                        <th class="center" style="width: 12%;">Densidad</th>
+                        <th class="center" style="width: 12%;">D. Otro Ext. (m)</th>
+                        <th class="center" style="width: 12%;">Densidad (ton/m³)</th>
                     </tr>
                 </thead>
                 <tbody>

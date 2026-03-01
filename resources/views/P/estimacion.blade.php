@@ -54,11 +54,11 @@
     </tr>
     <tr>
         <th>Diámetro</th>
-        <td>{{ $estimacion->troza->diametro }} cm</td>
+        <td>{{ $estimacion->troza->diametro }} m</td>
     </tr>
     <tr>
         <th>Densidad</th>
-        <td>{{ $estimacion->troza->densidad }} kg/m³</td>
+        <td>{{ $estimacion->troza->densidad }} ton/m³</td>
     </tr>
 </table>
 

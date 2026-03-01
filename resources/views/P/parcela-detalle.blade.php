@@ -675,7 +675,7 @@
                                     <th>ID</th>
                                     <th>Especie</th>
                                     <th>Altura (m)</th>
-                                    <th>DAP (cm)</th>
+                                    <th>DAP (m)</th>
                                     <th>Estimaciones</th>
                                 </tr>
                             </thead>
@@ -722,8 +722,8 @@
                                     <th>ID</th>
                                     <th>Especie</th>
                                     <th>Longitud (m)</th>
-                                    <th>Diám. 1 (cm)</th>
-                                    <th>Diám. 2 (cm)</th>
+                                    <th>Diám. 1 (m)</th>
+                                    <th>Diám. 2 (m)</th>
                                 </tr>
                             </thead>
                             <tbody>

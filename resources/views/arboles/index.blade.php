@@ -78,7 +78,7 @@
                             </td>
                             <td>
                                 <p class="mb-1"><span class="data-label">Altura:</span> <span class="data-value">{{ number_format($arbol->altura_total, 2) }} m</span></p>
-                                <p class="mb-0"><span class="data-label">DAP:</span> <span class="data-value">{{ number_format($arbol->diametro_pecho, 2) }} cm</span></p>
+                                <p class="mb-0"><span class="data-label">DAP:</span> <span class="data-value">{{ number_format($arbol->diametro_pecho, 2) }} m</span></p>
                             </td>
                             <td>
                                 <p class="mb-0"><i class="fas fa-draw-polygon me-2 text-muted"></i>{{ $arbol->parcela->nom_parcela }}</p>
@@ -122,7 +122,7 @@
             </div>
             <div class="modal-body p-4">
                 <p><strong class="text-muted">Altura Total:</strong> <span class="fs-5 fw-bold">{{ number_format($arbol->altura_total, 2) }} metros</span></p>
-                <p><strong class="text-muted">Diámetro a la Altura del Pecho (DAP):</strong> <span class="fs-5 fw-bold">{{ number_format($arbol->diametro_pecho, 2) }} cm</span></p>
+                <p><strong class="text-muted">Diámetro a la Altura del Pecho (DAP):</strong> <span class="fs-5 fw-bold">{{ number_format($arbol->diametro_pecho, 2) }} m</span></p>
                 <hr>
                 <p><strong class="text-muted">Especie:</strong> {{ $arbol->especie->nom_comun }} (<em>{{ $arbol->especie->nom_cientifico }}</em>)</p>
                 <p><strong class="text-muted">Parcela:</strong> {{ $arbol->parcela->nom_parcela }}</p>
@@ -144,7 +144,7 @@
                     @method('PUT')
                     <div class="row">
                         <div class="col-md-6 mb-3"><div class="form-floating"><input type="number" step="0.01" name="altura_total" class="form-control" value="{{ $arbol->altura_total }}" required placeholder="0.00"><label>Altura Total (m)*</label></div></div>
-                        <div class="col-md-6 mb-3"><div class="form-floating"><input type="number" step="0.01" name="diametro_pecho" class="form-control" value="{{ $arbol->diametro_pecho }}" required placeholder="0.00"><label>DAP (cm)*</label></div></div>
+                        <div class="col-md-6 mb-3"><div class="form-floating"><input type="number" step="0.01" name="diametro_pecho" class="form-control" value="{{ $arbol->diametro_pecho }}" required placeholder="0.00"><label>DAP (m)*</label></div></div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3"><div class="form-floating"><select name="id_especie" class="form-select" required>@foreach ($especies as $especie)<option value="{{ $especie->id_especie }}" {{ $arbol->id_especie == $especie->id_especie ? 'selected' : '' }}>{{ $especie->nom_comun }}</option>@endforeach</select><label>Especie*</label></div></div>
@@ -173,7 +173,7 @@
                     @csrf
                     <div class="row">
                         <div class="col-md-6 mb-3"><div class="form-floating"><input type="number" step="0.01" name="altura_total" class="form-control" required placeholder="0.00"><label>Altura Total (m)*</label></div></div>
-                        <div class="col-md-6 mb-3"><div class="form-floating"><input type="number" step="0.01" name="diametro_pecho" class="form-control" required placeholder="0.00"><label>DAP (cm)*</label></div></div>
+                        <div class="col-md-6 mb-3"><div class="form-floating"><input type="number" step="0.01" name="diametro_pecho" class="form-control" required placeholder="0.00"><label>DAP (m)*</label></div></div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3"><div class="form-floating"><select name="id_especie" class="form-select" required><option value="" disabled selected>Selecciona...</option>@foreach ($especies as $especie)<option value="{{ $especie->id_especie }}">{{ $especie->nom_comun }}</option>@endforeach</select><label>Especie*</label></div></div>

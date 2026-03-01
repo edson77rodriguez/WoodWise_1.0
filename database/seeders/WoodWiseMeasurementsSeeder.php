@@ -91,8 +91,7 @@ class WoodWiseMeasurementsSeeder extends Seeder
         // ÁRBOLES - Todas las medidas en METROS
         // diametro_pecho en metros (ej: 0.38m = 38cm)
         // altura_total en metros
-        // El trigger AFTER INSERT (calcular_estimaciones_arbol) crea automáticamente
-        // las estimaciones1 (Volumen Maderable, Biomasa, Carbono)
+        // Las estimaciones1 se crean manualmente después (OPCIONALES)
         // =====================================================================
         $arbolesToCreate = [
             // Parcela A - Pinus pseudostrobus y Pinus montezumae
@@ -108,17 +107,68 @@ class WoodWiseMeasurementsSeeder extends Seeder
             ['id_parcela' => $idParcelaC, 'id_especie' => 2, 'altura_total' => 17.4, 'diametro_pecho' => 0.36],
         ];
 
+        $arbolIds = [];
         foreach ($arbolesToCreate as $arbolData) {
-            // El trigger BEFORE INSERT (validar_arbol) valida los datos
-            // El trigger AFTER INSERT (calcular_estimaciones_arbol) crea automáticamente
-            // las estimaciones de Volumen Maderable, Biomasa y Carbono
-            DB::table('arboles')->insert([
+            $arbolIds[] = (int) DB::table('arboles')->insertGetId([
                 ...$arbolData,
-                // No ponemos created_at/updated_at porque el trigger validar_arbol los asigna
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
 
-        $this->command?->info('Mediciones demo insertadas. Los triggers calcularon los valores automaticamente.');
+        // =====================================================================
+        // ESTIMACIONES1 de árboles - Solo Volumen Maderable (id_tipo_e = 1)
+        // Fórmulas de biomasa según especie:
+        // - id_especie=1 (Pinus pseudostrobus) → id_formula=8: 0.3553 * D^2.2245
+        // - id_especie=2 (Quercus rugosa) → id_formula=7: 0.0192 * D^2.7569
+        // - id_especie=3 (Pinus montezumae) → id_formula=5: 0.006 * D^3.038
+        // - id_especie=4 (Quercus crassifolia) → id_formula=6: 0.283 * (D²*H)^0.807
+        // El calculo = biomasa, carbono = biomasa * 0.5
+        // =====================================================================
+        
+        // Mapeo especie → fórmula
+        $especieToFormula = [
+            1 => 8, // Pinus pseudostrobus
+            2 => 7, // Quercus rugosa
+            3 => 5, // Pinus montezumae
+            4 => 6, // Quercus crassifolia
+        ];
+        
+        foreach ($arbolIds as $index => $arbolId) {
+            $arbol = $arbolesToCreate[$index];
+            $idEspecie = $arbol['id_especie'];
+            $idFormula = $especieToFormula[$idEspecie] ?? null;
+            
+            // Convertir diámetro a centímetros para las fórmulas de biomasa
+            $d_cm = $arbol['diametro_pecho'] * 100;
+            $altura = $arbol['altura_total'];
+            
+            // Calcular biomasa según la fórmula de la especie
+            $biomasa = match($idEspecie) {
+                1 => 0.3553 * pow($d_cm, 2.2245),       // Pinus pseudostrobus
+                2 => 0.0192 * pow($d_cm, 2.7569),       // Quercus rugosa
+                3 => 0.006 * pow($d_cm, 3.038),         // Pinus montezumae
+                4 => 0.283 * pow(pow($d_cm, 2) * $altura, 0.807), // Quercus crassifolia
+                default => 0,
+            };
+            
+            $carbono = $biomasa * 0.5;
+            $areBasal = M_PI * pow($arbol['diametro_pecho'] / 2, 2);
+            
+            DB::table('estimaciones1')->insert([
+                'id_tipo_e' => 1, // Volumen Maderable
+                'id_formula' => $idFormula,
+                'calculo' => $biomasa, // calculo = biomasa
+                'area_basal' => $areBasal,
+                'biomasa' => $biomasa,
+                'carbono' => $carbono,
+                'id_arbol' => $arbolId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $this->command?->info('Mediciones demo insertadas. Estimaciones de Volumen Maderable (biomasa) creadas para árboles.');
     }
 
     private function getParcelaIdByNombre(string $nombre): int

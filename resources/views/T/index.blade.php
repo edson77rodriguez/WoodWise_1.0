@@ -872,6 +872,39 @@
                 link.click();
             });
         }
+
+        // =============== AUTO-SELECCIÓN DE FÓRMULA POR ESPECIE ===============
+        // Mapeo especie -> fórmula de biomasa
+        const especieFormulaMap = {
+            1: 8,  // Pinus pseudostrobus -> Biomasa Pinus pseudostrobus
+            2: 7,  // Quercus rugosa -> Biomasa Quercus rugosa
+            3: 5,  // Pinus montezumae -> Biomasa Pinus montezumae
+            4: 6   // Quercus crassifolia -> Biomasa Quercus crassifolia
+        };
+
+        // Event listeners para selects de árboles
+        document.querySelectorAll('.select-arbol-estimacion').forEach(selectArbol => {
+            selectArbol.addEventListener('change', function() {
+                const parcelaId = this.dataset.parcela;
+                const selectedOption = this.options[this.selectedIndex];
+                const especieId = selectedOption.dataset.especie;
+                
+                // Encontrar el select de fórmula correspondiente
+                const selectFormula = document.querySelector(`.select-formula-arbol[data-parcela="${parcelaId}"]`);
+                
+                if (selectFormula && especieId && especieFormulaMap[especieId]) {
+                    const formulaId = especieFormulaMap[especieId];
+                    selectFormula.value = formulaId;
+                    
+                    // Efecto visual de cambio
+                    selectFormula.style.transition = 'background-color 0.3s ease';
+                    selectFormula.style.backgroundColor = '#d4edda';
+                    setTimeout(() => {
+                        selectFormula.style.backgroundColor = '';
+                    }, 1000);
+                }
+            });
+        });
     });
 </script>
 @endpush

@@ -52,15 +52,14 @@ Route::middleware(['auth'])->group(function() {
     // Dashboard general
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Dashboard específico para técnicos
+    // Dashboard específico para administradores
     Route::get('/dashboard1', [DashboardController::class, 'index'])->name('dashboard1');
-
-    // Rutas para parcelas (protegidas por middleware de rol)
-    Route::middleware(['role:Tecnico'])->group(function() {
-        Route::resource('parcelas', ParcelaController::class);
-    });
 });
 
+// =====================================================================
+// RUTAS PARA ADMINISTRADORES
+// =====================================================================
+Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::resource('formulas', FormulaController::class);
     Route::resource('especies', EspecieController::class);
     Route::resource('usuarios', PersonaController::class);
@@ -70,18 +69,19 @@ Route::middleware(['auth'])->group(function() {
     Route::resource('parcelas', ParcelaController::class);
     Route::resource('trozas', TrozaController::class);
     Route::resource('arboles', ArbolController::class);
+    Route::get('/estimaciones1/formula-por-arbol/{arbolId}', [Estimacion1Controller::class, 'getFormulaByArbol'])->name('estimaciones1.formulaPorArbol');
     Route::resource('estimaciones1', Estimacion1Controller::class);
-
     Route::resource('turno_cortas', TurnoCortaController::class);
     Route::resource('asigna_parcelas', AsignaParcelaController::class);
     Route::resource('estimaciones', EstimacionController::class);
     Route::get('/estimaciones/formulas-por-tipo/{tipoId}', [EstimacionController::class, 'getFormulasByTipo']);
     Route::get('/catalogo-especies', [EspecieController::class, 'catalogo'])->name('especies.catalogo');
+});
 
 // =====================================================================
 // RUTAS PARA TÉCNICOS FORESTALES
 // =====================================================================
-Route::prefix('T')->middleware(['auth'])->group(function () {
+Route::prefix('T')->middleware(['auth', 'role:Tecnico'])->group(function () {
     // Dashboard principal del técnico
     Route::get('/index', [TecnicoDashboardController::class, 'index'])
         ->name('tecnico.dashboard');
@@ -118,7 +118,7 @@ Route::prefix('T')->middleware(['auth'])->group(function () {
 // =====================================================================
 // RUTAS PARA PRODUCTORES
 // =====================================================================
-Route::prefix('P')->middleware(['auth'])->group(function () {
+Route::prefix('P')->middleware(['auth', 'role:Productor'])->group(function () {
     // Dashboard principal
     Route::get('/index', [ProductorDashboardController::class, 'index'])
         ->name('productor.dashboard');

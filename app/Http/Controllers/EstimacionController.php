@@ -43,7 +43,7 @@ $formulas = Formula::all()  // Obtiene TODOS los registros
         'Formula de Smalian',
         'Formula de Huber',
         'Formula Newton',
-        'formula Tronco Cono'
+        'Formula Tronco Cono'
     ]);      
  return view('estimaciones.index', compact('estimaciones', 'tiposEstimacion', 'formulas', 'trozas'));
     }
