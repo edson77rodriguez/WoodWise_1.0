@@ -29,7 +29,7 @@ class LoginController extends Controller
     {
         // Verificar si el usuario tiene persona asociada
         if (!auth()->user()->persona) {
-            return '/dashboard1'; // Ruta por defecto si no tiene persona
+            return route('dashboard1'); // Ruta por defecto si no tiene persona
         }
 
         // Obtener el nombre del rol
@@ -40,11 +40,11 @@ class LoginController extends Controller
             case 'Tecnico':
                 return route('tecnico.dashboard');
             case 'Productor':
-               return route('productor.dashboard');
+                return route('productor.dashboard');
             case 'Administrador':
-                return '/dashboard1';
+                return route('dashboard1');
             default:
-               return route('productor.dashboard');
+                return route('welcome');
         }
     }
 }

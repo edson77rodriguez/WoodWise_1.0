@@ -181,8 +181,8 @@
                 <th width="10%">ID Troza</th>
                 <th width="20%">Especie</th>
                 <th width="12%">Longitud (m)</th>
-                <th width="12%">Diámetro (cm)</th>
-                <th width="12%">Densidad</th>
+                <th width="12%">Diámetro (m)</th>
+                <th width="12%">Densidad (ton/m³)</th>
                 <th width="17%" class="text-right">Volumen (m³)</th>
                 <th width="17%">Fecha Registro</th>
             </tr>

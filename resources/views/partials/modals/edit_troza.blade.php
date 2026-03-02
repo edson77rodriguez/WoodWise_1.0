@@ -21,13 +21,13 @@
                                   name="longitud" value="{{ $troza->longitud }}" required>
                        </div>
                        <div class="col-md-6 mb-3">
-                           <label class="form-label text-muted">Diámetro (cm)</label>
+                           <label class="form-label text-muted">Diámetro (m)</label>
                            <input type="number" step="0.01" class="form-control border-2"
                                   name="diametro" value="{{ $troza->diametro }}" required>
                        </div>
                    </div>
                    <div class="mb-3">
-                       <label class="form-label text-muted">Densidad</label>
+                       <label class="form-label text-muted">Densidad (ton/m³)</label>
                        <input type="number" step="0.01" class="form-control border-2"
                               name="densidad" value="{{ $troza->densidad }}" required>
                    </div>

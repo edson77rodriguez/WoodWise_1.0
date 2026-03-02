@@ -20,10 +20,10 @@
                             <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
                             <div class="mb-3">
                                 <label class="wood-form-label">Seleccionar Árbol</label>
-                                <select class="wood-form-select" name="id_arbol" required>
+                                <select class="wood-form-select select-arbol-estimacion" name="id_arbol" data-parcela="{{ $parcela->id_parcela }}" required>
                                     <option value="" selected disabled>Seleccione un árbol</option>
                                     @foreach($parcela->arboles as $arbol)
-                                        <option value="{{ $arbol->id_arbol }}">
+                                        <option value="{{ $arbol->id_arbol }}" data-especie="{{ $arbol->id_especie }}">
                                             Árbol #{{ $arbol->id_arbol }} - {{ $arbol->especie->nom_cientifico ?? 'Sin especie' }} 
                                             (H: {{ $arbol->altura_total }}m, DAP: {{ $arbol->diametro_pecho }}m)
                                         </option>
@@ -45,13 +45,13 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="wood-form-label">Fórmula de Biomasa</label>
-                                    <select class="wood-form-select" name="id_formula" required>
+                                    <select class="wood-form-select select-formula-arbol" name="id_formula" data-parcela="{{ $parcela->id_parcela }}" required>
                                         <option value="" selected disabled>Seleccione una fórmula</option>
                                         @foreach($formulas->whereIn('nom_formula', ['Biomasa Pinus montezumae', 'Biomasa Quercus crassifolia', 'Biomasa Quercus rugosa', 'Biomasa Pinus pseudostrobus']) as $formula)
                                             <option value="{{ $formula->id_formula }}">{{ $formula->nom_formula }}</option>
                                         @endforeach
                                     </select>
-                                    <small class="text-muted">El trigger calculará biomasa y carbono automáticamente.</small>
+                                    <small class="text-muted">La fórmula se auto-selecciona según la especie del árbol.</small>
                                 </div>
                             </div>
                             <div class="wood-modal-footer mt-4">

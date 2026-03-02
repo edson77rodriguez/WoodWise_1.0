@@ -273,8 +273,8 @@
                             <tr>
                                 <th>Código</th>
                                 <th>Longitud (m)</th>
-                                <th>Diámetro (cm)</th>
-                                <th>Densidad (kg/m³)</th>
+                                <th>Diámetro (m)</th>
+                                <th>Densidad (ton/m³)</th>
                                 <th>Estimación</th>
                                 <th>Volumen (m³)</th>
                             </tr>
