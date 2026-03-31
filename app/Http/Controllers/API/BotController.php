@@ -9,7 +9,9 @@ use App\Models\Tecnico;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class BotController extends Controller
 {
@@ -173,6 +175,10 @@ class BotController extends Controller
             'telefono' => ['required', 'string', 'max:30'],
         ]);
 
+        // Para n8n/WhatsApp, normalmente conviene devolver JSON con URL pública.
+        // Puedes forzarlo con ?link=1 o con header Accept: application/json
+        $returnLink = (bool) $request->boolean('link') || $request->wantsJson();
+
         $persona = $this->findPersonaByTelefono($data['telefono']);
 
         if (!$persona) {
@@ -221,6 +227,21 @@ class BotController extends Controller
                 ->setPaper('letter', 'portrait');
 
             $fileName = 'Parcela_' . $parcela->nom_parcela . '_' . now()->format('Y-m-d') . '.pdf';
+
+            if ($returnLink) {
+                $safeName = Str::slug($parcela->nom_parcela) ?: 'parcela';
+                $path = 'reportes/' . now()->format('Ymd') . '/' . $safeName . '_' . now()->format('His') . '_' . Str::random(10) . '.pdf';
+                Storage::disk('public')->put($path, $pdf->output());
+
+                return response()->json([
+                    'ok' => true,
+                    'tipo' => 'pdf',
+                    'file_name' => $fileName,
+                    'path' => $path,
+                    'url' => asset('storage/' . $path),
+                    'expires_suggestion' => 'Recomendación: borrar reportes antiguos (ej. >24h) con un cron.',
+                ], 200);
+            }
 
             return $pdf->stream($fileName);
         }
@@ -288,6 +309,21 @@ class BotController extends Controller
             ])->setPaper('A4', 'portrait');
 
             $fileName = 'Reporte_Parcela_' . $parcela->nom_parcela . '_' . now()->format('Y-m-d') . '.pdf';
+
+            if ($returnLink) {
+                $safeName = Str::slug($parcela->nom_parcela) ?: 'parcela';
+                $path = 'reportes/' . now()->format('Ymd') . '/' . $safeName . '_' . now()->format('His') . '_' . Str::random(10) . '.pdf';
+                Storage::disk('public')->put($path, $pdf->output());
+
+                return response()->json([
+                    'ok' => true,
+                    'tipo' => 'pdf',
+                    'file_name' => $fileName,
+                    'path' => $path,
+                    'url' => asset('storage/' . $path),
+                    'expires_suggestion' => 'Recomendación: borrar reportes antiguos (ej. >24h) con un cron.',
+                ], 200);
+            }
 
             return $pdf->stream($fileName);
         }
