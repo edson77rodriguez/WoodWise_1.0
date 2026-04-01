@@ -7,6 +7,7 @@ Route::prefix('v1/bot')
     ->middleware(['botkey'])
     ->group(function () {
         Route::post('/verificar', [BotController::class, 'verificarUsuario']);
+        Route::post('/mis-parcelas', [BotController::class, 'listarParcelas']);
         Route::post('/mis-trozas', [BotController::class, 'obtenerResumenTrozas']);
         Route::post('/mis-estimaciones-trozas', [BotController::class, 'obtenerResumenEstimacionesTrozas']);
         Route::get('/parcelas/{id_parcela}/reporte.pdf', [BotController::class, 'descargarReporteParcelaPdf']);

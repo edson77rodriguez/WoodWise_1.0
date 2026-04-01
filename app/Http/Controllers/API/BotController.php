@@ -15,6 +15,52 @@ use Illuminate\Support\Str;
 
 class BotController extends Controller
 {
+    public function listarParcelas(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+        ]);
+
+        $persona = $this->findPersonaByTelefono($data['telefono']);
+
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+        if ($rol === null) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => null,
+                'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
+            ], 409);
+        }
+
+        if ($parcelasIds->isEmpty()) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => $rol,
+                'total_parcelas' => 0,
+                'parcelas' => [],
+                'mensaje' => 'No tienes parcelas asignadas actualmente.',
+            ], 200);
+        }
+
+        $parcelas = DB::table('parcelas')
+            ->whereIn('id_parcela', $parcelasIds)
+            ->select('id_parcela', 'nom_parcela')
+            ->orderBy('nom_parcela')
+            ->get();
+
+        return response()->json([
+            'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+            'rol' => $rol,
+            'total_parcelas' => $parcelas->count(),
+            'parcelas' => $parcelas,
+        ], 200);
+    }
+
     public function verificarUsuario(Request $request)
     {
         $data = $request->validate([
@@ -52,6 +98,9 @@ class BotController extends Controller
     {
         $data = $request->validate([
             'telefono' => ['required', 'string', 'max:30'],
+            // Opcional: permite filtrar a UNA parcela. Si no se envía, se usan todas.
+            // Acepta: null/""/0 => todas. Acepta string "todas" => todas. Acepta "123" => 123.
+            'id_parcela' => ['nullable'],
         ]);
 
         $persona = $this->findPersonaByTelefono($data['telefono']);
@@ -78,9 +127,20 @@ class BotController extends Controller
             ], 200);
         }
 
+        [$idParcela, $selectorError] = $this->parseParcelaSelector($request->input('id_parcela'));
+        if ($selectorError) {
+            return response()->json(['error' => $selectorError], 422);
+        }
+
+        if ($idParcela !== null && !$parcelasIds->contains($idParcela)) {
+            return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+        }
+
+        $parcelasFiltro = $idParcela !== null ? collect([$idParcela]) : $parcelasIds;
+
         $resumenTrozas = DB::table('trozas')
             ->join('especies', 'trozas.id_especie', '=', 'especies.id_especie')
-            ->whereIn('trozas.id_parcela', $parcelasIds)
+            ->whereIn('trozas.id_parcela', $parcelasFiltro)
             ->select(
                 'especies.nom_comun as especie',
                 DB::raw('count(*) as total_trozas'),
@@ -96,7 +156,11 @@ class BotController extends Controller
         return response()->json([
             'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
             'rol' => $rol,
-            'total_parcelas' => $parcelasIds->count(),
+            'filtro' => [
+                'id_parcela' => $idParcela,
+                'modo' => $idParcela !== null ? 'una' : 'todas',
+            ],
+            'total_parcelas' => $parcelasFiltro->count(),
             'total_trozas_inventario' => $totalGeneral,
             'desglose_por_especie' => $resumenTrozas,
         ], 200);
@@ -106,6 +170,9 @@ class BotController extends Controller
     {
         $data = $request->validate([
             'telefono' => ['required', 'string', 'max:30'],
+            // Opcional: permite filtrar a UNA parcela. Si no se envía, se usan todas.
+            // Acepta: null/""/0 => todas. Acepta string "todas" => todas. Acepta "123" => 123.
+            'id_parcela' => ['nullable'],
         ]);
 
         $persona = $this->findPersonaByTelefono($data['telefono']);
@@ -132,11 +199,22 @@ class BotController extends Controller
             ], 200);
         }
 
+        [$idParcela, $selectorError] = $this->parseParcelaSelector($request->input('id_parcela'));
+        if ($selectorError) {
+            return response()->json(['error' => $selectorError], 422);
+        }
+
+        if ($idParcela !== null && !$parcelasIds->contains($idParcela)) {
+            return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+        }
+
+        $parcelasFiltro = $idParcela !== null ? collect([$idParcela]) : $parcelasIds;
+
         $rows = DB::table('estimaciones')
             ->join('trozas', 'estimaciones.id_troza', '=', 'trozas.id_troza')
             ->join('especies', 'trozas.id_especie', '=', 'especies.id_especie')
             ->join('tipo_estimaciones', 'estimaciones.id_tipo_e', '=', 'tipo_estimaciones.id_tipo_e')
-            ->whereIn('trozas.id_parcela', $parcelasIds)
+            ->whereIn('trozas.id_parcela', $parcelasFiltro)
             ->select(
                 'especies.nom_comun as especie',
                 'tipo_estimaciones.desc_estimacion as tipo_estimacion',
@@ -152,13 +230,17 @@ class BotController extends Controller
 
         $totales = DB::table('estimaciones')
             ->join('trozas', 'estimaciones.id_troza', '=', 'trozas.id_troza')
-            ->whereIn('trozas.id_parcela', $parcelasIds)
+            ->whereIn('trozas.id_parcela', $parcelasFiltro)
             ->selectRaw('count(*) as total_estimaciones, sum(estimaciones.calculo) as sum_calculo, sum(estimaciones.biomasa) as sum_biomasa, sum(estimaciones.carbono) as sum_carbono')
             ->first();
 
         return response()->json([
             'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
             'rol' => $rol,
+            'filtro' => [
+                'id_parcela' => $idParcela,
+                'modo' => $idParcela !== null ? 'una' : 'todas',
+            ],
             'totales' => [
                 'total_estimaciones' => (int) ($totales->total_estimaciones ?? 0),
                 'sum_calculo' => (float) ($totales->sum_calculo ?? 0),
@@ -347,6 +429,44 @@ class BotController extends Controller
         }
 
         return $query->first();
+    }
+
+    /**
+     * Normaliza el selector de parcela para soportar flujos de chat.
+     * - null/""/0 => todas las parcelas (return null)
+     * - "todas"/"toda" => todas (return null)
+     * - "123" o 123 => 123
+     *
+     * @return array{0: int|null, 1: string|null} [$idParcela, $error]
+     */
+    private function parseParcelaSelector(mixed $value): array
+    {
+        if ($value === null) {
+            return [null, null];
+        }
+
+        if (is_int($value)) {
+            return $value > 0 ? [$value, null] : [null, null];
+        }
+
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed === '' || $trimmed === '0') {
+                return [null, null];
+            }
+
+            $lower = mb_strtolower($trimmed);
+            if (in_array($lower, ['todas', 'toda', 'todo', 'todas las parcelas', 'toda la parcela'], true)) {
+                return [null, null];
+            }
+
+            if (ctype_digit($trimmed)) {
+                $id = (int) $trimmed;
+                return $id > 0 ? [$id, null] : [null, null];
+            }
+        }
+
+        return [null, 'El campo id_parcela debe ser un número o "todas".'];
     }
 
     /**
