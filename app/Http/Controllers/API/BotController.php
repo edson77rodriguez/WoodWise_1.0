@@ -251,6 +251,163 @@ class BotController extends Controller
         ], 200);
     }
 
+    public function obtenerResumenArboles(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+            // Opcional: permite filtrar a UNA parcela. Si no se envía, se usan todas.
+            // Acepta: null/""/0 => todas. Acepta string "todas" => todas. Acepta "123" => 123.
+            'id_parcela' => ['nullable'],
+        ]);
+
+        $persona = $this->findPersonaByTelefono($data['telefono']);
+
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+        if ($rol === null) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => null,
+                'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
+            ], 409);
+        }
+
+        if ($parcelasIds->isEmpty()) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => $rol,
+                'mensaje' => 'No tienes parcelas asignadas actualmente.',
+            ], 200);
+        }
+
+        [$idParcela, $selectorError] = $this->parseParcelaSelector($request->input('id_parcela'));
+        if ($selectorError) {
+            return response()->json(['error' => $selectorError], 422);
+        }
+
+        if ($idParcela !== null && !$parcelasIds->contains($idParcela)) {
+            return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+        }
+
+        $parcelasFiltro = $idParcela !== null ? collect([$idParcela]) : $parcelasIds;
+
+        $resumenArboles = DB::table('arboles')
+            ->join('especies', 'arboles.id_especie', '=', 'especies.id_especie')
+            ->whereIn('arboles.id_parcela', $parcelasFiltro)
+            ->select(
+                'especies.nom_comun as especie',
+                DB::raw('count(*) as total_arboles'),
+                DB::raw('avg(arboles.altura_total) as altura_promedio'),
+                DB::raw('avg(arboles.diametro_pecho) as dap_promedio')
+            )
+            ->groupBy('especies.nom_comun')
+            ->orderByDesc('total_arboles')
+            ->get();
+
+        $totalGeneral = (int) $resumenArboles->sum('total_arboles');
+
+        return response()->json([
+            'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+            'rol' => $rol,
+            'filtro' => [
+                'id_parcela' => $idParcela,
+                'modo' => $idParcela !== null ? 'una' : 'todas',
+            ],
+            'total_parcelas' => $parcelasFiltro->count(),
+            'total_arboles_inventario' => $totalGeneral,
+            'desglose_por_especie' => $resumenArboles,
+        ], 200);
+    }
+
+    public function obtenerResumenEstimacionesArboles(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+            // Opcional: permite filtrar a UNA parcela. Si no se envía, se usan todas.
+            // Acepta: null/""/0 => todas. Acepta string "todas" => todas. Acepta "123" => 123.
+            'id_parcela' => ['nullable'],
+        ]);
+
+        $persona = $this->findPersonaByTelefono($data['telefono']);
+
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+        if ($rol === null) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => null,
+                'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
+            ], 409);
+        }
+
+        if ($parcelasIds->isEmpty()) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => $rol,
+                'mensaje' => 'No tienes parcelas asignadas actualmente.',
+            ], 200);
+        }
+
+        [$idParcela, $selectorError] = $this->parseParcelaSelector($request->input('id_parcela'));
+        if ($selectorError) {
+            return response()->json(['error' => $selectorError], 422);
+        }
+
+        if ($idParcela !== null && !$parcelasIds->contains($idParcela)) {
+            return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+        }
+
+        $parcelasFiltro = $idParcela !== null ? collect([$idParcela]) : $parcelasIds;
+
+        $rows = DB::table('estimaciones1')
+            ->join('arboles', 'estimaciones1.id_arbol', '=', 'arboles.id_arbol')
+            ->join('especies', 'arboles.id_especie', '=', 'especies.id_especie')
+            ->join('tipo_estimaciones', 'estimaciones1.id_tipo_e', '=', 'tipo_estimaciones.id_tipo_e')
+            ->whereIn('arboles.id_parcela', $parcelasFiltro)
+            ->select(
+                'especies.nom_comun as especie',
+                'tipo_estimaciones.desc_estimacion as tipo_estimacion',
+                DB::raw('count(*) as total_estimaciones'),
+                DB::raw('sum(estimaciones1.calculo) as sum_calculo'),
+                DB::raw('sum(estimaciones1.biomasa) as sum_biomasa'),
+                DB::raw('sum(estimaciones1.carbono) as sum_carbono')
+            )
+            ->groupBy('especies.nom_comun', 'tipo_estimaciones.desc_estimacion')
+            ->orderBy('especies.nom_comun')
+            ->orderBy('tipo_estimaciones.desc_estimacion')
+            ->get();
+
+        $totales = DB::table('estimaciones1')
+            ->join('arboles', 'estimaciones1.id_arbol', '=', 'arboles.id_arbol')
+            ->whereIn('arboles.id_parcela', $parcelasFiltro)
+            ->selectRaw('count(*) as total_estimaciones, sum(estimaciones1.calculo) as sum_calculo, sum(estimaciones1.biomasa) as sum_biomasa, sum(estimaciones1.carbono) as sum_carbono')
+            ->first();
+
+        return response()->json([
+            'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+            'rol' => $rol,
+            'filtro' => [
+                'id_parcela' => $idParcela,
+                'modo' => $idParcela !== null ? 'una' : 'todas',
+            ],
+            'totales' => [
+                'total_estimaciones' => (int) ($totales->total_estimaciones ?? 0),
+                'sum_calculo' => (float) ($totales->sum_calculo ?? 0),
+                'sum_biomasa' => (float) ($totales->sum_biomasa ?? 0),
+                'sum_carbono' => (float) ($totales->sum_carbono ?? 0),
+            ],
+            'desglose' => $rows,
+        ], 200);
+    }
+
     public function descargarReporteParcelaPdf(Request $request, int $id_parcela)
     {
         $data = $request->validate([
