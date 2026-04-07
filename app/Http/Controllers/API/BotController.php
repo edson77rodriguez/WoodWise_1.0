@@ -408,6 +408,282 @@ class BotController extends Controller
         ], 200);
     }
 
+    public function registroMasivo(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+            // Se usa para que n8n pueda mandar el nombre del botón.
+            'nom_parcela' => ['required', 'string', 'max:255'],
+
+            // Ambos son opcionales, pero al menos uno debe venir con datos.
+            'trozas' => ['nullable', 'array'],
+            'trozas.*.longitud' => ['required_with:trozas', 'numeric', 'min:0.00001'],
+            'trozas.*.diametro' => ['required_with:trozas', 'numeric', 'min:0.00001'],
+            'trozas.*.diametro_otro_extremo' => ['nullable', 'numeric', 'min:0.00001'],
+            'trozas.*.diametro_medio' => ['nullable', 'numeric', 'min:0.00001'],
+            // densidad es obligatoria a nivel DB (trozas.densidad). Si no se envía, se reporta error por fila.
+            'trozas.*.densidad' => ['nullable', 'numeric', 'min:0.00001'],
+            // Puedes enviar id_especie o especie_texto.
+            'trozas.*.id_especie' => ['nullable', 'integer', 'exists:especies,id_especie'],
+            'trozas.*.especie_texto' => ['nullable', 'string', 'max:255'],
+
+            'arboles' => ['nullable', 'array'],
+            'arboles.*.altura_total' => ['required_with:arboles', 'numeric', 'min:0.00001'],
+            'arboles.*.diametro_pecho' => ['required_with:arboles', 'numeric', 'min:0.00001'],
+            'arboles.*.id_especie' => ['nullable', 'integer', 'exists:especies,id_especie'],
+            'arboles.*.especie_texto' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $trozas = collect($data['trozas'] ?? []);
+        $arboles = collect($data['arboles'] ?? []);
+
+        if ($trozas->isEmpty() && $arboles->isEmpty()) {
+            return response()->json([
+                'error' => 'Debes enviar al menos una troza o un árbol.',
+            ], 422);
+        }
+
+        $persona = $this->findPersonaByTelefono($data['telefono']);
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        $rol = $persona->rol?->nom_rol;
+        if ($rol !== 'Tecnico') {
+            return response()->json([
+                'error' => 'Solo un Técnico puede registrar inventario por este endpoint.',
+                'rol' => $rol,
+            ], 403);
+        }
+
+        $tecnico = $persona->tecnico;
+        if (!$tecnico) {
+            return response()->json(['error' => 'Perfil de técnico no configurado'], 409);
+        }
+
+        $nomParcela = trim($data['nom_parcela']);
+        if ($nomParcela === '') {
+            return response()->json(['error' => 'nom_parcela es requerido'], 422);
+        }
+
+        // Validación segura: la parcela debe existir y estar asignada al técnico.
+        $parcelasAsignadasIds = DB::table('asigna_parcelas')
+            ->where('id_tecnico', $tecnico->id_tecnico)
+            ->pluck('id_parcela');
+
+        if ($parcelasAsignadasIds->isEmpty()) {
+            return response()->json(['error' => 'No tienes parcelas asignadas actualmente.'], 403);
+        }
+
+        $parcelasMatch = DB::table('parcelas')
+            ->whereIn('id_parcela', $parcelasAsignadasIds)
+            ->where('nom_parcela', $nomParcela)
+            ->select('id_parcela', 'nom_parcela')
+            ->get();
+
+        if ($parcelasMatch->isEmpty()) {
+            return response()->json([
+                'error' => 'No se encontró la parcela o no tienes acceso a ella.',
+                'nom_parcela' => $nomParcela,
+            ], 404);
+        }
+
+        if ($parcelasMatch->count() > 1) {
+            return response()->json([
+                'error' => 'Existe más de una parcela con ese nombre en tus asignaciones. Usa un nombre único o ajusta el flujo para enviar id_parcela.',
+                'nom_parcela' => $nomParcela,
+                'opciones' => $parcelasMatch,
+            ], 409);
+        }
+
+        $idParcela = (int) $parcelasMatch->first()->id_parcela;
+
+        $receiptTrozas = [];
+        $receiptArboles = [];
+
+        foreach ($trozas->values() as $idx => $row) {
+            try {
+                [$idEspecie, $especieNombre, $especieError] = $this->resolveEspecieForRow($row['id_especie'] ?? null, $row['especie_texto'] ?? null);
+                if ($especieError) {
+                    $receiptTrozas[] = [
+                        'index' => $idx,
+                        'ok' => false,
+                        'error' => "Fila {$idx}: {$especieError}",
+                        'especie_texto' => $row['especie_texto'] ?? null,
+                    ];
+                    continue;
+                }
+
+                $densidad = $row['densidad'] ?? null;
+                if ($densidad === null) {
+                    $receiptTrozas[] = [
+                        'index' => $idx,
+                        'ok' => false,
+                        'error' => "Fila {$idx}: densidad requerida para registrar trozas (la tabla especies no tiene densidad configurada)",
+                        'especie' => $especieNombre,
+                        'id_especie' => $idEspecie,
+                    ];
+                    continue;
+                }
+
+                $payload = [
+                    'longitud' => $row['longitud'],
+                    'diametro' => $row['diametro'],
+                    'diametro_otro_extremo' => $row['diametro_otro_extremo'] ?? null,
+                    'diametro_medio' => $row['diametro_medio'] ?? null,
+                    'densidad' => $densidad,
+                    'id_especie' => $idEspecie,
+                    'id_parcela' => $idParcela,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                $idTroza = (int) DB::table('trozas')->insertGetId($payload);
+
+                $receiptTrozas[] = [
+                    'index' => $idx,
+                    'ok' => true,
+                    'id_troza' => $idTroza,
+                    'id_especie' => $idEspecie,
+                    'especie' => $especieNombre,
+                    'mensaje' => 'Troza guardada correctamente (sin estimaciones).',
+                ];
+            } catch (\Throwable $e) {
+                $receiptTrozas[] = [
+                    'index' => $idx,
+                    'ok' => false,
+                    'error' => "Fila {$idx}: error al guardar la troza",
+                ];
+            }
+        }
+
+        foreach ($arboles->values() as $idx => $row) {
+            try {
+                [$idEspecie, $especieNombre, $especieError] = $this->resolveEspecieForRow($row['id_especie'] ?? null, $row['especie_texto'] ?? null);
+                if ($especieError) {
+                    $receiptArboles[] = [
+                        'index' => $idx,
+                        'ok' => false,
+                        'error' => "Fila {$idx}: {$especieError}",
+                        'especie_texto' => $row['especie_texto'] ?? null,
+                    ];
+                    continue;
+                }
+
+                $payload = [
+                    'id_especie' => $idEspecie,
+                    'id_parcela' => $idParcela,
+                    'altura_total' => $row['altura_total'],
+                    'diametro_pecho' => $row['diametro_pecho'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                $idArbol = (int) DB::table('arboles')->insertGetId($payload);
+
+                $receiptArboles[] = [
+                    'index' => $idx,
+                    'ok' => true,
+                    'id_arbol' => $idArbol,
+                    'id_especie' => $idEspecie,
+                    'especie' => $especieNombre,
+                    'mensaje' => 'Árbol guardado correctamente (sin estimaciones).',
+                ];
+            } catch (\Throwable $e) {
+                $receiptArboles[] = [
+                    'index' => $idx,
+                    'ok' => false,
+                    'error' => "Fila {$idx}: error al guardar el árbol",
+                ];
+            }
+        }
+
+        return response()->json([
+            'ok' => true,
+            'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+            'rol' => $rol,
+            'parcela' => [
+                'id_parcela' => $idParcela,
+                'nom_parcela' => $nomParcela,
+            ],
+            'resumen' => [
+                'trozas_recibidas' => $trozas->count(),
+                'trozas_guardadas' => collect($receiptTrozas)->where('ok', true)->count(),
+                'arboles_recibidos' => $arboles->count(),
+                'arboles_guardados' => collect($receiptArboles)->where('ok', true)->count(),
+                'estimaciones_creadas' => 0,
+                'nota' => 'Este endpoint solo inserta inventario (no genera estimaciones automáticamente).',
+            ],
+            'trozas' => $receiptTrozas,
+            'arboles' => $receiptArboles,
+        ], 201);
+    }
+
+    /**
+     * Resuelve especie por id_especie o por texto (LIKE) para flujos de WhatsApp.
+     *
+     * @return array{0: int|null, 1: string|null, 2: string|null} [$idEspecie, $nombreComun, $error]
+     */
+    private function resolveEspecieForRow(mixed $idEspecie, mixed $especieTexto): array
+    {
+        if (is_int($idEspecie) && $idEspecie > 0) {
+            $row = DB::table('especies')->where('id_especie', $idEspecie)->select('id_especie', 'nom_comun')->first();
+            if (!$row) {
+                return [null, null, "Especie con id {$idEspecie} no existe."];
+            }
+
+            return [(int) $row->id_especie, (string) $row->nom_comun, null];
+        }
+
+        if (is_string($idEspecie) && ctype_digit(trim($idEspecie))) {
+            $asInt = (int) trim($idEspecie);
+            if ($asInt > 0) {
+                return $this->resolveEspecieForRow($asInt, $especieTexto);
+            }
+        }
+
+        $texto = is_string($especieTexto) ? trim($especieTexto) : '';
+        if ($texto === '') {
+            return [null, null, "Debes enviar id_especie o especie_texto."];
+        }
+
+        // 1) Intento de match exacto (si el collation es case-insensitive, esto ya ayuda mucho)
+        $exact = DB::table('especies')
+            ->where('nom_comun', $texto)
+            ->orWhere('nom_cientifico', $texto)
+            ->select('id_especie', 'nom_comun')
+            ->first();
+
+        if ($exact) {
+            return [(int) $exact->id_especie, (string) $exact->nom_comun, null];
+        }
+
+        // 2) LIKE (búsqueda “inteligente”)
+        $matches = DB::table('especies')
+            ->where('nom_comun', 'like', '%' . $texto . '%')
+            ->orWhere('nom_cientifico', 'like', '%' . $texto . '%')
+            ->select('id_especie', 'nom_comun', 'nom_cientifico')
+            ->limit(10)
+            ->get();
+
+        if ($matches->isEmpty()) {
+            return [null, null, "Especie '{$texto}' no reconocida."];
+        }
+
+        if ($matches->count() > 1) {
+            $suggestions = $matches
+                ->take(5)
+                ->map(fn ($m) => (string) $m->nom_comun)
+                ->values()
+                ->all();
+
+            return [null, null, "Especie '{$texto}' ambigua. Opciones: " . implode(', ', $suggestions)];
+        }
+
+        $m = $matches->first();
+        return [(int) $m->id_especie, (string) $m->nom_comun, null];
+    }
+
     public function descargarReporteParcelaPdf(Request $request, int $id_parcela)
     {
         $data = $request->validate([
