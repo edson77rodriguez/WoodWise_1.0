@@ -408,6 +408,56 @@ class BotController extends Controller
         ], 200);
     }
 
+    public function obtenerKitCampo(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+        ]);
+
+        $persona = $this->findPersonaByTelefono($data['telefono']);
+
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+        if ($rol !== 'Tecnico' && $rol !== 'Productor') {
+            return response()->json([
+                'error' => 'Tu perfil no tiene acceso al Kit de Campo.',
+                'rol' => $rol,
+            ], 403);
+        }
+
+        $parcelas = $parcelasIds->isEmpty()
+            ? collect()
+            : DB::table('parcelas')
+                ->whereIn('id_parcela', $parcelasIds)
+                ->orderBy('nom_parcela')
+                ->pluck('nom_parcela');
+
+        $especies = DB::table('especies')
+            ->orderBy('nom_comun')
+            ->pluck('nom_comun');
+
+        // Formato amigable para WhatsApp / n8n
+        $parcelasLista = $parcelas->isEmpty()
+            ? 'No tienes parcelas asignadas.'
+            : '• ' . $parcelas->implode("\n• ");
+
+        $especiesLista = $especies->isEmpty()
+            ? 'No hay especies registradas.'
+            : $especies->implode(', ');
+
+        return response()->json([
+            'ok' => true,
+            'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+            'rol' => $rol,
+            'parcelas_lista' => $parcelasLista,
+            'especies_lista' => $especiesLista,
+        ], 200);
+    }
+
     public function registroMasivo(Request $request)
     {
         $data = $request->validate([

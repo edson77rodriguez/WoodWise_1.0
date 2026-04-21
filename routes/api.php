@@ -12,6 +12,7 @@ Route::prefix('v1/bot')
         Route::post('/mis-estimaciones-trozas', [BotController::class, 'obtenerResumenEstimacionesTrozas']);
         Route::post('/mis-arboles', [BotController::class, 'obtenerResumenArboles']);
         Route::post('/mis-estimaciones-arboles', [BotController::class, 'obtenerResumenEstimacionesArboles']);
+        Route::post('/kit-campo', [BotController::class, 'obtenerKitCampo']);
         Route::post('/registro-masivo', [BotController::class, 'registroMasivo']);
         Route::get('/parcelas/{id_parcela}/reporte.pdf', [BotController::class, 'descargarReporteParcelaPdf']);
     });
