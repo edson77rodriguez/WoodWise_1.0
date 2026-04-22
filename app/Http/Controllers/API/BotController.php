@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\BotSesion;
 use App\Models\Persona;
 use App\Models\Parcela;
 use App\Models\Tecnico;
@@ -15,6 +16,76 @@ use Illuminate\Support\Str;
 
 class BotController extends Controller
 {
+    public function asistenteGuiado(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+            'mensaje' => ['required', 'string'],
+        ]);
+
+        $telefono = $data['telefono'];
+        $mensajeCrudo = trim($data['mensaje']);
+        $mensajeLimpio = mb_strtolower($mensajeCrudo);
+
+        $persona = $this->findPersonaByTelefono($telefono);
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+        if ($rol !== 'Tecnico' && $rol !== 'Productor') {
+            return response()->json(['error' => 'Tu perfil no tiene acceso al Asistente.'], 403);
+        }
+
+        $sesion = BotSesion::where('telefono', $telefono)->first();
+
+        if (in_array($mensajeLimpio, ['cancelar', 'salir', 'detener', 'abortar'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return response()->json([
+                'ok' => true,
+                'mensaje' => "🛑 *Asistente cancelado.*\nTu progreso ha sido borrado. Puedes volver a iniciar desde el Menú Principal.",
+            ], 200);
+        }
+
+        // 3. LA MÁQUINA DE ESTADOS (El flujo conversacional)
+        if (!$sesion) {
+            // Si no hay sesión, SOLO iniciamos si el usuario presionó el botón (que manda "iniciar")
+            if ($mensajeLimpio === 'iniciar') {
+                return $this->iniciarAsistente($telefono, $parcelasIds);
+            }
+
+            // Si mandó cualquier texto random y no tiene plática activa, lo mandamos al menú.
+            return response()->json([
+                'ok' => true,
+                'mensaje' => "👋 No tienes ninguna tarea activa en este momento.\n\nEscribe *'Hola'* para abrir el Menú Principal de SIGMAD.",
+            ], 200);
+        }
+
+        switch ($sesion->estado) {
+            case 'ESPERANDO_PARCELA':
+                return $this->procesarPasoParcela($sesion, $mensajeCrudo, $parcelasIds);
+
+            case 'ESPERANDO_TIPO':
+                return $this->procesarPasoTipo($sesion, $mensajeCrudo);
+
+            case 'ESPERANDO_ESPECIE':
+                return $this->procesarPasoEspecie($sesion, $mensajeCrudo);
+
+            case 'ESPERANDO_MEDIDAS_ARBOL':
+                return $this->procesarPasoMedidasArbol($sesion, $mensajeCrudo);
+
+            case 'ESPERANDO_MEDIDAS_TROZA':
+                return $this->procesarPasoMedidasTroza($sesion, $mensajeCrudo);
+
+            default:
+                $sesion->delete();
+                return response()->json(['error' => 'Sesión corrupta. Por favor, inicia de nuevo.'], 500);
+        }
+    }
+
     public function listarParcelas(Request $request)
     {
         $data = $request->validate([
@@ -456,6 +527,314 @@ class BotController extends Controller
             'parcelas_lista' => $parcelasLista,
             'especies_lista' => $especiesLista,
         ], 200);
+    }
+
+    private function iniciarAsistente(string $telefono, $parcelasIds)
+    {
+        BotSesion::where('telefono', $telefono)->delete();
+
+        BotSesion::create([
+            'telefono' => $telefono,
+            'estado' => 'ESPERANDO_PARCELA',
+            'payload' => [],
+        ]);
+
+        $parcelas = $parcelasIds->isEmpty()
+            ? collect()
+            : DB::table('parcelas')
+                ->whereIn('id_parcela', $parcelasIds)
+                ->orderBy('nom_parcela')
+                ->pluck('nom_parcela');
+
+        $parcelasTexto = $parcelas->isEmpty()
+            ? 'No tienes parcelas asignadas.'
+            : '• ' . $parcelas->implode("\n• ");
+
+        return response()->json([
+            'ok' => true,
+            'mensaje' => "🤖 *Asistente de Captura Iniciado*\n\nHola. Te guiaré paso a paso para registrar tus datos.\n_Escribe 'cancelar' en cualquier momento para salir._\n\n📍 *Tus Parcelas:*\n{$parcelasTexto}\n\n👉 *Escribe el nombre de la parcela en la que estás trabajando:*",
+        ], 200);
+    }
+
+    private function procesarPasoParcela(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
+    {
+        $nomParcela = trim($mensajeCrudo);
+
+        // 1. Verificamos si la parcela existe y si el usuario tiene acceso
+        $parcela = DB::table('parcelas')
+            ->whereIn('id_parcela', $parcelasIds)
+            ->where('nom_parcela', 'like', '%' . $nomParcela . '%')
+            ->first();
+
+        if (!$parcela) {
+            return response()->json([
+                'ok' => false,
+                'estado' => $sesion->estado,
+                'mensaje' => "⚠️ No encontré una parcela llamada '*{$nomParcela}*' en tus asignaciones.\n\nPor favor, escribe el nombre correcto o envía 'cancelar' para salir.",
+            ], 200);
+        }
+
+        // 2. Guardamos el dato en el payload temporal
+        $payload = $sesion->payload ?? [];
+        $payload['id_parcela'] = $parcela->id_parcela;
+        $payload['nom_parcela'] = $parcela->nom_parcela;
+
+        // 3. Avanzamos la sesión al siguiente estado
+        $sesion->update([
+            'estado' => 'ESPERANDO_TIPO',
+            'payload' => $payload,
+        ]);
+
+        // 4. Preguntamos lo que sigue
+        return response()->json([
+            'ok' => true,
+            'estado' => 'ESPERANDO_TIPO',
+            'mensaje' => "✅ Parcela *{$parcela->nom_parcela}* seleccionada.\n\n¿Qué deseas registrar?\nEscribe *'Arbol'* o *'Troza'*.",
+        ], 200);
+    }
+
+    private function procesarPasoTipo(BotSesion $sesion, string $mensajeCrudo)
+    {
+        $tipoLimpio = mb_strtolower(trim($mensajeCrudo));
+
+        // 1. Validamos la entrada
+        if (str_contains($tipoLimpio, 'arbol') || str_contains($tipoLimpio, 'árbol')) {
+            $tipo = 'arboles';
+        } elseif (str_contains($tipoLimpio, 'troza')) {
+            $tipo = 'trozas';
+        } else {
+            return response()->json([
+                'ok' => false,
+                'estado' => $sesion->estado,
+                'mensaje' => "⚠️ No entendí. Por favor, escribe *'Arbol'* o *'Troza'*.",
+            ], 200);
+        }
+
+        // 2. Guardamos en el payload
+        $payload = $sesion->payload ?? [];
+        $payload['tipo'] = $tipo;
+
+        // 3. Avanzamos al siguiente estado
+        $sesion->update([
+            'estado' => 'ESPERANDO_ESPECIE',
+            'payload' => $payload,
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'estado' => 'ESPERANDO_ESPECIE',
+            'mensaje' => "✅ Modo *{$tipo}* activado.\n\n¿De qué especie se trata?\n_(Escribe el nombre, ej: Pino lacio)_",
+        ], 200);
+    }
+
+    private function procesarPasoEspecie(BotSesion $sesion, string $mensajeCrudo)
+    {
+        $texto = trim($mensajeCrudo);
+        [$idEspecie, $nombreComun, $error] = $this->resolveEspecieForRow(null, $texto);
+
+        if ($error) {
+            return response()->json([
+                'ok' => false,
+                'estado' => $sesion->estado,
+                'mensaje' => "⚠️ {$error}\n\nPor favor escribe el nombre de la especie nuevamente.",
+            ], 200);
+        }
+
+        $payload = $sesion->payload ?? [];
+        $payload['id_especie'] = $idEspecie;
+        $payload['nom_especie'] = $nombreComun;
+
+        $tipo = $payload['tipo'] ?? null;
+        if ($tipo === 'arboles') {
+            $sesion->update([
+                'estado' => 'ESPERANDO_MEDIDAS_ARBOL',
+                'payload' => $payload,
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'estado' => 'ESPERANDO_MEDIDAS_ARBOL',
+                'mensaje' => "✅ Especie *{$nombreComun}* seleccionada.\n\nEscribe el *DAP* y la *Altura Total* (en metros), separados por coma.\n_Ej: 0.35, 18.5_",
+            ], 200);
+        }
+
+        if ($tipo === 'trozas') {
+            $sesion->update([
+                'estado' => 'ESPERANDO_MEDIDAS_TROZA',
+                'payload' => $payload,
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'estado' => 'ESPERANDO_MEDIDAS_TROZA',
+                'mensaje' => "✅ Especie *{$nombreComun}* seleccionada.\n\nEscribe *Diámetro Superior*, *Longitud* y *Densidad* (en metros), separados por coma.\n_Opcional: Diámetro Inferior, Diámetro Medio_\n_Ej: 0.45, 3.2, 0.65_",
+            ], 200);
+        }
+
+        // Fallback: si por alguna razón no existe tipo en payload
+        $sesion->update([
+            'estado' => 'ESPERANDO_TIPO',
+            'payload' => $payload,
+        ]);
+
+        return response()->json([
+            'ok' => false,
+            'estado' => 'ESPERANDO_TIPO',
+            'mensaje' => "⚠️ Para continuar necesito saber qué deseas registrar. Escribe *'Arbol'* o *'Troza'*.",
+        ], 200);
+    }
+
+    private function procesarPasoMedidasArbol(BotSesion $sesion, string $mensajeCrudo)
+    {
+        $payload = $sesion->payload ?? [];
+        $idParcela = $payload['id_parcela'] ?? null;
+        $idEspecie = $payload['id_especie'] ?? null;
+
+        if (!$idParcela || !$idEspecie) {
+            $sesion->delete();
+            return response()->json([
+                'ok' => false,
+                'estado' => 'ESPERANDO_PARCELA',
+                'mensaje' => "⚠️ Perdí el contexto de la sesión. Por favor inicia de nuevo desde el menú.",
+            ], 200);
+        }
+
+        $numeros = $this->extraerNumeros($mensajeCrudo);
+        if (count($numeros) < 2) {
+            return response()->json([
+                'ok' => false,
+                'estado' => $sesion->estado,
+                'mensaje' => "⚠️ No pude leer los datos. Envía *DAP* y *Altura Total* separados por coma.\n_Ej: 0.35, 18.5_",
+            ], 200);
+        }
+
+        $dap = (float) $numeros[0];
+        $altura = (float) $numeros[1];
+        if ($dap <= 0 || $altura <= 0) {
+            return response()->json([
+                'ok' => false,
+                'estado' => $sesion->estado,
+                'mensaje' => "⚠️ Los valores deben ser mayores a 0.\n_Ej: 0.35, 18.5_",
+            ], 200);
+        }
+
+        $persona = $this->findPersonaByTelefono((string) $sesion->telefono);
+        $rol = $persona?->rol?->nom_rol;
+        if ($rol !== 'Tecnico') {
+            $sesion->delete();
+            return response()->json([
+                'ok' => false,
+                'estado' => 'FINALIZADO',
+                'mensaje' => 'Solo un Técnico puede registrar inventario usando el asistente.',
+            ], 200);
+        }
+
+        $idArbol = (int) DB::table('arboles')->insertGetId([
+            'id_especie' => (int) $idEspecie,
+            'id_parcela' => (int) $idParcela,
+            'altura_total' => $altura,
+            'diametro_pecho' => $dap,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $sesion->delete();
+
+        $nomParcela = $payload['nom_parcela'] ?? null;
+        $nomEspecie = $payload['nom_especie'] ?? null;
+
+        return response()->json([
+            'ok' => true,
+            'estado' => 'FINALIZADO',
+            'mensaje' => "✅ Registro guardado correctamente.\n\n📍 Parcela: *" . ($nomParcela ?: (string) $idParcela) . "*\n🌲 Especie: *" . ($nomEspecie ?: (string) $idEspecie) . "*\nDAP: *{$dap}*\nAltura Total: *{$altura}*\n\nID Árbol: *{$idArbol}*",
+        ], 200);
+    }
+
+    private function procesarPasoMedidasTroza(BotSesion $sesion, string $mensajeCrudo)
+    {
+        $payload = $sesion->payload ?? [];
+        $idParcela = $payload['id_parcela'] ?? null;
+        $idEspecie = $payload['id_especie'] ?? null;
+
+        if (!$idParcela || !$idEspecie) {
+            $sesion->delete();
+            return response()->json([
+                'ok' => false,
+                'estado' => 'ESPERANDO_PARCELA',
+                'mensaje' => "⚠️ Perdí el contexto de la sesión. Por favor inicia de nuevo desde el menú.",
+            ], 200);
+        }
+
+        $numeros = $this->extraerNumeros($mensajeCrudo);
+        if (count($numeros) < 3) {
+            return response()->json([
+                'ok' => false,
+                'estado' => $sesion->estado,
+                'mensaje' => "⚠️ Envía *Diámetro Superior*, *Longitud* y *Densidad* separados por coma.\n_Ej: 0.45, 3.2, 0.65_",
+            ], 200);
+        }
+
+        $diametro = (float) $numeros[0];
+        $longitud = (float) $numeros[1];
+        $densidad = (float) $numeros[2];
+        $diametroOtroExtremo = isset($numeros[3]) ? (float) $numeros[3] : null;
+        $diametroMedio = isset($numeros[4]) ? (float) $numeros[4] : null;
+
+        if ($diametro <= 0 || $longitud <= 0 || $densidad <= 0) {
+            return response()->json([
+                'ok' => false,
+                'estado' => $sesion->estado,
+                'mensaje' => "⚠️ Los valores deben ser mayores a 0.\n_Ej: 0.45, 3.2, 0.65_",
+            ], 200);
+        }
+
+        $persona = $this->findPersonaByTelefono((string) $sesion->telefono);
+        $rol = $persona?->rol?->nom_rol;
+        if ($rol !== 'Tecnico') {
+            $sesion->delete();
+            return response()->json([
+                'ok' => false,
+                'estado' => 'FINALIZADO',
+                'mensaje' => 'Solo un Técnico puede registrar inventario usando el asistente.',
+            ], 200);
+        }
+
+        $idTroza = (int) DB::table('trozas')->insertGetId([
+            'id_especie' => (int) $idEspecie,
+            'id_parcela' => (int) $idParcela,
+            'diametro' => $diametro,
+            'longitud' => $longitud,
+            'densidad' => $densidad,
+            'diametro_otro_extremo' => $diametroOtroExtremo,
+            'diametro_medio' => $diametroMedio,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $sesion->delete();
+
+        $nomParcela = $payload['nom_parcela'] ?? null;
+        $nomEspecie = $payload['nom_especie'] ?? null;
+
+        return response()->json([
+            'ok' => true,
+            'estado' => 'FINALIZADO',
+            'mensaje' => "✅ Registro guardado correctamente.\n\n📍 Parcela: *" . ($nomParcela ?: (string) $idParcela) . "*\n🌲 Especie: *" . ($nomEspecie ?: (string) $idEspecie) . "*\nDiámetro: *{$diametro}*\nLongitud: *{$longitud}*\nDensidad: *{$densidad}*\n\nID Troza: *{$idTroza}*",
+        ], 200);
+    }
+
+    /**
+     * Extrae números del mensaje (acepta decimales con . o ,).
+     * @return float[]
+     */
+    private function extraerNumeros(string $texto): array
+    {
+        preg_match_all('/-?\d+(?:[\.,]\d+)?/', $texto, $matches);
+
+        return array_values(array_map(
+            fn ($n) => (float) str_replace(',', '.', $n),
+            $matches[0] ?? []
+        ));
     }
 
     public function registroMasivo(Request $request)
