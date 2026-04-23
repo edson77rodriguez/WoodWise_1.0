@@ -621,11 +621,33 @@ class BotController extends Controller
         return $limpio;
     }
 
+    private function obtenerEspeciesDisponiblesTexto(int $max = 20): string
+    {
+        $especies = DB::table('especies')
+            ->orderBy('nom_comun')
+            ->pluck('nom_comun')
+            ->filter(fn ($nombre) => is_string($nombre) && trim($nombre) !== '')
+            ->values();
+
+        if ($especies->isEmpty()) {
+            return 'No hay especies registradas.';
+        }
+
+        $total = $especies->count();
+        $muestra = $especies->take($max);
+        $texto = '• ' . $muestra->implode("\n• ");
+
+        if ($total > $max) {
+            $texto .= "\n• ... y " . ($total - $max) . ' más';
+        }
+
+        return $texto;
+    }
+
     private function procesarPasoTipo(BotSesion $sesion, string $mensajeCrudo)
     {
         $tipoLimpio = mb_strtolower(trim($mensajeCrudo));
 
-        // 1. Validamos la entrada
         if (str_contains($tipoLimpio, 'arbol') || str_contains($tipoLimpio, 'árbol')) {
             $tipo = 'arboles';
         } elseif (str_contains($tipoLimpio, 'troza')) {
@@ -638,20 +660,20 @@ class BotController extends Controller
             ], 200);
         }
 
-        // 2. Guardamos en el payload
         $payload = $sesion->payload ?? [];
         $payload['tipo'] = $tipo;
 
-        // 3. Avanzamos al siguiente estado
         $sesion->update([
             'estado' => 'ESPERANDO_ESPECIE',
             'payload' => $payload,
         ]);
 
+        $especiesTexto = $this->obtenerEspeciesDisponiblesTexto();
+
         return response()->json([
             'ok' => true,
             'estado' => 'ESPERANDO_ESPECIE',
-            'mensaje' => "✅ Modo *{$tipo}* activado.\n\n¿De qué especie se trata?\n_(Escribe el nombre, ej: Pino lacio)_",
+            'mensaje' => "✅ Modo *{$tipo}* activado.\n\n¿De qué especie se trata?\n_(Escribe el nombre común, ej: Pino lacio)_\n\n📚 *Especies registradas:*\n{$especiesTexto}",
         ], 200);
     }
 
@@ -661,10 +683,12 @@ class BotController extends Controller
         [$idEspecie, $nombreComun, $error] = $this->resolveEspecieForRow(null, $texto);
 
         if ($error) {
+            $especiesTexto = $this->obtenerEspeciesDisponiblesTexto();
+
             return response()->json([
                 'ok' => false,
                 'estado' => $sesion->estado,
-                'mensaje' => "⚠️ {$error}\n\nPor favor escribe el nombre de la especie nuevamente.",
+                'mensaje' => "⚠️ {$error}\n\nPor favor escribe el nombre de la especie nuevamente.\n\n📚 *Especies registradas:*\n{$especiesTexto}",
             ], 200);
         }
 
@@ -682,7 +706,7 @@ class BotController extends Controller
             return response()->json([
                 'ok' => true,
                 'estado' => 'ESPERANDO_MEDIDAS_ARBOL',
-                'mensaje' => "✅ Especie *{$nombreComun}* seleccionada.\n\nEscribe el *DAP* y la *Altura Total* (en metros), separados por coma.\n_Ej: 0.35, 18.5_",
+                'mensaje' => "✅ Especie *{$nombreComun}* seleccionada.\n\nAhora envía estas medidas en metros, separadas por coma:\n• *DAP*: diámetro a la altura del pecho (medido a 1.30 m del suelo).\n• *Altura Total*: altura completa del árbol desde la base hasta la punta.\n\n_Ejemplo: 0.35, 18.5_",
             ], 200);
         }
 
@@ -695,11 +719,10 @@ class BotController extends Controller
             return response()->json([
                 'ok' => true,
                 'estado' => 'ESPERANDO_MEDIDAS_TROZA',
-                'mensaje' => "✅ Especie *{$nombreComun}* seleccionada.\n\nEscribe *Diámetro Superior*, *Longitud* y *Densidad* (en metros), separados por coma.\n_Opcional: Diámetro Inferior, Diámetro Medio_\n_Ej: 0.45, 3.2, 0.65_",
+                'mensaje' => "✅ Especie *{$nombreComun}* seleccionada.\n\nAhora envía estas medidas, separadas por coma:\n• *Diámetro Superior*: diámetro del extremo delgado de la troza (m).\n• *Longitud*: largo total de la troza (m).\n• *Densidad*: densidad de la madera para el cálculo (usa el valor de tu inventario).\n• *Opcional* Diámetro Inferior: diámetro del extremo grueso (m).\n• *Opcional* Diámetro Medio: diámetro en la parte media (m).\n\n_Ejemplo mínimo: 0.45, 3.2, 0.65_\n_Ejemplo completo: 0.45, 3.2, 0.65, 0.52, 0.48_",
             ], 200);
         }
 
-        // Fallback: si por alguna razón no existe tipo en payload
         $sesion->update([
             'estado' => 'ESPERANDO_TIPO',
             'payload' => $payload,
