@@ -1128,29 +1128,34 @@ class BotController extends Controller
             }
         }
 
-        $texto = is_string($especieTexto) ? trim($especieTexto) : '';
-        if ($texto === '') {
+        $textoOriginal = is_string($especieTexto) ? trim($especieTexto) : '';
+        $texto = trim($textoOriginal, " \t\n\r\0\x0B\"'`*");
+        $textoNormalizado = $this->normalizarTextoBusqueda($texto);
+
+        if ($textoNormalizado === '') {
             return [null, null, "Debes enviar id_especie o especie_texto."];
         }
 
-        // 1) Intento de match exacto (si el collation es case-insensitive, esto ya ayuda mucho)
-        $exact = DB::table('especies')
-            ->where('nom_comun', $texto)
-            ->orWhere('nom_cientifico', $texto)
-            ->select('id_especie', 'nom_comun')
-            ->first();
-
-        if ($exact) {
-            return [(int) $exact->id_especie, (string) $exact->nom_comun, null];
-        }
-
-        // 2) LIKE (búsqueda “inteligente”)
+        // Búsqueda tolerante: mayúsculas/minúsculas, acentos, comillas y separadores.
         $matches = DB::table('especies')
-            ->where('nom_comun', 'like', '%' . $texto . '%')
-            ->orWhere('nom_cientifico', 'like', '%' . $texto . '%')
             ->select('id_especie', 'nom_comun', 'nom_cientifico')
-            ->limit(10)
-            ->get();
+            ->get()
+            ->filter(function ($row) use ($textoNormalizado) {
+                $nomComun = $this->normalizarTextoBusqueda((string) ($row->nom_comun ?? ''));
+                $nomCientifico = $this->normalizarTextoBusqueda((string) ($row->nom_cientifico ?? ''));
+
+                if ($nomComun === '' && $nomCientifico === '') {
+                    return false;
+                }
+
+                return $nomComun === $textoNormalizado
+                    || $nomCientifico === $textoNormalizado
+                    || str_contains($nomComun, $textoNormalizado)
+                    || str_contains($nomCientifico, $textoNormalizado)
+                    || str_contains($textoNormalizado, $nomComun)
+                    || str_contains($textoNormalizado, $nomCientifico);
+            })
+            ->values();
 
         if ($matches->isEmpty()) {
             return [null, null, "Especie '{$texto}' no reconocida."];
