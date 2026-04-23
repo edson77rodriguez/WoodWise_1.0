@@ -37,6 +37,18 @@ class BotController extends Controller
             return response()->json(['error' => 'Tu perfil no tiene acceso al Asistente.'], 403);
         }
 
+        // Regla de acceso desde el inicio: el registro guiado es exclusivo para Técnicos.
+        if ($rol === 'Productor') {
+            return response()->json([
+                'ok' => false,
+                'acceso' => [
+                    'rol' => $rol,
+                    'puede_registrar' => false,
+                ],
+                'mensaje' => "🔐 *Verificación de acceso*\nRol detectado: *{$rol}*\n❌ No tienes acceso para registrar inventario en el Asistente Guiado.\n\nEsta tarea está habilitada solo para usuarios con rol *Técnico*.\nSi necesitas registrar datos, solicita apoyo a un técnico asignado.",
+            ], 200);
+        }
+
         $sesion = BotSesion::where('telefono', $telefono)->first();
 
         if (in_array($mensajeLimpio, ['cancelar', 'salir', 'detener', 'abortar'], true)) {
@@ -555,7 +567,7 @@ class BotController extends Controller
 
         return response()->json([
             'ok' => true,
-            'mensaje' => "🤖 *Asistente de Captura Iniciado*\n\nHola. Te guiaré paso a paso para registrar tus datos.\n_Escribe 'cancelar' en cualquier momento para salir._\n\n📍 *Tus Parcelas:*\n{$parcelasTexto}\n\n👉 *Escribe el nombre de la parcela en la que estás trabajando:*",
+            'mensaje' => "🤖 *Asistente de Captura Iniciado*\n\n🔐 Acceso verificado: *Técnico* ✅\nHola. Te guiaré paso a paso para registrar tus datos.\n_Escribe 'cancelar' en cualquier momento para salir._\n\n📍 *Tus Parcelas:*\n{$parcelasTexto}\n\n👉 *Escribe el nombre de la parcela en la que estás trabajando:*",
         ], 200);
     }
 
@@ -776,7 +788,7 @@ class BotController extends Controller
             return response()->json([
                 'ok' => false,
                 'estado' => 'FINALIZADO',
-                'mensaje' => 'Solo un Técnico puede registrar inventario usando el asistente.',
+                'mensaje' => "🔐 *Verificación de acceso*\nRol detectado: *" . ($rol ?: 'Sin rol') . "*\n❌ Solo un Técnico puede registrar inventario usando el asistente.",
             ], 200);
         }
 
@@ -849,7 +861,7 @@ class BotController extends Controller
             return response()->json([
                 'ok' => false,
                 'estado' => 'FINALIZADO',
-                'mensaje' => 'Solo un Técnico puede registrar inventario usando el asistente.',
+                'mensaje' => "🔐 *Verificación de acceso*\nRol detectado: *" . ($rol ?: 'Sin rol') . "*\n❌ Solo un Técnico puede registrar inventario usando el asistente.",
             ], 200);
         }
 
