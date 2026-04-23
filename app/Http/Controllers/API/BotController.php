@@ -562,12 +562,24 @@ class BotController extends Controller
     private function procesarPasoParcela(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
     {
         $nomParcela = trim($mensajeCrudo);
+        $busquedaNormalizada = $this->normalizarTextoBusqueda($nomParcela);
 
-        // 1. Verificamos si la parcela existe y si el usuario tiene acceso
+        // 1. Verificamos solo dentro de las parcelas asignadas y hacemos una búsqueda tolerante.
         $parcela = DB::table('parcelas')
             ->whereIn('id_parcela', $parcelasIds)
-            ->where('nom_parcela', 'like', '%' . $nomParcela . '%')
-            ->first();
+            ->select('id_parcela', 'nom_parcela')
+            ->get()
+            ->first(function ($row) use ($busquedaNormalizada) {
+                $nombreNormalizado = $this->normalizarTextoBusqueda((string) $row->nom_parcela);
+
+                if ($busquedaNormalizada === '') {
+                    return false;
+                }
+
+                return $nombreNormalizado === $busquedaNormalizada
+                    || str_contains($nombreNormalizado, $busquedaNormalizada)
+                    || str_contains($busquedaNormalizada, $nombreNormalizado);
+            });
 
         if (!$parcela) {
             return response()->json([
@@ -594,6 +606,19 @@ class BotController extends Controller
             'estado' => 'ESPERANDO_TIPO',
             'mensaje' => "✅ Parcela *{$parcela->nom_parcela}* seleccionada.\n\n¿Qué deseas registrar?\nEscribe *'Arbol'* o *'Troza'*.",
         ], 200);
+    }
+
+    private function normalizarTextoBusqueda(string $texto): string
+    {
+        $limpio = Str::of($texto)
+            ->trim(" \t\n\r\0\x0B\"'`*")
+            ->lower()
+            ->ascii()
+            ->replaceMatches('/[^a-z0-9]+/u', ' ')
+            ->squish()
+            ->toString();
+
+        return $limpio;
     }
 
     private function procesarPasoTipo(BotSesion $sesion, string $mensajeCrudo)
