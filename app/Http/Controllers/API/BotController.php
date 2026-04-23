@@ -52,8 +52,8 @@ class BotController extends Controller
 
         // 3. LA MÁQUINA DE ESTADOS (El flujo conversacional)
         if (!$sesion) {
-            // Si no hay sesión, SOLO iniciamos si el usuario presionó el botón (que manda "iniciar")
-            if ($mensajeLimpio === 'iniciar') {
+            // Aceptamos la palabra 'iniciar' (por si acaso) o el ID exacto del botón que viene de n8n
+            if ($mensajeLimpio === 'iniciar' || $mensajeLimpio === 'menu_ingreso_guiado') {
                 return $this->iniciarAsistente($telefono, $parcelasIds);
             }
 
