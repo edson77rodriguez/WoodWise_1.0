@@ -205,37 +205,42 @@ class BotController extends Controller
         }
 
         $nombre = trim($persona->nom ?? 'Usuario');
+        $etiquetaRol = $rol === 'Tecnico' ? 'Tecnico de campo' : 'Productor forestal';
 
-        $mensajeCuerpo = "Hola *{$nombre}*, soy tu asistente virtual de gestion forestal.\n\n"
-            . "Estoy aqui para ayudarte a gestionar tus inventarios y consultar el impacto ambiental directamente desde WhatsApp.\n\n"
-            . "En que te puedo ayudar hoy?";
+        $mensajeCuerpo = "Hola *{$nombre}*.
+    Soy tu asistente virtual de *SIGMAD*.
+
+    Perfil detectado: *{$etiquetaRol}*.
+    Desde aqui puedes consultar inventarios, revisar impacto ambiental y generar reportes de forma rapida.
+
+    Selecciona la opcion que deseas usar:";
 
         $secciones = [];
 
         if ($rol === 'Tecnico') {
             $secciones[] = [
-                'title' => 'PREPARACION',
+                'title' => 'Preparacion de Campo',
                 'rows' => [
                     [
                         'id' => 'menu_kit_campo',
-                        'title' => 'Mi Kit de Campo',
-                        'description' => 'Ver mis parcelas, especies y guia offline',
+                        'title' => 'Kit de Campo',
+                        'description' => 'Parcelas, especies y guia para captura',
                     ],
                 ],
             ];
 
             $secciones[] = [
-                'title' => 'REGISTRO DE DATOS',
+                'title' => 'Registro de Datos',
                 'rows' => [
                     [
                         'id' => 'menu_ingreso_guiado',
                         'title' => 'Asistente Guiado',
-                        'description' => 'Registro paso a paso',
+                        'description' => 'Captura asistida paso a paso',
                     ],
                     [
                         'id' => 'menu_ingreso_archivo',
                         'title' => 'Subir Archivo',
-                        'description' => 'Envia tu Excel o PDF',
+                        'description' => 'Carga archivos Excel o PDF',
                     ],
                 ],
             ];
@@ -243,28 +248,28 @@ class BotController extends Controller
 
         if (in_array($rol, ['Tecnico', 'Productor'], true)) {
             $secciones[] = [
-                'title' => 'CONSULTAS Y CALCULOS',
+                'title' => 'Consultas y Calculos',
                 'rows' => [
                     [
                         'id' => 'btn_inventario',
                         'title' => 'Ver Inventarios',
-                        'description' => 'Consulta trozas y arboles',
+                        'description' => 'Consulta trozas y arboles registrados',
                     ],
                     [
                         'id' => 'btn_estimaciones',
                         'title' => 'Impacto Ambiental',
-                        'description' => 'Biomasa y Carbono',
+                        'description' => 'Biomasa, carbono y resultados clave',
                     ],
                 ],
             ];
 
             $secciones[] = [
-                'title' => 'REPORTES',
+                'title' => 'Reportes',
                 'rows' => [
                     [
                         'id' => 'btn_reporte',
                         'title' => 'Descargar PDF',
-                        'description' => 'Genera el reporte oficial',
+                        'description' => 'Genera y descarga el reporte oficial',
                     ],
                 ],
             ];
@@ -280,10 +285,10 @@ class BotController extends Controller
                 'text' => $mensajeCuerpo,
             ],
             'footer' => [
-                'text' => 'Selecciona una opcion',
+                'text' => 'WoodWise | Gestion forestal inteligente',
             ],
             'action' => [
-                'button' => 'Menu Principal',
+                'button' => 'Abrir menu principal',
                 'sections' => $secciones,
             ],
         ];
