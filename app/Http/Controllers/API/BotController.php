@@ -52,8 +52,11 @@ class BotController extends Controller
 
         // 3. LA MÁQUINA DE ESTADOS (El flujo conversacional)
         if (!$sesion) {
-            // Aceptamos la palabra 'iniciar' (por si acaso) o el ID exacto del botón que viene de n8n
-            if ($mensajeLimpio === 'iniciar' || $mensajeLimpio === 'menu_ingreso_guiado') {
+            // Normalizamos comillas/espacios para tolerar variaciones típicas de n8n/Meta.
+            $mensajeClave = trim($mensajeLimpio, " \t\n\r\0\x0B\"'");
+
+            // Aceptamos palabra clave o IDs de botón comunes del flujo guiado.
+            if (in_array($mensajeClave, ['iniciar', 'menu_ingreso_guiado', 'ingreso_guiado', 'asistente_guiado'], true)) {
                 return $this->iniciarAsistente($telefono, $parcelasIds);
             }
 
@@ -738,15 +741,18 @@ class BotController extends Controller
             'updated_at' => now(),
         ]);
 
-        $sesion->delete();
+        $sesion->update([
+            'estado' => 'ESPERANDO_ESPECIE',
+            'payload' => $payload,
+        ]);
 
         $nomParcela = $payload['nom_parcela'] ?? null;
         $nomEspecie = $payload['nom_especie'] ?? null;
 
         return response()->json([
             'ok' => true,
-            'estado' => 'FINALIZADO',
-            'mensaje' => "✅ Registro guardado correctamente.\n\n📍 Parcela: *" . ($nomParcela ?: (string) $idParcela) . "*\n🌲 Especie: *" . ($nomEspecie ?: (string) $idEspecie) . "*\nDAP: *{$dap}*\nAltura Total: *{$altura}*\n\nID Árbol: *{$idArbol}*",
+            'estado' => 'ESPERANDO_ESPECIE',
+            'mensaje' => "✅ Registro guardado correctamente.\n\n📍 Parcela: *" . ($nomParcela ?: (string) $idParcela) . "*\n🌲 Especie: *" . ($nomEspecie ?: (string) $idEspecie) . "*\nDAP: *{$dap}*\nAltura Total: *{$altura}*\n\nID Árbol: *{$idArbol}*\n\n👉 Puedes registrar otro. Escribe la *especie* del siguiente registro o envía *cancelar* para finalizar.",
         ], 200);
     }
 
@@ -811,15 +817,18 @@ class BotController extends Controller
             'updated_at' => now(),
         ]);
 
-        $sesion->delete();
+        $sesion->update([
+            'estado' => 'ESPERANDO_ESPECIE',
+            'payload' => $payload,
+        ]);
 
         $nomParcela = $payload['nom_parcela'] ?? null;
         $nomEspecie = $payload['nom_especie'] ?? null;
 
         return response()->json([
             'ok' => true,
-            'estado' => 'FINALIZADO',
-            'mensaje' => "✅ Registro guardado correctamente.\n\n📍 Parcela: *" . ($nomParcela ?: (string) $idParcela) . "*\n🌲 Especie: *" . ($nomEspecie ?: (string) $idEspecie) . "*\nDiámetro: *{$diametro}*\nLongitud: *{$longitud}*\nDensidad: *{$densidad}*\n\nID Troza: *{$idTroza}*",
+            'estado' => 'ESPERANDO_ESPECIE',
+            'mensaje' => "✅ Registro guardado correctamente.\n\n📍 Parcela: *" . ($nomParcela ?: (string) $idParcela) . "*\n🌲 Especie: *" . ($nomEspecie ?: (string) $idEspecie) . "*\nDiámetro: *{$diametro}*\nLongitud: *{$longitud}*\nDensidad: *{$densidad}*\n\nID Troza: *{$idTroza}*\n\n👉 Puedes registrar otra. Escribe la *especie* del siguiente registro o envía *cancelar* para finalizar.",
         ], 200);
     }
 
