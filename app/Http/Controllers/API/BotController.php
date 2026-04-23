@@ -207,39 +207,37 @@ class BotController extends Controller
         $nombre = trim($persona->nom ?? 'Usuario');
         $etiquetaRol = $rol === 'Tecnico' ? 'Tecnico de campo' : 'Productor forestal';
 
-        $mensajeCuerpo = "Hola *{$nombre}*.
-    Soy tu asistente virtual de *SIGMAD*.
-
-    Perfil detectado: *{$etiquetaRol}*.
-    Desde aqui puedes consultar inventarios, revisar impacto ambiental y generar reportes de forma rapida.
-
-    Selecciona la opcion que deseas usar:";
+        $mensajeCuerpo = "Hola *{$nombre}* 👋\n"
+            . "Soy tu asistente virtual de *SIGMAD* 🌿\n\n"
+            . "🧾 Perfil detectado: *{$etiquetaRol}*\n"
+            . "Desde aqui puedes consultar inventarios, revisar impacto ambiental y generar reportes de forma rapida.\n\n"
+            . "✨ Selecciona la opcion que deseas usar:";
 
         $secciones = [];
 
         if ($rol === 'Tecnico') {
             $secciones[] = [
-                'title' => 'Preparacion de Campo',
+                'title' => '🛡️ Preparacion de Campo',
                 'rows' => [
                     [
                         'id' => 'menu_kit_campo',
-                        'title' => 'Kit de Campo',
+                        'title' => '🎒 Kit de Campo',
                         'description' => 'Parcelas, especies y guia para captura',
                     ],
                 ],
             ];
 
             $secciones[] = [
-                'title' => 'Registro de Datos',
+                'title' => '📥 Registro de Datos',
                 'rows' => [
                     [
                         'id' => 'menu_ingreso_guiado',
-                        'title' => 'Asistente Guiado',
+                        'title' => '🤖 Asistente Guiado',
                         'description' => 'Captura asistida paso a paso',
                     ],
                     [
                         'id' => 'menu_ingreso_archivo',
-                        'title' => 'Subir Archivo',
+                        'title' => '📎 Subir Archivo',
                         'description' => 'Carga archivos Excel o PDF',
                     ],
                 ],
@@ -248,27 +246,27 @@ class BotController extends Controller
 
         if (in_array($rol, ['Tecnico', 'Productor'], true)) {
             $secciones[] = [
-                'title' => 'Consultas y Calculos',
+                'title' => '📊 Consultas y Calculos',
                 'rows' => [
                     [
                         'id' => 'btn_inventario',
-                        'title' => 'Ver Inventarios',
+                        'title' => '🪵 Ver Inventarios',
                         'description' => 'Consulta trozas y arboles registrados',
                     ],
                     [
                         'id' => 'btn_estimaciones',
-                        'title' => 'Impacto Ambiental',
+                        'title' => '🌍 Impacto Ambiental',
                         'description' => 'Biomasa, carbono y resultados clave',
                     ],
                 ],
             ];
 
             $secciones[] = [
-                'title' => 'Reportes',
+                'title' => '📂 Reportes',
                 'rows' => [
                     [
                         'id' => 'btn_reporte',
-                        'title' => 'Descargar PDF',
+                        'title' => '📥 Descargar PDF',
                         'description' => 'Genera y descarga el reporte oficial',
                     ],
                 ],
@@ -279,16 +277,16 @@ class BotController extends Controller
             'type' => 'list',
             'header' => [
                 'type' => 'text',
-                'text' => 'Bienvenido a SIGMAD',
+                'text' => '🍃 Bienvenido a SIGMAD',
             ],
             'body' => [
                 'text' => $mensajeCuerpo,
             ],
             'footer' => [
-                'text' => 'WoodWise | Gestion forestal inteligente',
+                'text' => 'WoodWise | Gestion forestal inteligente 🌲',
             ],
             'action' => [
-                'button' => 'Abrir menu principal',
+                'button' => '☰ Menu Principal',
                 'sections' => $secciones,
             ],
         ];
