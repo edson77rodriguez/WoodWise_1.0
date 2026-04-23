@@ -180,6 +180,121 @@ class BotController extends Controller
         ], 200);
     }
 
+    public function obtenerMenuPrincipal(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+        ]);
+
+        $persona = $this->findPersonaByTelefono($data['telefono']);
+
+        if (!$persona) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'Este numero no esta registrado en SIGMAD.',
+            ], 404);
+        }
+
+        $rol = $persona->rol?->nom_rol;
+
+        if (!$rol) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'Tu cuenta no tiene un rol asignado. Contacta al administrador.',
+            ], 403);
+        }
+
+        $nombre = trim($persona->nom ?? 'Usuario');
+
+        $mensajeCuerpo = "Hola *{$nombre}*, soy tu asistente virtual de gestion forestal.\n\n"
+            . "Estoy aqui para ayudarte a gestionar tus inventarios y consultar el impacto ambiental directamente desde WhatsApp.\n\n"
+            . "En que te puedo ayudar hoy?";
+
+        $secciones = [];
+
+        if ($rol === 'Tecnico') {
+            $secciones[] = [
+                'title' => 'PREPARACION',
+                'rows' => [
+                    [
+                        'id' => 'menu_kit_campo',
+                        'title' => 'Mi Kit de Campo',
+                        'description' => 'Ver mis parcelas, especies y guia offline',
+                    ],
+                ],
+            ];
+
+            $secciones[] = [
+                'title' => 'REGISTRO DE DATOS',
+                'rows' => [
+                    [
+                        'id' => 'menu_ingreso_guiado',
+                        'title' => 'Asistente Guiado',
+                        'description' => 'Registro paso a paso',
+                    ],
+                    [
+                        'id' => 'menu_ingreso_archivo',
+                        'title' => 'Subir Archivo',
+                        'description' => 'Envia tu Excel o PDF',
+                    ],
+                ],
+            ];
+        }
+
+        if (in_array($rol, ['Tecnico', 'Productor'], true)) {
+            $secciones[] = [
+                'title' => 'CONSULTAS Y CALCULOS',
+                'rows' => [
+                    [
+                        'id' => 'btn_inventario',
+                        'title' => 'Ver Inventarios',
+                        'description' => 'Consulta trozas y arboles',
+                    ],
+                    [
+                        'id' => 'btn_estimaciones',
+                        'title' => 'Impacto Ambiental',
+                        'description' => 'Biomasa y Carbono',
+                    ],
+                ],
+            ];
+
+            $secciones[] = [
+                'title' => 'REPORTES',
+                'rows' => [
+                    [
+                        'id' => 'btn_reporte',
+                        'title' => 'Descargar PDF',
+                        'description' => 'Genera el reporte oficial',
+                    ],
+                ],
+            ];
+        }
+
+        $interactiveObject = [
+            'type' => 'list',
+            'header' => [
+                'type' => 'text',
+                'text' => 'Bienvenido a SIGMAD',
+            ],
+            'body' => [
+                'text' => $mensajeCuerpo,
+            ],
+            'footer' => [
+                'text' => 'Selecciona una opcion',
+            ],
+            'action' => [
+                'button' => 'Menu Principal',
+                'sections' => $secciones,
+            ],
+        ];
+
+        return response()->json([
+            'ok' => true,
+            'rol' => $rol,
+            'interactive_payload' => $interactiveObject,
+        ], 200);
+    }
+
     public function obtenerResumenTrozas(Request $request)
     {
         $data = $request->validate([
