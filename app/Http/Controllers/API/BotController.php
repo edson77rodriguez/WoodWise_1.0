@@ -813,12 +813,20 @@ class BotController extends Controller
 
     private function procesarAlcanceEstimacion(BotSesion $sesion, string $mensajeCrudo)
     {
-        $opcion = trim($mensajeCrudo);
+        $entrada = $this->normalizarTextoBusqueda($mensajeCrudo);
+
+        $opcion = match (true) {
+            in_array($entrada, ['1', 'arbol', 'arboles'], true) => '1',
+            in_array($entrada, ['2', 'troza', 'trozas'], true) => '2',
+            in_array($entrada, ['3', 'ambos', 'todo', 'todas'], true) => '3',
+            default => trim($mensajeCrudo),
+        };
+
         if (!in_array($opcion, ['1', '2', '3'], true)) {
             return response()->json([
                 'ok' => false,
                 'estado' => self::ESPERANDO_ALCANCE_ESTIMACION,
-                'mensaje' => "⚠️ Opción no válida. Responde con:\n*1* Árboles\n*2* Trozas\n*3* Ambos",
+                'mensaje' => "⚠️ Opción no válida. Responde con número o texto:\n*1* / *Arboles*\n*2* / *Trozas*\n*3* / *Ambos*",
             ], 200);
         }
 
