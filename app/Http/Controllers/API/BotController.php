@@ -16,6 +16,10 @@ use Illuminate\Support\Str;
 
 class BotController extends Controller
 {
+    public const ESPERANDO_PARCELA_ESTIMACION = 'esperando_parcela_estimacion';
+    public const ESPERANDO_ALCANCE_ESTIMACION = 'esperando_alcance_estimacion';
+    public const ESPERANDO_FORMULA_ESTIMACION = 'esperando_formula_estimacion';
+
     public function asistenteGuiado(Request $request)
     {
         $data = $request->validate([
@@ -72,6 +76,11 @@ class BotController extends Controller
                 return $this->iniciarAsistente($telefono, $parcelasIds);
             }
 
+            // Disparador del flujo de generación de estimaciones pendientes.
+            if (in_array($mensajeClave, ['menu_generar_estimaciones', 'btn_estimaciones', 'generar estimaciones'], true)) {
+                return $this->iniciarFlujoEstimaciones($telefono, $parcelasIds);
+            }
+
             // Si mandó cualquier texto random y no tiene plática activa, lo mandamos al menú.
             return response()->json([
                 'ok' => true,
@@ -94,6 +103,15 @@ class BotController extends Controller
 
             case 'ESPERANDO_MEDIDAS_TROZA':
                 return $this->procesarPasoMedidasTroza($sesion, $mensajeCrudo);
+
+            case self::ESPERANDO_PARCELA_ESTIMACION:
+                return $this->procesarParcelaEstimacion($sesion, $mensajeCrudo, $parcelasIds);
+
+            case self::ESPERANDO_ALCANCE_ESTIMACION:
+                return $this->procesarAlcanceEstimacion($sesion, $mensajeCrudo);
+
+            case self::ESPERANDO_FORMULA_ESTIMACION:
+                return $this->procesarFormulaEstimacion($sesion, $mensajeCrudo);
 
             default:
                 $sesion->delete();
@@ -248,6 +266,11 @@ class BotController extends Controller
             $secciones[] = [
                 'title' => '📊 Consultas y Calculos',
                 'rows' => [
+                    [
+                        'id' => 'menu_generar_estimaciones',
+                        'title' => '🧮 Generar Estimaciones',
+                        'description' => 'Procesa pendientes por parcela y alcance',
+                    ],
                     [
                         'id' => 'btn_inventario',
                         'title' => '🪵 Ver Inventarios',
@@ -687,6 +710,302 @@ class BotController extends Controller
             'ok' => true,
             'mensaje' => "🤖 *Asistente de Captura Iniciado*\n\n🔐 Acceso verificado: *Técnico* ✅\nHola. Te guiaré paso a paso para registrar tus datos.\n_Escribe 'cancelar' en cualquier momento para salir._\n\n📍 *Tus Parcelas:*\n{$parcelasTexto}\n\n👉 *Escribe el nombre de la parcela en la que estás trabajando:*",
         ], 200);
+    }
+
+    private function iniciarFlujoEstimaciones(string $telefono, $parcelasIds)
+    {
+        BotSesion::where('telefono', $telefono)->delete();
+
+        BotSesion::create([
+            'telefono' => $telefono,
+            'estado' => self::ESPERANDO_PARCELA_ESTIMACION,
+            'payload' => [],
+        ]);
+
+        $parcelas = $parcelasIds->isEmpty()
+            ? collect()
+            : DB::table('parcelas')
+                ->whereIn('id_parcela', $parcelasIds)
+                ->orderBy('nom_parcela')
+                ->pluck('nom_parcela');
+
+        $parcelasTexto = $parcelas->isEmpty()
+            ? 'No tienes parcelas asignadas.'
+            : '• ' . $parcelas->implode("\n• ");
+
+        return response()->json([
+            'ok' => true,
+            'estado' => self::ESPERANDO_PARCELA_ESTIMACION,
+            'mensaje' => "🧮 *Generar Estimaciones*\n\nSelecciona la parcela para procesar pendientes.\n\n📍 *Tus Parcelas:*\n{$parcelasTexto}\n\n👉 Escribe el nombre de la parcela.",
+        ], 200);
+    }
+
+    private function procesarParcelaEstimacion(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
+    {
+        $selector = trim($mensajeCrudo);
+        $busquedaNormalizada = $this->normalizarTextoBusqueda($selector);
+
+        $parcela = DB::table('parcelas')
+            ->whereIn('id_parcela', $parcelasIds)
+            ->select('id_parcela', 'nom_parcela')
+            ->get()
+            ->first(function ($row) use ($selector, $busquedaNormalizada) {
+                if (is_numeric($selector) && (int) $selector > 0 && (int) $row->id_parcela === (int) $selector) {
+                    return true;
+                }
+
+                if ($busquedaNormalizada === '') {
+                    return false;
+                }
+
+                $nombreNormalizado = $this->normalizarTextoBusqueda((string) $row->nom_parcela);
+
+                return $nombreNormalizado === $busquedaNormalizada
+                    || str_contains($nombreNormalizado, $busquedaNormalizada)
+                    || str_contains($busquedaNormalizada, $nombreNormalizado);
+            });
+
+        if (!$parcela) {
+            return response()->json([
+                'ok' => false,
+                'estado' => self::ESPERANDO_PARCELA_ESTIMACION,
+                'mensaje' => "⚠️ No encontré la parcela '*{$selector}*' en tus asignaciones.\n\nEscribe el nombre correcto o envía *cancelar* para salir.",
+            ], 200);
+        }
+
+        $idParcela = (int) $parcela->id_parcela;
+
+        $pendientesArboles = (int) DB::table('arboles as a')
+            ->where('a.id_parcela', $idParcela)
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('estimaciones1 as e1')
+                    ->whereColumn('e1.id_arbol', 'a.id_arbol');
+            })
+            ->count();
+
+        $pendientesTrozas = (int) DB::table('trozas as t')
+            ->where('t.id_parcela', $idParcela)
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('estimaciones as e')
+                    ->whereColumn('e.id_troza', 't.id_troza');
+            })
+            ->count();
+
+        $payload = $sesion->payload ?? [];
+        $payload['id_parcela'] = $idParcela;
+        $payload['nom_parcela'] = (string) $parcela->nom_parcela;
+        $payload['pendientes_arboles'] = $pendientesArboles;
+        $payload['pendientes_trozas'] = $pendientesTrozas;
+
+        $sesion->update([
+            'estado' => self::ESPERANDO_ALCANCE_ESTIMACION,
+            'payload' => $payload,
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'estado' => self::ESPERANDO_ALCANCE_ESTIMACION,
+            'mensaje' => "✅ Parcela *{$parcela->nom_parcela}* seleccionada.\n\n📌 Pendientes detectados:\n• Árboles sin estimar: *{$pendientesArboles}*\n• Trozas sin estimar: *{$pendientesTrozas}*\n\n¿Qué deseas estimar?\n*1* Árboles\n*2* Trozas\n*3* Ambos",
+        ], 200);
+    }
+
+    private function procesarAlcanceEstimacion(BotSesion $sesion, string $mensajeCrudo)
+    {
+        $opcion = trim($mensajeCrudo);
+        if (!in_array($opcion, ['1', '2', '3'], true)) {
+            return response()->json([
+                'ok' => false,
+                'estado' => self::ESPERANDO_ALCANCE_ESTIMACION,
+                'mensaje' => "⚠️ Opción no válida. Responde con:\n*1* Árboles\n*2* Trozas\n*3* Ambos",
+            ], 200);
+        }
+
+        $payload = $sesion->payload ?? [];
+        $idParcela = (int) ($payload['id_parcela'] ?? 0);
+        $nomParcela = (string) ($payload['nom_parcela'] ?? $idParcela);
+
+        if ($idParcela <= 0) {
+            $sesion->delete();
+
+            return response()->json([
+                'ok' => false,
+                'mensaje' => '⚠️ Se perdió el contexto de parcela. Inicia de nuevo desde el menú principal.',
+            ], 200);
+        }
+
+        if ($opcion === '1') {
+            try {
+                $resultado = $this->ejecutarCalculosPendientes($idParcela, $opcion, null);
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'ok' => false,
+                    'estado' => self::ESPERANDO_ALCANCE_ESTIMACION,
+                    'mensaje' => '❌ No se pudieron generar estimaciones en este momento. Intenta nuevamente.',
+                ], 200);
+            }
+
+            $sesion->delete();
+
+            return response()->json([
+                'ok' => true,
+                'estado' => 'FINALIZADO',
+                'mensaje' => "✅ Estimaciones generadas para *{$nomParcela}*.\n\n🌳 Árboles procesados: *{$resultado['arboles']}*\n🪵 Trozas procesadas: *{$resultado['trozas']}*\n\nPuedes volver al menú para consultar resultados.",
+            ], 200);
+        }
+
+        $payload['alcance_estimacion'] = $opcion;
+        $sesion->update([
+            'estado' => self::ESPERANDO_FORMULA_ESTIMACION,
+            'payload' => $payload,
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'estado' => self::ESPERANDO_FORMULA_ESTIMACION,
+            'mensaje' => "✏️ Selecciona la fórmula para estimar *trozas*:\n*1* Smalian\n*2* Huber\n*3* Newton\n*4* Cono truncado",
+        ], 200);
+    }
+
+    private function procesarFormulaEstimacion(BotSesion $sesion, string $mensajeCrudo)
+    {
+        $opcionFormula = trim($mensajeCrudo);
+        if (!in_array($opcionFormula, ['1', '2', '3', '4'], true)) {
+            return response()->json([
+                'ok' => false,
+                'estado' => self::ESPERANDO_FORMULA_ESTIMACION,
+                'mensaje' => "⚠️ Fórmula no válida. Responde con *1*, *2*, *3* o *4*.",
+            ], 200);
+        }
+
+        $payload = $sesion->payload ?? [];
+        $idParcela = (int) ($payload['id_parcela'] ?? 0);
+        $nomParcela = (string) ($payload['nom_parcela'] ?? $idParcela);
+        $alcance = (string) ($payload['alcance_estimacion'] ?? '');
+
+        if ($idParcela <= 0 || !in_array($alcance, ['2', '3'], true)) {
+            $sesion->delete();
+
+            return response()->json([
+                'ok' => false,
+                'mensaje' => '⚠️ Se perdió el contexto de estimación. Inicia de nuevo desde el menú principal.',
+            ], 200);
+        }
+
+        try {
+            $resultado = $this->ejecutarCalculosPendientes($idParcela, $alcance, (int) $opcionFormula);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'ok' => false,
+                'estado' => self::ESPERANDO_FORMULA_ESTIMACION,
+                'mensaje' => '❌ No se pudieron generar estimaciones en este momento. Intenta nuevamente.',
+            ], 200);
+        }
+
+        $sesion->delete();
+
+        $mapaFormulas = [
+            '1' => 'Smalian',
+            '2' => 'Huber',
+            '3' => 'Newton',
+            '4' => 'Cono truncado',
+        ];
+
+        return response()->json([
+            'ok' => true,
+            'estado' => 'FINALIZADO',
+            'mensaje' => "✅ Estimaciones generadas para *{$nomParcela}* con fórmula *{$mapaFormulas[$opcionFormula]}*.\n\n🌳 Árboles procesados: *{$resultado['arboles']}*\n🪵 Trozas procesadas: *{$resultado['trozas']}*\n\nPuedes volver al menú para consultar resultados.",
+        ], 200);
+    }
+
+    private function ejecutarCalculosPendientes(int $idParcela, string $alcance, ?int $idFormulaTroza): array
+    {
+        return DB::transaction(function () use ($idParcela, $alcance, $idFormulaTroza) {
+            $idTipoEstimacion = DB::table('tipo_estimaciones')
+                ->whereRaw('LOWER(desc_estimacion) = ?', [mb_strtolower('Volumen maderable')])
+                ->value('id_tipo_e');
+
+            if (!$idTipoEstimacion) {
+                $idTipoEstimacion = DB::table('tipo_estimaciones')->min('id_tipo_e');
+            }
+
+            if (!$idTipoEstimacion) {
+                throw new \RuntimeException('No existe un tipo de estimación configurado.');
+            }
+
+            $ahora = now();
+            $insertadosArboles = 0;
+            $insertadosTrozas = 0;
+
+            if (in_array($alcance, ['1', '3'], true)) {
+                $arbolesPendientes = DB::table('arboles as a')
+                    ->where('a.id_parcela', $idParcela)
+                    ->whereNotExists(function ($q) {
+                        $q->select(DB::raw(1))
+                            ->from('estimaciones1 as e1')
+                            ->whereColumn('e1.id_arbol', 'a.id_arbol');
+                    })
+                    ->pluck('a.id_arbol');
+
+                if ($arbolesPendientes->isNotEmpty()) {
+                    $rows = $arbolesPendientes->map(function ($idArbol) use ($idTipoEstimacion, $ahora) {
+                        return [
+                            'id_tipo_e' => (int) $idTipoEstimacion,
+                            'id_formula' => null,
+                            'calculo' => 0,
+                            'area_basal' => 0,
+                            'biomasa' => 0,
+                            'carbono' => 0,
+                            'id_arbol' => (int) $idArbol,
+                            'created_at' => $ahora,
+                            'updated_at' => $ahora,
+                        ];
+                    })->all();
+
+                    DB::table('estimaciones1')->insert($rows);
+                    $insertadosArboles = count($rows);
+                }
+            }
+
+            if (in_array($alcance, ['2', '3'], true)) {
+                if (!$idFormulaTroza || !in_array($idFormulaTroza, [1, 2, 3, 4], true)) {
+                    throw new \InvalidArgumentException('Fórmula de troza inválida para el alcance seleccionado.');
+                }
+
+                $trozasPendientes = DB::table('trozas as t')
+                    ->where('t.id_parcela', $idParcela)
+                    ->whereNotExists(function ($q) {
+                        $q->select(DB::raw(1))
+                            ->from('estimaciones as e')
+                            ->whereColumn('e.id_troza', 't.id_troza');
+                    })
+                    ->pluck('t.id_troza');
+
+                if ($trozasPendientes->isNotEmpty()) {
+                    $rows = $trozasPendientes->map(function ($idTroza) use ($idTipoEstimacion, $idFormulaTroza, $ahora) {
+                        return [
+                            'id_tipo_e' => (int) $idTipoEstimacion,
+                            'id_formula' => (int) $idFormulaTroza,
+                            'calculo' => 0,
+                            'biomasa' => 0,
+                            'carbono' => 0,
+                            'id_troza' => (int) $idTroza,
+                            'created_at' => $ahora,
+                            'updated_at' => $ahora,
+                        ];
+                    })->all();
+
+                    DB::table('estimaciones')->insert($rows);
+                    $insertadosTrozas = count($rows);
+                }
+            }
+
+            return [
+                'arboles' => $insertadosArboles,
+                'trozas' => $insertadosTrozas,
+            ];
+        });
     }
 
     private function procesarPasoParcela(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
