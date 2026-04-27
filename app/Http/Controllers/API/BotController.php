@@ -878,12 +878,21 @@ class BotController extends Controller
 
     private function procesarFormulaEstimacion(BotSesion $sesion, string $mensajeCrudo)
     {
-        $opcionFormula = trim($mensajeCrudo);
+        $entradaFormula = $this->normalizarTextoBusqueda($mensajeCrudo);
+
+        $opcionFormula = match (true) {
+            in_array($entradaFormula, ['1', 'smalian'], true) => '1',
+            in_array($entradaFormula, ['2', 'huber'], true) => '2',
+            in_array($entradaFormula, ['3', 'newton'], true) => '3',
+            in_array($entradaFormula, ['4', 'cono truncado', 'cono', 'truncado'], true) => '4',
+            default => trim($mensajeCrudo),
+        };
+
         if (!in_array($opcionFormula, ['1', '2', '3', '4'], true)) {
             return response()->json([
                 'ok' => false,
                 'estado' => self::ESPERANDO_FORMULA_ESTIMACION,
-                'mensaje' => "⚠️ Fórmula no válida. Responde con *1*, *2*, *3* o *4*.",
+                'mensaje' => "⚠️ Fórmula no válida. Responde con número o nombre:\n*1* / *Smalian*\n*2* / *Huber*\n*3* / *Newton*\n*4* / *Cono truncado*.",
             ], 200);
         }
 
