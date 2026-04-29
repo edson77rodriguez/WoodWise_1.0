@@ -23,7 +23,7 @@
 
     <div class="video-background">
         <video autoplay muted loop playsinline id="bg-video" poster="{{ asset('img/forest-bg.jpg') }}">
-            <source src="{{ asset('videos/tree.mp4') }}" type="video/mp4">
+            <source src="{{ asset('Videos/tree.mp4') }}" type="video/mp4">
             <img src="{{ asset('img/forest-bg.jpg') }}" alt="Fondo de bosque (fallback)">
         </video>
     </div>
