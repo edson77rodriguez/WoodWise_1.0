@@ -53,7 +53,8 @@
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <ul class="navbar-nav gap-1">
                     <li class="nav-item">
-                        <a href="{{ route('welcome') }}" class="nav-link active">
+                        <a href="{{ route('welcome') }}" cl                        git diff -- resources/views/welcome.blade.php
+                        git diff -- resources/views/P/index.blade.phpass="nav-link active">
                             <i class="fas fa-home me-1"></i> Inicio
                         </a>
                     </li>
