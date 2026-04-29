@@ -249,12 +249,12 @@
             <tr>
                 <td style="width: 80px;">
                     @if($logo)
-                        <img src="{{ $logo }}" class="logo" alt="WoodWise">
+                        <img src="{{ $logo }}" class="logo" alt="SIGMAD">
                     @endif
                 </td>
                 <td class="header-title">
                     <h1>REPORTE DE PARCELA</h1>
-                    <p>Sistema de Gestión Forestal WoodWise</p>
+                    <p>Sistema Inteligente de Gestión Maderable</p>
                 </td>
                 <td class="header-date" style="width: 120px;">
                     Generado: {{ $fecha }}
@@ -453,7 +453,7 @@
     <div class="footer">
         <table>
             <tr>
-                <td>WoodWise - Sistema de Gestión Forestal</td>
+                <td>SIGMAD - Sistema Inteligente de Gestión Maderable</td>
                 <td style="text-align: center;">Este documento es de carácter informativo</td>
                 <td style="text-align: right;">Página 1</td>
             </tr>

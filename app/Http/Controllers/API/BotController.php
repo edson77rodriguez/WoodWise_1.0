@@ -176,7 +176,7 @@ class BotController extends Controller
         if (!$persona) {
             return response()->json([
                 'autorizado' => false,
-                'mensaje' => 'Este número no está registrado en el sistema WoodWise.',
+                'mensaje' => 'Este número no está registrado en el sistema SIGMAD.',
             ], 404);
         }
 
@@ -306,7 +306,7 @@ class BotController extends Controller
                 'text' => $mensajeCuerpo,
             ],
             'footer' => [
-                'text' => 'WoodWise | Gestion forestal inteligente 🌲',
+                'text' => 'SIGMAD | Sistema Inteligente de Gestion Maderable 🌲',
             ],
             'action' => [
                 'button' => '☰ Menu Principal',
@@ -1682,9 +1682,9 @@ class BotController extends Controller
 
             $logoBase64 = '';
             if (extension_loaded('gd')) {
-                $logoPath = public_path('img/woodwise.png');
+                $logoPath = public_path('assets/images/SIGMAD.svg');
                 if (file_exists($logoPath)) {
-                    $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+                    $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
                 }
             }
 

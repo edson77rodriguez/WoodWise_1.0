@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="icon" type="image/png" href="{{ asset('img/roda.jpg') }}">
-    <title>WoodWise - Gestión Forestal Inteligente</title>
+    <title>SIGMAD - Sistema Inteligente de Gestión Maderable</title>
 
-    <meta name="description" content="Sistema de gestión forestal WoodWise para cálculo de volúmenes maderables y administración de parcelas">
+    <meta name="description" content="SIGMAD - Sistema Inteligente de Gestión Maderable para cálculo de volúmenes y administración de parcelas">
 
     {{-- Fuentes para el nuevo tema 'Glassmorphism' --}}
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
@@ -26,8 +26,8 @@
     <aside class="sidenav" id="sidenav-main">
         <div class="sidenav-header">
             <a class="navbar-brand" href="{{ route('dashboard1') }}">
-                <img src="{{ asset('img/woodwise.png') }}" height="32" alt="WoodWise Logo" loading="eager">
-                <span>WoodWise</span>
+                <img src="{{ asset('assets/images/SIGMAD.svg') }}" height="32" alt="Logo SIGMAD" loading="eager">
+                <span>SIGMAD</span>
             </a>
             {{-- Botón de cierre para móvil, controlado por JS --}}
             <button class="btn-close-sidenav d-lg-none" id="sidenav-close" aria-label="Cerrar menú">
@@ -136,7 +136,7 @@
         </div>
         
         <div class="sidenav-footer">
-            <small>© {{ date('Y') }} WoodWise v1.0</small>
+            <small>© {{ date('Y') }} SIGMAD v1.0</small>
         </div>
     </aside>
 

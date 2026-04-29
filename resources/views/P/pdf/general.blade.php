@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte General - WoodWise</title>
+    <title>Reporte General - SIGMAD</title>
     <style>
         @page {
             margin: 35px 30px;
@@ -267,12 +267,12 @@
             <tr>
                 <td style="width: 70px;">
                     @if($logo)
-                        <img src="{{ $logo }}" class="logo" alt="WoodWise">
+                        <img src="{{ $logo }}" class="logo" alt="SIGMAD">
                     @endif
                 </td>
                 <td class="header-title">
                     <h1>REPORTE GENERAL DE PARCELAS</h1>
-                    <p>Sistema de Gestión Forestal WoodWise</p>
+                    <p>Sistema Inteligente de Gestión Maderable</p>
                 </td>
                 <td class="header-date" style="width: 110px;">
                     Generado: {{ $fecha }}
@@ -433,7 +433,7 @@
     <div class="footer">
         <table>
             <tr>
-                <td>WoodWise - Sistema de Gestión Forestal</td>
+                <td>SIGMAD - Sistema Inteligente de Gestión Maderable</td>
                 <td style="text-align: center;">Este documento es de carácter informativo</td>
                 <td style="text-align: right;">Página 1</td>
             </tr>

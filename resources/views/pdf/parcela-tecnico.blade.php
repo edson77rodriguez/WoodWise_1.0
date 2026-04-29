@@ -6,7 +6,7 @@
     <title>Reporte Técnico Forestal - {{ $parcela->nom_parcela }}</title>
     <style>
         /* ============================================
-           ESTILOS CORPORATIVOS WOODWISE
+           ESTILOS CORPORATIVOS SIGMAD
            Diseño Profesional para Reportes Técnicos
            ============================================ */
         
@@ -465,7 +465,7 @@
     </style>
 </head>
 <body>
-    <div class="watermark">WOODWISE</div>
+    <div class="watermark">SIGMAD</div>
 
     <!-- ============================================
          ENCABEZADO CORPORATIVO
@@ -479,8 +479,8 @@
                     </div>
                 </td>
                 <td class="brand-cell">
-                    <div class="brand-name">WOODWISE</div>
-                    <div class="brand-tagline">Sistema de Gestión Forestal Inteligente</div>
+                    <div class="brand-name">SIGMAD</div>
+                    <div class="brand-tagline">Sistema Inteligente de Gestión Maderable</div>
                 </td>
                 <td class="doc-info-cell">
                     <div class="doc-type">REPORTE TÉCNICO</div>
@@ -849,10 +849,10 @@
     <div class="document-footer">
         <div class="footer-content">
             <div class="footer-left">
-                <strong>WoodWise</strong> © {{ date('Y') }}
+                <strong>SIGMAD</strong> © {{ date('Y') }}
             </div>
             <div class="footer-center">
-                Sistema de Gestión Forestal - Documento Oficial
+                Sistema Inteligente de Gestión Maderable - Documento Oficial
             </div>
             <div class="footer-right">
                 Página 1 de 1

@@ -318,7 +318,7 @@
     @endforeach
 
     <div class="footer">
-        Reporte generado por WoodWise - Sistema de Gestión Forestal | Página {{ $loop->iteration }} de {{ $loop->count }}
+        Reporte generado por SIGMAD - Sistema Inteligente de Gestión Maderable | Página {{ $loop->iteration }} de {{ $loop->count }}
     </div>
 </body>
 </html>

@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="WoodWise - Solución tecnológica para gestión forestal sostenible y cálculo preciso de volúmenes maderables">
-    <title>@yield('title', 'WoodWise - Gestión Forestal Inteligente')</title>
+    <meta name="description" content="SIGMAD - Sistema Inteligente de Gestión Maderable para administración sostenible y cálculo preciso de volúmenes">
+    <title>@yield('title', 'SIGMAD - Sistema Inteligente de Gestión Maderable')</title>
     <link 
         rel="stylesheet" 
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" 
@@ -31,13 +31,13 @@
     <header class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ route('welcome') }}">
-                <img src="{{ asset('img/woodwise.png') }}" 
-                     alt="WoodWise Logo"
+                 <img src="{{ asset('assets/images/SIGMAD.svg') }}" 
+                     alt="Logo SIGMAD"
                      width="40"
                      height="40"
                      class="me-2 rounded-circle floating"
                      loading="eager">
-                <span class="text-gradient">WoodWise</span>
+                 <span class="text-gradient">SIGMAD</span>
             </a>
 
             <button class="navbar-toggler border-0" type="button"
@@ -106,8 +106,8 @@
             
             <div class="col-lg-4 fade-in">
                 <div class="footer-brand-container">
-                    <h3 class="footer-logo">Wood<span>Wise</span></h3>
-                    <p class="footer-description">Tecnología avanzada para la gestión forestal sostenible. Optimización de recursos con precisión científica.</p>
+                    <h3 class="footer-logo">SIGMAD</h3>
+                    <p class="footer-description">Sistema Inteligente de Gestión Maderable. Optimización de recursos con precisión científica.</p>
                     <div class="social-icons">
                         <a href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
                         <a href="#" aria-label="Twitter"><i class="bi bi-twitter"></i></a>
@@ -163,7 +163,7 @@
         </div>
         
         <div class="copyright text-center fade-in">
-            <p class="copyright-text">&copy; 2025 WoodWise - Todos los derechos reservados</p>
+            <p class="copyright-text">&copy; 2025 SIGMAD - Todos los derechos reservados</p>
             <small class="developer-credit">Desarrollado con <i class="bi bi-heart-fill heart-icon"></i> por TESVB COMPANY</small>
         </div>
     </div>

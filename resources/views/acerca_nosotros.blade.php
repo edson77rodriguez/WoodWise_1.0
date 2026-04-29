@@ -32,11 +32,11 @@
                                 </div>
                                 <h3 class="carousel-title fw-bold mb-2 mb-md-3 text-center text-md-start text-dark">Nuestra Misión</h3>
                                 <p class="fs-6 fs-md-5 text-center text-md-start text-dark-emphasis">
-                                    En <strong class="text-gradient">WoodWise</strong>, revolucionamos la gestión forestal mediante tecnología de punta que combina precisión científica con sostenibilidad ambiental.
+                                    En <strong class="text-gradient">SIGMAD</strong>, revolucionamos la gestión maderable mediante tecnología de punta que combina precisión científica con sostenibilidad ambiental.
                                 </p>
                             </div>
                             <div class="col-md-6 order-1 order-md-2">
-                                <img src="{{ asset('img/woodwise.png') }}" class="img-fluid rounded-3 shadow" alt="Misión WoodWise" loading="lazy">
+                                <img src="{{ asset('assets/images/SIGMAD.svg') }}" class="img-fluid rounded-3 shadow" alt="Misión SIGMAD" loading="lazy">
                             </div>
                         </div>
                     </div>
@@ -55,7 +55,7 @@
                                 </p>
                             </div>
                             <div class="col-md-6 order-1 order-md-1">
-                                <img src="{{ asset('img/woodwise.png') }}" class="img-fluid rounded-3 shadow" alt="Equipo WoodWise" loading="lazy">
+                                <img src="{{ asset('assets/images/SIGMAD.svg') }}" class="img-fluid rounded-3 shadow" alt="Equipo SIGMAD" loading="lazy">
                             </div>
                         </div>
                     </div>
@@ -79,7 +79,7 @@
                                 </ul>
                             </div>
                             <div class="col-md-6 order-1 order-md-2">
-                                <img src="{{ asset('img/woodwise.png') }}" class="img-fluid rounded-3 shadow" alt="Tecnología WoodWise" loading="lazy">
+                                <img src="{{ asset('assets/images/SIGMAD.svg') }}" class="img-fluid rounded-3 shadow" alt="Tecnología SIGMAD" loading="lazy">
                             </div>
                         </div>
                     </div>
@@ -126,7 +126,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6 order-1 order-md-1">
-                                <img src="{{ asset('img/woodwise.png') }}" class="img-fluid rounded-3 shadow" alt="Valores WoodWise" loading="lazy">
+                                <img src="{{ asset('assets/images/SIGMAD.svg') }}" class="img-fluid rounded-3 shadow" alt="Valores SIGMAD" loading="lazy">
                             </div>
                         </div>
                     </div>

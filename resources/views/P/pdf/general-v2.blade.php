@@ -397,14 +397,14 @@
                             <tr>
                                 <td style="width: 55px;">
                                     @if($logo)
-                                        <img src="{{ $logo }}" class="logo" alt="WoodWise">
+                                        <img src="{{ $logo }}" class="logo" alt="SIGMAD">
                                     @else
                                         <div style="width:50px;height:50px;background:rgba(255,255,255,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#d4a853;font-weight:bold;font-size:12px;">WW</div>
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="brand-name">WOODWISE</div>
-                                    <div class="brand-subtitle">Gestión Forestal</div>
+                                    <div class="brand-name">SIGMAD</div>
+                                    <div class="brand-subtitle">Sistema Inteligente de Gestión Maderable</div>
                                 </td>
                             </tr>
                         </table>
@@ -658,7 +658,7 @@
         <table class="footer-table">
             <tr>
                 <td style="width: 33%;">
-                    <span class="footer-brand">WoodWise</span> - Sistema de Gestión Forestal Sostenible
+                    <span class="footer-brand">SIGMAD</span> - Sistema Inteligente de Gestión Maderable
                 </td>
                 <td style="width: 34%; text-align: center;">
                     Documento generado automáticamente · Datos confidenciales

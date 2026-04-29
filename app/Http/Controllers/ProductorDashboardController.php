@@ -280,9 +280,9 @@ class ProductorDashboardController extends Controller
         // Logo (solo si GD está disponible)
         $logoBase64 = '';
         if (extension_loaded('gd')) {
-            $logoPath = public_path('img/woodwise.png');
+            $logoPath = public_path('assets/images/SIGMAD.svg');
             if (file_exists($logoPath)) {
-                $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+                $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
             }
         }
 
@@ -342,9 +342,9 @@ class ProductorDashboardController extends Controller
         // Logo (solo si GD está disponible)
         $logoBase64 = '';
         if (extension_loaded('gd')) {
-            $logoPath = public_path('img/woodwise.png');
+            $logoPath = public_path('assets/images/SIGMAD.svg');
             if (file_exists($logoPath)) {
-                $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+                $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
             }
         }
 

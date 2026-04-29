@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="WoodWise - Solución tecnológica para cálculo preciso de volúmenes maderables y gestión forestal sostenible">
-    <title>WoodWise - Gestión Inteligente de Bosques</title>
+    <meta name="description" content="SIGMAD - Sistema Inteligente de Gestión Maderable para cálculo preciso de volúmenes y administración sostenible">
+    <title>SIGMAD - Sistema Inteligente de Gestión Maderable</title>
 
-    <link rel="icon" href="{{ asset('img/woodwise.png') }}" type="image/png">
-    <link rel="apple-touch-icon" href="{{ asset('img/woodwise.png') }}">
+    <link rel="icon" href="{{ asset('assets/images/SIGMAD.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ asset('assets/images/SIGMAD.svg') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,12 +33,12 @@
     <header class="navbar navbar-expand-lg navbar-dark sticky-top navbar-initial" id="mainNavbar">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ route('welcome') }}">
-                <img src="{{ asset('img/woodwise.png') }}" 
-                     alt="WoodWise Logo" 
+                 <img src="{{ asset('assets/images/SIGMAD.svg') }}" 
+                     alt="Logo SIGMAD" 
                      width="50" 
                      height="50" 
                      class="me-2 rounded-circle floating">
-                <span class="text-gradient">WoodWise</span>
+                 <span class="text-gradient">SIGMAD</span>
             </a>
 
             <button class="navbar-toggler" type="button" 
@@ -87,13 +87,13 @@
                         <div class="hero-card">
                             <div class="row g-0">
                                 <div class="col-md-6 hero-img">
-                                    <img src="{{ asset('img/portada.jpg') }}" 
+                                     <img src="{{ asset('img/portada.jpg') }}" 
                                          class="img-fluid" 
-                                         alt="Sistema WoodWise en acción"
+                                         alt="Sistema SIGMAD en acción"
                                          loading="lazy">
                                 </div>
                                 <div class="col-md-6 hero-text-content">
-                                    <h1 class="hero-title">Bienvenido a <span>WoodWise</span></h1>
+                                     <h1 class="hero-title">Bienvenido a <span>SIGMAD</span></h1>
                                     <p class="hero-text">
                                         La solución tecnológica más avanzada para el cálculo preciso de volúmenes maderables. 
                                         Nuestra plataforma combina algoritmos inteligentes con datos satelitales para ofrecer 
@@ -163,8 +163,8 @@
                 
                 <div class="col-lg-4 fade-in">
                     <div class="footer-brand-container">
-                        <h3 class="footer-logo">Wood<span>Wise</span></h3>
-                        <p class="footer-description">Tecnología avanzada para la gestión forestal sostenible. Optimización de recursos con precisión científica.</p>
+                        <h3 class="footer-logo">SIGMAD</h3>
+                        <p class="footer-description">Sistema Inteligente de Gestión Maderable. Optimización de recursos con precisión científica.</p>
                         <div class="social-icons">
                             <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                             <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
@@ -220,7 +220,7 @@
             </div>
             
             <div class="copyright text-center fade-in">
-                <p class="copyright-text">&copy; 2025 WoodWise - Todos los derechos reservados</p>
+                <p class="copyright-text">&copy; 2025 SIGMAD - Todos los derechos reservados</p>
                 <small class="developer-credit">Desarrollado con <i class="fas fa-heart heart-icon"></i> por TESVB COMPANY</small>
             </div>
         </div>
