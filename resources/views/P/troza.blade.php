@@ -67,7 +67,7 @@
 @endif
 
 <div class="footer">
-    © {{ date('Y') }} WoodWise - Sistema de Gestión Forestal
+    © {{ date('Y') }} SIGMAD - Sistema Inteligente de Gestión Maderable
 </div>
 </body>
 </html>

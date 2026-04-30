@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Iniciar Sesión - WoodWise')
+@section('title', 'Iniciar Sesión - SIGMAD')
 
 {{-- 1. CSS movido al stack de 'styles' en el <head> --}}
 @push('styles')
@@ -18,11 +18,11 @@
                     <div class="card-header bg-gradient-primary py-3 py-md-4">
                         <div class="text-center position-relative">
                             <div class="logo-3d-container mb-3">
-                                <img src="{{ asset('img/woodwise.png') }}" alt="WoodWise Logo" 
+                                <img src="{{ asset('assets/images/SIGMAD.svg') }}" alt="Logo SIGMAD" 
                                      class="logo-3d img-fluid">
                             </div>
-                            <h2 class="text-white mb-1 h4 animate__animated animate__fadeIn">Bienvenido a WoodWise</h2>
-                            <p class="text-white-50 mb-0 small animate__animated animate__fadeIn animate__delay-1s">Gestión Forestal Inteligente</p>
+                            <h2 class="text-white mb-1 h4 animate__animated animate__fadeIn">Bienvenido a SIGMAD</h2>
+                            <p class="text-white-50 mb-0 small animate__animated animate__fadeIn animate__delay-1s">Sistema Inteligente de Gestión Maderable</p>
                         </div>
                     </div>
 

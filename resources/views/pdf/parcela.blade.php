@@ -18,11 +18,11 @@
             text-align: center;
             margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 2px solid #4a7c30; /* Verde WoodWise */
+            border-bottom: 2px solid #4a7c30; /* Verde SIGMAD */
         }
 
         .title {
-            color: #1a3a16; /* Verde oscuro WoodWise */
+            color: #1a3a16; /* Verde oscuro SIGMAD */
             font-size: 22px;
             font-weight: bold;
             margin-bottom: 5px;
@@ -30,7 +30,7 @@
         }
 
         .subtitle {
-            color: #4a3c27; /* Marrón WoodWise */
+            color: #4a3c27; /* Marrón SIGMAD */
             font-size: 13px;
         }
 
@@ -41,7 +41,7 @@
         }
 
         .section-title {
-            background-color: #1a3a16; /* Verde oscuro WoodWise */
+            background-color: #1a3a16; /* Verde oscuro SIGMAD */
             color: white;
             padding: 8px 12px;
             font-weight: bold;
@@ -60,7 +60,7 @@
         }
 
         .info-table th {
-            background-color: #1a3a16; /* Verde oscuro WoodWise */
+            background-color: #1a3a16; /* Verde oscuro SIGMAD */
             color: white;
             text-align: left;
             padding: 8px 10px;
@@ -342,8 +342,8 @@
 </div>
 
 <div class="footer">
-    <p class="text-bold">WoodWise - Sistema de Gestión Forestal Sostenible</p>
-    <p>© {{ date('Y') }} WoodWise Technologies. Todos los derechos reservados.</p>
+    <p class="text-bold">SIGMAD - Sistema Inteligente de Gestión Maderable</p>
+    <p>© {{ date('Y') }} SIGMAD. Todos los derechos reservados.</p>
     <p>Documento generado automáticamente el {{ now()->format('d/m/Y H:i') }}</p>
 </div>
 </body>

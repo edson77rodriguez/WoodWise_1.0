@@ -14,7 +14,9 @@ class ArbolController extends Controller
     {
         $this->middleware('auth');
         $this->middleware(function ($request, $next) {
-            if (Auth::user()->persona->rol->nom_rol !== 'Administrador') {
+            $user = Auth::user();
+
+            if (!$user || !$user->persona || !$user->persona->rol || $user->persona->rol->nom_rol !== 'Administrador') {
                 return response()->view('denegado', [], 403);
             }
             return $next($request);

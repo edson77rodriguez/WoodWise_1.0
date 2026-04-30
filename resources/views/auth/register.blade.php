@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Registro - WoodWise')
+@section('title', 'Registro - SIGMAD')
 
 {{-- 1. CSS movido al stack 'styles' (carga en <head>) --}}
 @push('styles')

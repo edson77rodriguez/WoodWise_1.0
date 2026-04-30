@@ -40,12 +40,7 @@
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <div class="user-dropdown-menu" id="userDropdown">
-                        <a href="{{ route('perfil.index') }}" class="dropdown-item">
-                            <i class="fas fa-user"></i><span>Mi Perfil</span>
-                        </a>
-                        <a href="{{ route('especies.catalogo') }}" class="dropdown-item">
-                            <i class="fas fa-seedling"></i><span>Catálogo Especies</span>
-                        </a>
+                        
                         <div class="dropdown-divider"></div>
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf

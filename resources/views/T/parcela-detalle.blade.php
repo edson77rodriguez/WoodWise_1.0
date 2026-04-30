@@ -245,6 +245,93 @@
         }
         .empty-state i { font-size: 3rem; margin-bottom: 1rem; color: #2d5a27; opacity: 0.6; }
         .empty-state p { margin-bottom: 0; font-weight: 500; }
+
+        /* ===== Mejoras responsive + proporciones consistentes ===== */
+        .stats-grid > [class*="col-"] {
+            display: flex;
+        }
+        .stat-card-mini {
+            width: 100%;
+            height: 100%;
+            min-height: 120px;
+        }
+
+        @media (max-width: 768px) {
+            .parcela-hero {
+                padding: 1.5rem;
+                overflow: hidden !important;
+            }
+
+            .parcela-hero h1 {
+                font-size: 1.6rem;
+            }
+
+            .parcela-hero .meta {
+                font-size: 0.95rem;
+                line-height: 1.4;
+            }
+
+            .action-buttons {
+                width: 100%;
+            }
+            .action-buttons .btn-action {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .data-section {
+                padding: 1.25rem;
+            }
+
+            /* Tablas -> tarjetas apiladas (móvil) */
+            .data-table thead {
+                display: none;
+            }
+            .data-table,
+            .data-table tbody,
+            .data-table tr,
+            .data-table td,
+            .data-table tfoot {
+                display: block;
+                width: 100%;
+            }
+            .data-table tbody tr {
+                background: #ffffff;
+                border: 1px solid #eef5ed;
+                border-radius: 12px;
+                margin-bottom: 0.75rem;
+                overflow: hidden;
+            }
+            .data-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 1rem;
+                padding: 0.75rem 0.9rem;
+            }
+            .data-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: #6b7280;
+                min-width: 130px;
+            }
+            .data-table tfoot tr {
+                background: #f8faf8;
+                border: 1px solid #eef5ed;
+                border-radius: 12px;
+                overflow: hidden;
+                margin-top: 0.75rem;
+            }
+            .data-table tfoot td {
+                display: flex;
+                justify-content: space-between;
+                padding: 0.75rem 0.9rem;
+                border-bottom: 1px solid #eef5ed;
+            }
+            .data-table tfoot td::before {
+                content: none;
+            }
+        }
     </style>
 @endpush
 
@@ -275,7 +362,7 @@
     </div>
 
     {{-- Estadísticas Resumen --}}
-    <div class="row g-4 mb-4">
+    <div class="row g-4 mb-4 stats-grid">
         <div class="col-md-3 col-sm-6">
             <div class="stat-card-mini">
                 <div class="icon volumen"><i class="fas fa-cubes"></i></div>
@@ -340,11 +427,11 @@
                             <tbody>
                                 @foreach($parcela->trozas as $troza)
                                 <tr>
-                                    <td><strong>{{ $troza->id_troza }}</strong></td>
-                                    <td>{{ $troza->especie->nom_cientifico ?? 'N/A' }}</td>
-                                    <td>{{ $troza->longitud }}m</td>
-                                    <td>{{ $troza->diametro }}m</td>
-                                    <td>{{ $troza->densidad }} ton/m³</td>
+                                    <td data-label="#"><strong>{{ $troza->id_troza }}</strong></td>
+                                    <td data-label="Especie">{{ $troza->especie->nom_cientifico ?? 'N/A' }}</td>
+                                    <td data-label="Long. (m)">{{ $troza->longitud }}m</td>
+                                    <td data-label="Diám. (m)">{{ $troza->diametro }}m</td>
+                                    <td data-label="Densidad">{{ $troza->densidad }} ton/m³</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -383,17 +470,18 @@
                             <tbody>
                                 @foreach($estimacionesTrozas as $est)
                                 <tr>
-                                    <td>#{{ $est->id_troza }}</td>
-                                    <td>{{ $est->formula->nom_formula ?? 'N/A' }}</td>
-                                    <td><span class="badge-tipo badge-volumen">{{ number_format($est->calculo, 4) }} m³</span></td>
-                                    <td><span class="badge-tipo badge-biomasa">{{ number_format($est->biomasa, 4) }} ton</span></td>
-                                    <td><span class="badge-tipo badge-carbono">{{ number_format($est->carbono, 4) }} ton</span></td>
+                                    <td data-label="Troza">#{{ $est->id_troza }}</td>
+                                    <td data-label="Fórmula">{{ $est->formula->nom_formula ?? 'N/A' }}</td>
+                                    <td data-label="Volumen"><span class="badge-tipo badge-volumen">{{ number_format($est->calculo, 4) }} m³</span></td>
+                                    <td data-label="Biomasa"><span class="badge-tipo badge-biomasa">{{ number_format($est->biomasa, 4) }} ton</span></td>
+                                    <td data-label="Carbono"><span class="badge-tipo badge-carbono">{{ number_format($est->carbono, 4) }} ton</span></td>
                                 </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr style="background: #f8faf8; font-weight: 600;">
-                                    <td colspan="2">TOTALES</td>
+                                    <td>TOTALES</td>
+                                    <td></td>
                                     <td>{{ number_format($totalVolumenTrozas, 4) }} m³</td>
                                     <td>{{ number_format($totalBiomasaTrozas, 4) }} ton</td>
                                     <td>{{ number_format($totalCarbonoTrozas, 4) }} ton</td>
@@ -432,10 +520,10 @@
                             <tbody>
                                 @foreach($parcela->arboles as $arbol)
                                 <tr>
-                                    <td><strong>{{ $arbol->id_arbol }}</strong></td>
-                                    <td>{{ $arbol->especie->nom_cientifico ?? 'N/A' }}</td>
-                                    <td>{{ $arbol->altura_total }}m</td>
-                                    <td>{{ $arbol->diametro_pecho }}m</td>
+                                    <td data-label="#"><strong>{{ $arbol->id_arbol }}</strong></td>
+                                    <td data-label="Especie">{{ $arbol->especie->nom_cientifico ?? 'N/A' }}</td>
+                                    <td data-label="Altura">{{ $arbol->altura_total }}m</td>
+                                    <td data-label="DAP">{{ $arbol->diametro_pecho }}m</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -474,8 +562,8 @@
                             <tbody>
                                 @foreach($estimacionesArboles as $est)
                                 <tr>
-                                    <td>#{{ $est->id_arbol }}</td>
-                                    <td>
+                                    <td data-label="Árbol">#{{ $est->id_arbol }}</td>
+                                    <td data-label="Tipo">
                                         @if($est->tipoEstimacion->desc_estimacion == 'Volumen Maderable')
                                             <span class="badge-tipo badge-volumen">{{ $est->tipoEstimacion->desc_estimacion }}</span>
                                         @elseif($est->tipoEstimacion->desc_estimacion == 'Biomasa')
@@ -484,15 +572,16 @@
                                             <span class="badge-tipo badge-carbono">{{ $est->tipoEstimacion->desc_estimacion }}</span>
                                         @endif
                                     </td>
-                                    <td>{{ number_format($est->calculo, 4) }}</td>
-                                    <td>{{ number_format($est->biomasa, 4) }} ton</td>
-                                    <td>{{ number_format($est->carbono, 4) }} ton</td>
+                                    <td data-label="Cálculo">{{ number_format($est->calculo, 4) }}</td>
+                                    <td data-label="Biomasa">{{ number_format($est->biomasa, 4) }} ton</td>
+                                    <td data-label="Carbono">{{ number_format($est->carbono, 4) }} ton</td>
                                 </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr style="background: #f8faf8; font-weight: 600;">
-                                    <td colspan="2">TOTALES</td>
+                                    <td>TOTALES</td>
+                                    <td></td>
                                     <td>{{ number_format($totalVolumenArboles, 4) }}</td>
                                     <td>{{ number_format($totalBiomasaArboles, 4) }} ton</td>
                                     <td>{{ number_format($totalCarbonoArboles, 4) }} ton</td>
