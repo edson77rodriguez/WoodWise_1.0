@@ -34,7 +34,7 @@
                         </div>
                         <div class="header-text-content ms-4">
                             <h1 class="header-title gradient-text">
-                                Panel del Técnico Forestal
+                                Panel del Técnico
                                 <span class="title-underline"></span>
                             </h1>
                             <p class="header-subtitle">
@@ -47,7 +47,7 @@
                                 </div>
                                 <div class="stat-chip">
                                     <i class="fas fa-id-card me-1"></i>
-                                    <span>{{ $tecnico->clave_tecnico }}</span>
+                                    <span>{{ $tecnico->clave_tecnico ?? 'Sin clave' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -161,7 +161,7 @@
                             </div>
                             <div class="meta-item">
                                 <i class="fas fa-key"></i>
-                                <span>{{ $tecnico->clave_tecnico }}</span>
+                                    <span>{{ $tecnico->clave_tecnico ?? 'N/A' }}</span>
                             </div>
                             <div class="meta-item">
                                 <i class="fas fa-calendar"></i>
@@ -180,8 +180,8 @@
                         <span class="preview-label">Trozas</span>
                     </div>
                     <div class="preview-item">
-                        <span class="preview-value">{{ $totalVolumenMaderable ?? 0 }}m³</span>
-                        <span class="preview-label">Volumen</span>
+                        <span class="preview-value">{{ number_format($totalVolumenMaderable ?? 0, 2) }}</span>
+                        <span class="preview-label">Volumen (m³)</span>
                     </div>
                 </div>
             </div>
@@ -413,269 +413,139 @@
                 </div>
             </div>
 
-            <!-- Contenedor de Tabla -->
-            <div class="table-wrapper">
-                <div class="table-scroll-container">
-                    <table class="advanced-data-table">
-                        <thead class="table-header-sticky">
-                            <tr>
-                                <th class="column-parcela">
-                                    <div class="column-header">
-                                        <span>Parcela</span>
-                                        <button class="sort-btn" data-sort="name">
-                                            <i class="fas fa-sort"></i>
-                                        </button>
+            <!-- Contenedor de Tarjetas -->
+            <div class="parcel-cards-container">
+                <div class="parcel-cards-grid" id="parcelasGrid">
+                    @forelse($parcelas as $index => $parcela)
+                        @php
+                            $total_estimaciones_parcela = ($parcela->estimaciones_count ?? 0) + ($parcela->estimaciones1_count ?? 0);
+                            $volumen_parcela = ($parcela->estimaciones_sum_calculo ?? 0) + ($parcela->estimaciones1_sum_calculo ?? 0);
+                            $producerName = 'No asignado';
+                            if ($parcela->productor && $parcela->productor->persona) {
+                                $producerName = trim(($parcela->productor->persona->nom ?? '') . ' ' . ($parcela->productor->persona->ap ?? ''));
+                            }
+                        @endphp
+
+                        <div
+                            class="parcela-float-card"
+                            data-parcela-id="{{ $parcela->id_parcela }}"
+                            data-parcela-name="{{ $parcela->nom_parcela }}"
+                            data-producer="{{ $producerName }}"
+                            data-location="{{ $parcela->ubicacion }}"
+                            data-extension="{{ (float) $parcela->extension }}"
+                            data-arboles="{{ (int) ($parcela->arboles_count ?? 0) }}"
+                            data-trozas="{{ (int) $parcela->trozas_count }}"
+                            data-estimaciones="{{ (int) $total_estimaciones_parcela }}"
+                            data-volumen="{{ number_format($volumen_parcela, 2, '.', '') }}"
+                        >
+                            <div class="parcela-float-card__top">
+                                <div class="parcela-float-card__title">
+                                    <div class="parcela-float-card__icon">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span class="parcela-float-card__status" aria-hidden="true"></span>
                                     </div>
-                                </th>
-                                <th class="column-productor">
-                                    <div class="column-header">
+                                    <div class="parcela-float-card__title-text">
+                                        <div class="parcela-float-card__name">{{ $parcela->nom_parcela }}</div>
+                                        <div class="parcela-float-card__meta">
+                                            <span class="parcela-float-card__code">#{{ $parcela->id_parcela }}</span>
+                                            <span class="parcela-float-card__badge">Activa</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="action-menu-mobile action-menu-inline" aria-label="Acciones">
+                                    <button class="action-menu-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-vertical"></i>
+                                    </button>
+                                    <div class="action-menu-list">
+                                        <a href="{{ url('/T/parcelas/' . $parcela->id_parcela . '/export-pdf') }}" class="action-menu-item">
+                                            <i class="fas fa-file-pdf"></i>
+                                            <span>Exportar PDF</span>
+                                        </a>
+                                        <button class="action-menu-item" data-bs-toggle="modal" data-bs-target="#addTrozaModal{{ $parcela->id_parcela }}">
+                                            <i class="fas fa-cut"></i>
+                                            <span>Nueva Troza</span>
+                                        </button>
+                                        <button class="action-menu-item" data-bs-toggle="modal" data-bs-target="#estimacionTrozaModal{{ $parcela->id_parcela }}">
+                                            <i class="fas fa-cube"></i>
+                                            <span>Estimación de Troza</span>
+                                        </button>
+                                        <button class="action-menu-item" data-bs-toggle="modal" data-bs-target="#addArbolModal{{ $parcela->id_parcela }}">
+                                            <i class="fas fa-tree"></i>
+                                            <span>Nuevo Árbol</span>
+                                        </button>
+                                        <button class="action-menu-item" data-bs-toggle="modal" data-bs-target="#estimacionArbolModal{{ $parcela->id_parcela }}">
+                                            <i class="fas fa-tree"></i>
+                                            <span>Estimación de Árbol</span>
+                                        </button>
+                                        <a href="{{ route('tecnico.parcela.detalle', $parcela->id_parcela) }}" class="action-menu-item">
+                                            <i class="fas fa-eye"></i>
+                                            <span>Ver Detalles</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="parcela-float-card__info">
+                                <div class="parcela-float-card__info-row">
+                                    <div class="parcela-float-card__info-k">
+                                        <i class="fas fa-user"></i>
                                         <span>Productor</span>
-                                        <button class="sort-btn" data-sort="producer">
-                                            <i class="fas fa-sort"></i>
-                                        </button>
                                     </div>
-                                </th>
-                                <th class="column-ubicacion">
-                                    <div class="column-header">
+                                    <div class="parcela-float-card__info-v">{{ $producerName }}</div>
+                                </div>
+                                <div class="parcela-float-card__info-row">
+                                    <div class="parcela-float-card__info-k">
+                                        <i class="fas fa-location-dot"></i>
                                         <span>Ubicación</span>
                                     </div>
-                                </th>
-                                <th class="column-extension">
-                                    <div class="column-header">
+                                    <div class="parcela-float-card__info-v">{{ $parcela->ubicacion }}</div>
+                                </div>
+                                <div class="parcela-float-card__info-row">
+                                    <div class="parcela-float-card__info-k">
+                                        <i class="fas fa-ruler-combined"></i>
                                         <span>Extensión</span>
-                                        <button class="sort-btn" data-sort="extension">
-                                            <i class="fas fa-sort"></i>
-                                        </button>
                                     </div>
-                                </th>
-                                <th class="column-arboles">
-                                    <div class="column-header">
-                                        <i class="fas fa-tree"></i>
-                                        <span>Árboles</span>
-                                    </div>
-                                </th>
-                                <th class="column-trozas">
-                                    <div class="column-header">
-                                        <i class="fas fa-cut"></i>
-                                        <span>Trozas</span>
-                                    </div>
-                                </th>
-                                <th class="column-estimaciones">
-                                    <div class="column-header">
-                                        <i class="fas fa-calculator"></i>
-                                        <span>Estimaciones</span>
-                                    </div>
-                                </th>
-                                <th class="column-volumen">
-                                    <div class="column-header">
-                                        <i class="fas fa-cubes"></i>
-                                        <span>Volumen</span>
-                                        <button class="sort-btn" data-sort="volume">
-                                            <i class="fas fa-sort"></i>
-                                        </button>
-                                    </div>
-                                </th>
-                                <th class="column-actions">
-                                    <div class="column-header">
-                                        <span>Acciones</span>
-                                    </div>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($parcelas as $index => $parcela)
-                                <tr class="table-data-row" data-parcela-id="{{ $parcela->id_parcela }}">
-                                    <!-- Columna Parcela -->
-                                    <td class="cell-parcela">
-                                        <div class="parcela-card">
-                                            <div class="parcela-avatar">
-                                                <i class="fas fa-map-marker-alt"></i>
-                                                <div class="parcela-status active"></div>
-                                            </div>
-                                            <div class="parcela-info">
-                                                <h6 class="parcela-name">{{ $parcela->nom_parcela }}</h6>
-                                                <div class="parcela-meta">
-                                                    <span class="parcela-code">#{{ $parcela->id_parcela }}</span>
-                                                    <span class="parcela-badge">Activa</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
+                                    <div class="parcela-float-card__info-v">{{ number_format($parcela->extension, 2) }} ha</div>
+                                </div>
+                            </div>
 
-                                    <!-- Columna Productor -->
-                                    <td class="cell-productor">
-                                        @if($parcela->productor && $parcela->productor->persona)
-                                            <div class="producer-card">
-                                                <div class="producer-avatar">
-                                                    <i class="fas fa-user"></i>
-                                                </div>
-                                                <div class="producer-info">
-                                                    <span class="producer-name">{{ $parcela->productor->persona->nom }}</span>
-                                                    <span class="producer-id">{{ $parcela->productor->persona->cedula }}</span>
-                                                </div>
-                                            </div>
-                                        @else
-                                            <div class="empty-state-cell">
-                                                <i class="fas fa-user-slash"></i>
-                                                <span>No asignado</span>
-                                            </div>
-                                        @endif
-                                    </td>
-
-                                    <!-- Columna Ubicación -->
-                                    <td class="cell-ubicacion">
-                                        <div class="location-cell">
-                                            <i class="fas fa-location-dot"></i>
-                                            <span class="location-text">{{ $parcela->ubicacion }}</span>
-                                        </div>
-                                    </td>
-
-                                    <!-- Columna Extensión -->
-                                    <td class="cell-extension">
-                                        <div class="extension-display">
-                                            <div class="extension-value">{{ $parcela->extension }}</div>
-                                            <div class="extension-unit">hectáreas</div>
-                                        </div>
-                                    </td>
-
-                                    <!-- Columna Árboles -->
-                                    <td class="cell-arboles">
-                                        <div class="metric-cell trees">
-                                            <div class="metric-icon">
-                                                <i class="fas fa-tree"></i>
-                                            </div>
-                                            <div class="metric-content">
-                                                <span class="metric-value">{{ $parcela->arboles_count ?? 0 }}</span>
-                                                <div class="metric-progress">
-                                                    <div class="progress-bar" style="width: {{ min(($parcela->arboles_count ?? 0) / 50 * 100, 100) }}%"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <!-- Columna Trozas -->
-                                    <td class="cell-trozas">
-                                        <div class="metric-cell trozas">
-                                            <div class="metric-icon">
-                                                <i class="fas fa-cut"></i>
-                                            </div>
-                                            <div class="metric-content">
-                                                <span class="metric-value">{{ $parcela->trozas_count }}</span>
-                                                <div class="metric-progress">
-                                                    <div class="progress-bar" style="width: {{ min($parcela->trozas_count / 30 * 100, 100) }}%"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <!-- Columna Estimaciones -->
-                                    {{-- DESPUÉS (Suma estimaciones + estimaciones1) --}}
-                                    <td class="cell-estimaciones">
-                                        @php
-                                            // Sumamos ambos conteos que nos da el controlador
-                                            $total_estimaciones_parcela = ($parcela->estimaciones_count ?? 0) + ($parcela->estimaciones1_count ?? 0);
-                                        @endphp
-                                        <div class="metric-cell estimations">
-                                            <div class="metric-icon">
-                                                <i class="fas fa-calculator"></i>
-                                            </div>
-                                            <div class="metric-content">
-                                                <span class="metric-value">{{ $total_estimaciones_parcela }}</span>
-                                                <div class="metric-progress">
-                                                    {{-- Usamos el nuevo total para la barra de progreso --}}
-                                                    <div class="progress-bar" style="width: {{ min(($total_estimaciones_parcela) / 20 * 100, 100) }}%"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-
-                             <td>
-                                    @php
-                                        // El volumen total de la parcela es la suma de sus dos tipos de estimaciones
-                                        $volumen_parcela = ($parcela->estimaciones_sum_calculo ?? 0) + 
-                                                        ($parcela->estimaciones1_sum_calculo ?? 0);
-                                    @endphp
-                                    <span class="modern-badge bg-success" 
-                                        data-bs-toggle="tooltip" 
-                                        title="Volumen total (Suma de Estimaciones)">
-                                        <i class="fas fa-cubes me-1"></i>{{ number_format($volumen_parcela, 2) }}
-                                    </span>
-                                </td>
-
-                                    <!-- Columna Acciones -->
-                                        <td class="cell-actions">
-                                            <div class="advanced-actions">
-                                                <!-- Grupo PDF -->
-                                                <div class="action-group">
-                                                    <a href="{{ url('/T/parcelas/' . $parcela->id_parcela . '/export-pdf') }}" 
-                                                       class="action-btn pdf" 
-                                                       data-bs-toggle="tooltip" title="Exportar PDF">
-                                                        <i class="fas fa-file-pdf"></i>
-                                                    </a>
-                                                </div>
-
-                                                <!-- Grupo Troza + Estimación Troza -->
-                                                <div class="action-group">
-                                                    <button class="action-btn cut" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#addTrozaModal{{ $parcela->id_parcela }}"
-                                                            data-bs-toggle="tooltip" title="Nueva Troza">
-                                                        <i class="fas fa-cut"></i>
-                                                    </button>
-                                                    <button class="action-btn calc" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#estimacionTrozaModal{{ $parcela->id_parcela }}"
-                                                            data-bs-toggle="tooltip" title="Estimación de Troza">
-                                                        <i class="fas fa-cube"></i>
-                                                    </button>
-                                                </div>
-
-                                                <!-- Grupo Árbol + Estimación Árbol -->
-                                                <div class="action-group">
-                                                    <button class="action-btn tree" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#addArbolModal{{ $parcela->id_parcela }}"
-                                                            data-bs-toggle="tooltip" title="Nuevo Árbol">
-                                                        <i class="fas fa-tree"></i>
-                                                    </button>
-                                                    <button class="action-btn calc" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#estimacionArbolModal{{ $parcela->id_parcela }}"
-                                                            data-bs-toggle="tooltip" title="Estimación de Árbol">
-                                                        <i class="fas fa-tree"></i>
-                                                    </button>
-                                                </div>
-
-                                                <!-- Grupo Ver Detalles -->
-                                                <div class="action-group">
-                                                    <a href="{{ route('tecnico.parcela.detalle', $parcela->id_parcela) }}" 
-                                                       class="action-btn view" 
-                                                       data-bs-toggle="tooltip" title="Ver Detalles">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="9">
-                                        <div class="empty-table-state">
-                                            <div class="empty-icon">
-                                                <i class="fas fa-map-marked-alt"></i>
-                                            </div>
-                                            <h4>No hay parcelas asignadas</h4>
-                                            <p>Comienza creando tu primera parcela para gestionar los recursos forestales</p>
-                                            <button class="btn-create-parcela" data-bs-toggle="modal" data-bs-target="#createParcelaModal">
-                                                <i class="fas fa-plus"></i>
-                                                Crear Primera Parcela
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                            <div class="parcela-float-card__metrics">
+                                <div class="parcela-float-metric">
+                                    <div class="parcela-float-metric__icon trees"><i class="fas fa-tree"></i></div>
+                                    <div class="parcela-float-metric__val">{{ $parcela->arboles_count ?? 0 }}</div>
+                                    <div class="parcela-float-metric__lbl">Árboles</div>
+                                </div>
+                                <div class="parcela-float-metric">
+                                    <div class="parcela-float-metric__icon trozas"><i class="fas fa-cut"></i></div>
+                                    <div class="parcela-float-metric__val">{{ $parcela->trozas_count }}</div>
+                                    <div class="parcela-float-metric__lbl">Trozas</div>
+                                </div>
+                                <div class="parcela-float-metric">
+                                    <div class="parcela-float-metric__icon est"><i class="fas fa-calculator"></i></div>
+                                    <div class="parcela-float-metric__val">{{ $total_estimaciones_parcela }}</div>
+                                    <div class="parcela-float-metric__lbl">Estimaciones</div>
+                                </div>
+                                <div class="parcela-float-metric">
+                                    <div class="parcela-float-metric__icon vol"><i class="fas fa-cubes"></i></div>
+                                    <div class="parcela-float-metric__val">{{ number_format($volumen_parcela, 2) }}</div>
+                                    <div class="parcela-float-metric__lbl">Volumen</div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="empty-table-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-map-marked-alt"></i>
+                            </div>
+                            <h4>No hay parcelas asignadas</h4>
+                            <p>Comienza creando tu primera parcela para gestionar los recursos forestales</p>
+                            <button class="btn-create-parcela" data-bs-toggle="modal" data-bs-target="#createParcelaModal">
+                                <i class="fas fa-plus"></i>
+                                Crear Primera Parcela
+                            </button>
+                        </div>
+                    @endforelse
                 </div>
             </div>
 
@@ -712,6 +582,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Tooltips
@@ -768,6 +639,25 @@
             });
         }
 
+        // Acciones compactas por fila (móvil)
+        document.querySelectorAll('.action-menu-trigger').forEach(trigger => {
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const menu = this.nextElementSibling;
+                if (!menu) return;
+                document.querySelectorAll('.action-menu-list.show').forEach(openMenu => {
+                    if (openMenu !== menu) openMenu.classList.remove('show');
+                });
+                menu.classList.toggle('show');
+                this.setAttribute('aria-expanded', menu.classList.contains('show') ? 'true' : 'false');
+            });
+        });
+
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.action-menu-list.show').forEach(menu => menu.classList.remove('show'));
+            document.querySelectorAll('.action-menu-trigger[aria-expanded="true"]').forEach(btn => btn.setAttribute('aria-expanded', 'false'));
+        });
+
         // Efectos hover modernos
         document.querySelectorAll('.modern-stat-card').forEach(card => {
             card.addEventListener('mouseenter', function() {
@@ -780,15 +670,15 @@
 
         // =============== BÚSQUEDA EN TIEMPO REAL ===============
         const searchInput = document.querySelector('.search-input');
-        const tableRows = document.querySelectorAll('.advanced-data-table tbody tr');
+        const parcelCards = document.querySelectorAll('.parcela-float-card');
         
         if (searchInput) {
             searchInput.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase().trim();
                 
-                tableRows.forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                parcelCards.forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    card.style.display = text.includes(searchTerm) ? '' : 'none';
                 });
             });
             
@@ -813,16 +703,9 @@
                 const minExt = parseFloat(document.querySelector('.range-inputs input:first-child')?.value) || 0;
                 const maxExt = parseFloat(document.querySelector('.range-inputs input:last-child')?.value) || Infinity;
                 
-                tableRows.forEach(row => {
-                    const extCell = row.querySelector('td:nth-child(4)'); // Columna de extensión
-                    if (extCell) {
-                        const ext = parseFloat(extCell.textContent) || 0;
-                        if (ext >= minExt && ext <= maxExt) {
-                            row.style.display = '';
-                        } else {
-                            row.style.display = 'none';
-                        }
-                    }
+                parcelCards.forEach(card => {
+                    const ext = parseFloat(card.dataset.extension || '0') || 0;
+                    card.style.display = (ext >= minExt && ext <= maxExt) ? '' : 'none';
                 });
                 
                 // Cerrar dropdown
@@ -837,38 +720,174 @@
             resetBtn.addEventListener('click', function() {
                 filterCheckboxes.forEach(cb => cb.checked = true);
                 rangeInputs.forEach(input => input.value = '');
-                tableRows.forEach(row => row.style.display = '');
+                parcelCards.forEach(card => card.style.display = '');
             });
         }
 
-        // =============== EXPORTAR A CSV ===============
+        // =============== EXPORTAR (XLSX si es posible, si no CSV) ===============
         const exportBtn = document.querySelector('.btn-export');
         if (exportBtn) {
-            exportBtn.addEventListener('click', function() {
-                const table = document.querySelector('.advanced-data-table');
-                if (!table) return;
-                
+            exportBtn.addEventListener('click', async function() {
+                const cards = Array.from(document.querySelectorAll('.parcela-float-card'));
+                if (!cards.length) return;
+
+                const visibleCards = cards.filter(c => c.style.display !== 'none');
+                const today = new Date().toISOString().slice(0,10);
+                let excelGenerated = false;
+
+                // Preferimos XLSX (ExcelJS) para algo más profesional.
+                if (typeof window.ExcelJS !== 'undefined' && visibleCards.length) {
+                    const originalText = exportBtn.textContent;
+                    exportBtn.disabled = true;
+                    exportBtn.style.opacity = '0.75';
+                    exportBtn.textContent = 'Exportando...';
+
+                    try {
+                        const workbook = new ExcelJS.Workbook();
+                        workbook.creator = 'SIGMAD';
+                        workbook.created = new Date();
+
+                        const sheet = workbook.addWorksheet('Parcelas', {
+                            views: [{ state: 'frozen', ySplit: 1 }]
+                        });
+
+                        const columns = [
+                            { header: 'Parcela', key: 'parcela', width: 28 },
+                            { header: 'ID', key: 'id', width: 10 },
+                            { header: 'Productor', key: 'productor', width: 28 },
+                            { header: 'Ubicación', key: 'ubicacion', width: 28 },
+                            { header: 'Extensión (ha)', key: 'extension', width: 16 },
+                            { header: 'Árboles', key: 'arboles', width: 10 },
+                            { header: 'Trozas', key: 'trozas', width: 10 },
+                            { header: 'Estimaciones', key: 'estimaciones', width: 14 },
+                            { header: 'Volumen', key: 'volumen', width: 14 },
+                        ];
+
+                        sheet.columns = columns;
+
+                        // Encabezado
+                        sheet.getRow(1).values = columns.map(c => c.header);
+                        const headerRow = sheet.getRow(1);
+                        headerRow.height = 20;
+                        headerRow.eachCell(cell => {
+                            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A5F2A' } };
+                        });
+
+                        // Datos
+                        visibleCards.forEach(card => {
+                            sheet.addRow({
+                                parcela: (card.dataset.parcelaName || '').trim(),
+                                id: (card.dataset.parcelaId || '').trim(),
+                                productor: (card.dataset.producer || '').trim(),
+                                ubicacion: (card.dataset.location || '').trim(),
+                                extension: parseFloat(card.dataset.extension || '0') || 0,
+                                arboles: parseInt(card.dataset.arboles || '0', 10) || 0,
+                                trozas: parseInt(card.dataset.trozas || '0', 10) || 0,
+                                estimaciones: parseInt(card.dataset.estimaciones || '0', 10) || 0,
+                                volumen: parseFloat(card.dataset.volumen || '0') || 0,
+                            });
+                        });
+
+                        // Estilo filas (alternado suave sin usar Table)
+                        const border = {
+                            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                            right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                        };
+
+                        sheet.eachRow((row, rowNumber) => {
+                            row.eachCell(cell => {
+                                cell.border = border;
+                                if (rowNumber !== 1) {
+                                    cell.alignment = { vertical: 'middle' };
+                                }
+                            });
+
+                            if (rowNumber > 1 && rowNumber % 2 === 0) {
+                                row.eachCell(cell => {
+                                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                                });
+                            }
+                        });
+
+                        // Formatos numéricos
+                        const extensionCol = 5;
+                        const volumeCol = 9;
+                        for (let r = 2; r <= sheet.rowCount; r++) {
+                            sheet.getRow(r).getCell(extensionCol).numFmt = '0.00';
+                            sheet.getRow(r).getCell(volumeCol).numFmt = '0.00';
+                        }
+
+                        // Auto filtro
+                        sheet.autoFilter = {
+                            from: 'A1',
+                            to: 'I1'
+                        };
+
+                        const buffer = await workbook.xlsx.writeBuffer();
+                        const blob = new Blob([buffer], {
+                            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `parcelas_tecnico_${today}.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(link.href);
+                        excelGenerated = true;
+                    } catch (err) {
+                        console.error(err);
+                        alert('No se pudo generar el Excel. Se exportará como CSV.');
+                        // fallback CSV abajo
+                    } finally {
+                        exportBtn.disabled = false;
+                        exportBtn.style.opacity = '';
+                        exportBtn.textContent = originalText;
+                    }
+
+                    // Si el XLSX se generó correctamente, ya terminamos.
+                    if (excelGenerated) return;
+                }
+
+                // Fallback CSV
+                const headers = [
+                    'Parcela',
+                    'ID',
+                    'Productor',
+                    'Ubicación',
+                    'Extensión (ha)',
+                    'Árboles',
+                    'Trozas',
+                    'Estimaciones',
+                    'Volumen'
+                ];
+
                 let csv = [];
-                const headers = [];
-                table.querySelectorAll('thead th').forEach(th => {
-                    headers.push('"' + th.textContent.trim().replace(/"/g, '""') + '"');
+                csv.push(headers.map(h => '"' + h.replace(/"/g, '""') + '"').join(','));
+
+                visibleCards.forEach(card => {
+                    const row = [
+                        card.dataset.parcelaName || '',
+                        card.dataset.parcelaId || '',
+                        card.dataset.producer || '',
+                        card.dataset.location || '',
+                        card.dataset.extension || '',
+                        card.dataset.arboles || '0',
+                        card.dataset.trozas || '0',
+                        card.dataset.estimaciones || '0',
+                        card.dataset.volumen || '0'
+                    ].map(v => '"' + String(v).trim().replace(/\s+/g, ' ').replace(/"/g, '""') + '"');
+                    csv.push(row.join(','));
                 });
-                csv.push(headers.join(','));
-                
-                table.querySelectorAll('tbody tr').forEach(row => {
-                    if (row.style.display === 'none') return;
-                    const cols = [];
-                    row.querySelectorAll('td').forEach(td => {
-                        let text = td.textContent.trim().replace(/\s+/g, ' ').replace(/"/g, '""');
-                        cols.push('"' + text + '"');
-                    });
-                    csv.push(cols.join(','));
-                });
-                
+
                 const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = 'parcelas_tecnico_' + new Date().toISOString().slice(0,10) + '.csv';
+                link.download = 'parcelas_tecnico_' + today + '.csv';
                 link.click();
             });
         }
