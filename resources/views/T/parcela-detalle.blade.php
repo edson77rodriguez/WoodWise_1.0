@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @push('styles')
-    <link href="{{ asset('css/WW/tecnico-dashboard.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/WW/tecnico-dashboard.css') }}?v={{ filemtime(public_path('css/WW/tecnico-dashboard.css')) }}" rel="stylesheet">
     <style>
         .parcela-hero {
             background: linear-gradient(135deg, rgba(26, 58, 22, 0.97) 0%, rgba(45, 90, 39, 0.97) 50%, rgba(61, 122, 53, 0.97) 100%) !important;

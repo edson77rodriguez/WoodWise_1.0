@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @push('styles')
-    <link href="{{ asset('css/WW/tecnico-dashboard.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/WW/tecnico-dashboard.css') }}?v={{ filemtime(public_path('css/WW/tecnico-dashboard.css')) }}" rel="stylesheet">
 @endpush
 
 @section('content')

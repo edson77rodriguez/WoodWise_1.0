@@ -1,15 +1,16 @@
 :root {
-    --wood-primary: #2F4F4F;
-    --wood-secondary: #556B2F;
-    --wood-accent: #C8B560;
-    --wood-light: #F5F5DC;
-    --wood-dark: #1A2E22;
-    --wood-text: #333333;
-    --wood-bg-light: #F5F5DC;
+    /* Paleta SIGMAD unificada */
+    --wood-primary: #3E2E1B; /* marrón oscuro */
+    --wood-secondary: #8A6620; /* marrón cálido */
+    --wood-accent: #D8B75A; /* dorado claro */
+    --wood-light: #FBFAF5; /* fondo claro */
+    --wood-dark: #3E2E1B; /* texto/acentos oscuros */
+    --wood-text: #22221A;
+    --wood-bg-light: #FBFAF5;
     --wood-white: #FFFFFF;
-    --wood-gradient: linear-gradient(135deg, #2F4F4F 0%, #556B2F 100%);
-    
-    /* Variable para el marquee. Facilita el mantenimiento de la animación. */
+    --wood-gradient: linear-gradient(135deg, #8A6620 0%, #4B7B3B 100%);
+
+    /* Variables de layout */
     --marquee-card-width: 300px;
     --marquee-gap: 2rem;
     --marquee-items-unique: 3; /* Número de tarjetas únicas */
@@ -116,10 +117,6 @@ h1, h2, h3, h4, h5, h6 {
     transition: all 0.4s ease;
     border: 2px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.navbar-brand:hover img {
-    transform: rotate(15deg) scale(1.1);
 }
 
 .nav-link {
@@ -605,17 +602,6 @@ h1, h2, h3, h4, h5, h6 {
     color: #ff6b6b;
 }
 
-
-/* === 8. Animaciones Globales === */
-@keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-15px); }
-    100% { transform: translateY(0px); }
-}
-
-.floating {
-    animation: float 6s ease-in-out infinite;
-}
 
 .fade-in {
     opacity: 0;
