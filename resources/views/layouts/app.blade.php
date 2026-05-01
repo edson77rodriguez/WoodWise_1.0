@@ -25,19 +25,31 @@
     <link href="{{ asset('css/WW/layout.css') }}?v={{ filemtime(public_path('css/WW/layout.css')) }}" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
+    <style>
+        @media (min-width: 992px) {
+            .navbar.navbar-expand-lg .navbar-collapse {
+                display: flex !important;
+                flex-basis: auto;
+            }
+
+            .navbar.navbar-expand-lg .navbar-nav {
+                flex-direction: row;
+            }
+        }
+    </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
 
     <header class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ route('welcome') }}">
-                 <img src="{{ asset('assets/images/SIGMAD.svg') }}" 
+                <img src="{{ asset('assets/images/SIGMAD.svg') }}" 
                      alt="Logo SIGMAD"
                      width="40"
                      height="40"
                      class="me-2 rounded-circle floating"
                      loading="eager">
-                 <span class="text-gradient">SIGMAD</span>
+                <span class="text-gradient">SIGMAD</span>
             </a>
 
             <button class="navbar-toggler border-0" type="button"
@@ -51,27 +63,24 @@
 
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <ul class="navbar-nav gap-1">
-
-                    @if (!Auth::check() || (Auth::check() && Auth::user()->persona->rol->nom_rol != 'Tecnico'))
-                        <li class="nav-item">
-                            <a href="{{ route('welcome') }}"
-                               class="nav-link {{ request()->routeIs('welcome') ? 'active' : '' }}">
-                                <i class="bi bi-house-door-fill me-1"></i> Inicio
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('acerca') }}"
-                               class="nav-link {{ request()->routeIs('acerca') ? 'active' : '' }}">
-                                <i class="bi bi-info-circle-fill me-1"></i> Acerca
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('contacto') }}"
-                               class="nav-link {{ request()->routeIs('contacto') ? 'active' : '' }}">
-                                <i class="bi bi-envelope-fill me-1"></i> Contacto
-                            </a>
-                        </li>
-                    @endif
+                    <li class="nav-item">
+                        <a href="{{ route('welcome') }}"
+                           class="nav-link {{ request()->routeIs('welcome') ? 'active' : '' }}">
+                            <i class="bi bi-house-door-fill me-1"></i> Inicio
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('acerca') }}"
+                           class="nav-link {{ request()->routeIs('acerca') ? 'active' : '' }}">
+                            <i class="bi bi-info-circle-fill me-1"></i> Acerca
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('contacto') }}"
+                           class="nav-link {{ request()->routeIs('contacto') ? 'active' : '' }}">
+                            <i class="bi bi-envelope-fill me-1"></i> Contacto
+                        </a>
+                    </li>
 
                     @guest
                         <li class="nav-item ms-lg-3">
@@ -90,7 +99,6 @@
                             </form>
                         </li>
                     @endguest
-                    
                 </ul>
             </div>
         </div>
