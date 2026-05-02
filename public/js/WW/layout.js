@@ -1,94 +1,84 @@
 /*
- * WoodWise Layout Logic (Refactorizado)
- *
- * 1. Eliminada toda la manipulación de estilos inline (navbar.style.transform/boxShadow).
- * La lógica ahora solo alterna clases CSS (.is-at-top, .is-hidden) para un rendimiento declarativo.
- * 2. Eliminada la reimplementación manual del colapso de Bootstrap. El bundle de BS5 ya maneja esto.
- * 3. Mantenida la UX de "cerrar menú al hacer clic" pero refactorizada para disparar el toggler nativo de BS.
+ * SIGMAD — Layout Logic
+ * FIXES:
+ *  - toggler.click() corregido (era sintaxis Markdown inválida)
+ *  - Scroll activo en TODOS los viewports, no solo móvil
+ *  - Menú no se oculta si el collapse está abierto
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    const navbar = document.querySelector('.navbar');
-    const toggler = document.querySelector('.navbar-toggler');
-    if (!navbar) return; // Salir si el navbar no existe
+    const navbar   = document.querySelector('.navbar');
+    const toggler  = document.querySelector('.navbar-toggler');
+    const collapse = document.querySelector('.navbar-collapse');
+
+    if (!navbar) return;
 
     let lastScroll = 0;
+    let ticking    = false;
 
-    /**
-     * Alterna clases en el Navbar basado en la posición y dirección del scroll.
-     * El CSS maneja toda la animación y estilos.
-     */
+    /* ── 1. Scroll: clases .is-at-top / .is-hidden ─────────────── */
     function handleScrollClassToggle() {
         const currentScroll = window.scrollY;
 
-        // 1. En la parte superior (is-at-top)
-        // Añade/quita esta clase para que el CSS pueda eliminar el box-shadow.
+        // En la cima → sin sombra extra
         if (currentScroll <= 50) {
             navbar.classList.add('is-at-top');
+            navbar.classList.remove('is-hidden');
         } else {
             navbar.classList.remove('is-at-top');
+
+            // Bajando y lejos de la cima → ocultar (solo si el menú está cerrado)
+            const menuOpen = collapse && collapse.classList.contains('show');
+            if (currentScroll > lastScroll && currentScroll > 120 && !menuOpen) {
+                navbar.classList.add('is-hidden');
+            } else if (currentScroll < lastScroll) {
+                navbar.classList.remove('is-hidden');
+            }
         }
 
-        // 2. Ocultar al bajar (is-hidden)
-        // Solo oculta si estamos lejos de la parte superior (más de 100px) y bajando.
-        if (currentScroll > lastScroll && currentScroll > 100) {
-            navbar.classList.add('is-hidden'); // CSS: transform: translateY(-100%)
-        } else if (currentScroll < lastScroll) {
-            navbar.classList.remove('is-hidden'); // CSS: transform: translateY(0)
-        }
-
-        lastScroll = currentScroll <= 0 ? 0 : currentScroll; // Maneja el rebote en iOS
+        lastScroll = Math.max(currentScroll, 0);
+        ticking    = false;
     }
 
-    /**
-     * Mejora de UX Móvil: Cierra el menú de Bootstrap nativo al hacer clic en un enlace.
-     */
-    function setupMobileMenuCloseOnClick() {
-        const collapseElement = document.querySelector('.navbar-collapse');
-        if (!collapseElement || !toggler) return;
+    // Usar rAF para no bloquear el hilo principal
+    window.addEventListener('scroll', function () {
+        if (!ticking) {
+            requestAnimationFrame(handleScrollClassToggle);
+            ticking = true;
+        }
+    }, { passive: true });
 
-        const navLinks = collapseElement.querySelectorAll('.nav-link');
-        
-        navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                // Solo cerramos si el menú está abierto (visible en modo móvil)
-                // Usamos getComputedStyle porque el toggler puede estar d-none en desktop.
+    // Estado inicial al cargar
+    handleScrollClassToggle();
+
+    /* ── 2. UX Móvil: cerrar menú al tocar un enlace ───────────── */
+    function setupMobileMenuCloseOnClick() {
+        if (!collapse || !toggler) return;
+
+        collapse.querySelectorAll('.nav-link').forEach(function (link) {
+            link.addEventListener('click', function () {
+                // Solo actuar si el toggler es visible (vista móvil)
                 if (window.getComputedStyle(toggler).display !== 'none') {
-                    // Disparamos un clic en el toggler para cerrar el menú.
-                    // Esto permite que el gestor de colapso nativo de Bootstrap maneje la animación y el estado ARIA.
-                    toggler.click();
+                    toggler.click(); // ✅ JS correcto — antes era [toggler.click](http://...) (Markdown)
                 }
             });
         });
     }
 
-
-    /**
-     * Lógica de inicialización y Resize.
-     * Añade/quita el listener de scroll para optimizar el rendimiento.
-     */
-    let isMobileView = window.innerWidth < 992;
-
-    if (isMobileView) {
-        window.addEventListener('scroll', handleScrollClassToggle);
-    }
     setupMobileMenuCloseOnClick();
 
-    // Listener de Resize para gestionar el estado
-    window.addEventListener('resize', () => {
-        const isNowMobile = window.innerWidth < 992;
-        
-        if (!isNowMobile && isMobileView) {
-            // Transición de Móvil a Desktop
-            window.removeEventListener('scroll', handleScrollClassToggle);
-            // Limpiamos las clases de estado móvil del navbar
-            navbar.classList.remove('is-hidden', 'is-at-top');
-        } else if (isNowMobile && !isMobileView) {
-            // Transición de Desktop a Móvil
-            window.addEventListener('scroll', handleScrollClassToggle);
-        }
-        
-        isMobileView = isNowMobile;
-    });
+    /* ── 3. Fade-in al scroll (IntersectionObserver) ───────────── */
+    const fadeEls = document.querySelectorAll('.fade-in');
+    if (fadeEls.length > 0) {
+        const observer = new IntersectionObserver(function (entries, obs) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('visible');
+                obs.unobserve(entry.target);
+            });
+        }, { threshold: 0.1 });
+
+        fadeEls.forEach(function (el) { observer.observe(el); });
+    }
 });

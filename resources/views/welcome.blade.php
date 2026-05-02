@@ -35,9 +35,7 @@
             <a class="navbar-brand d-flex align-items-center" href="{{ route('welcome') }}">
                  <img src="{{ asset('assets/images/SIGMAD.svg') }}" 
                      alt="Logo SIGMAD" 
-                     width="50" 
-                     height="50" 
-                     class="me-2 rounded-circle">
+                     class="me-2">
                  <span class="text-gradient">SIGMAD</span>
             </a>
 

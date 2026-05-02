@@ -9,6 +9,7 @@
     --wood-bg-light: #FBFAF5;
     --wood-white: #FFFFFF;
     --wood-gradient: linear-gradient(135deg, #8A6620 0%, #4B7B3B 100%);
+    --navbar-green: #355653;
 
     /* Variables de layout */
     --marquee-card-width: 300px;
@@ -81,20 +82,25 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
     padding: 1rem 0;
     transition: all 0.4s ease;
-    background: var(--wood-gradient);
+    background: var(--navbar-green) !important;
     color: var(--wood-white);
 }
 
 .navbar-initial {
-    background: transparent !important;
-    box-shadow: none !important;
+    background: var(--navbar-green) !important;
     backdrop-filter: none !important;
     transition: all 0.4s ease;
 }
+/* Agregar esto después de .navbar-initial */
+.navbar-initial .navbar-collapse.show,
+.navbar-initial .navbar-collapse.collapsing {
+    background: var(--navbar-green) !important;
+    backdrop-filter: none !important;
+}
 
 .navbar.scrolled {
-    background: rgba(47, 79, 79, 0.95) !important;
-    backdrop-filter: blur(10px) !important;
+    background: var(--navbar-green) !important;
+    backdrop-filter: none !important;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
     padding: 0.8rem 0 !important;
 }
@@ -103,7 +109,7 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     letter-spacing: 1px;
     /* display: flex y align-items: center ya están en el HTML refactorizado (clase 'd-flex') */
-    font-size: 1.5rem;
+    font-size: 1.8rem; /* Tamaño de fuente aumentado para escritorio */
 }
 
 .text-gradient {
@@ -114,9 +120,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .navbar-brand img {
+    width: 100px; /* Tamaño considerablemente mayor para escritorio */
+    height: 100px;
+    object-fit: contain; /* Contiene el logo completo sin recortarlo en absoluto */
     transition: all 0.4s ease;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .nav-link {
@@ -156,8 +163,27 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .nav-link.active {
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.navbar .navbar-brand,
+.navbar .nav-link,
+.navbar .btn-login {
+    color: var(--wood-white) !important;
+}
+
+.navbar .nav-link:before {
+    background-color: var(--wood-accent);
+}
+
+.navbar .btn-login {
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.navbar .btn-login:hover {
+    background: rgba(255, 255, 255, 0.16);
 }
 
 /* (Nota: El 'margin-right: 8px' del icono ya fue reemplazado por utilidades 'me-1' en el HTML) */
@@ -717,6 +743,15 @@ h1, h2, h3, h4, h5, h6 {
         min-width: 250px;
         width: 250px;
         padding: 1.5rem;
+    }
+
+    /* Ajuste del logo para evitar que ocupe demasiado espacio en móviles */
+    .navbar-brand {
+        font-size: 1.4rem;
+    }
+    .navbar-brand img {
+        width: 65px; /* Aumentado para que resalte más en celulares */
+        height: 65px;
     }
 }
 

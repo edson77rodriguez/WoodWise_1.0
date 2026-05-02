@@ -1,167 +1,242 @@
-/* Paleta profesional de verdes forestales (Fuente: Inter) */
+/* ================================================================
+   SIGMAD — layout.css (Definitivo con Paleta Oficial)
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap');
+
+/* ── 1. Variables Globales ─────────────────────────────────────── */
 :root {
-    --wood-dark: #1a3a16;
-    --wood-medium: #4a3c27;
-    --wood-light: #e8d8b5;
-    --wood-accent: #4a7c30;
-    --wood-text: #2b2b2b;
-    --wood-bg-light: #f5f7f2;
-    --wood-bg-dark: #0f1a0c;
-    --wood-border-radius: 8px;
-    --wood-box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    --wood-transition: all 0.2s ease;
+    /* Paleta SIGMAD Oficial */
+    --wood-primary:   #3E2E1B; /* marrón oscuro */
+    --wood-secondary: #8A6620; /* marrón cálido */
+    --wood-accent:    #D8B75A; /* dorado claro */
+    --wood-light:     #FBFAF5; /* fondo claro */
+    --wood-dark:      #3E2E1B; /* texto/acentos oscuros */
+    --wood-text:      #22221A;
+    --wood-bg-light:  #FBFAF5;
+    --wood-white:     #FFFFFF;
+    --wood-gradient:  linear-gradient(135deg, #4B7B3B 0%, #4B7B3B 100%);
+    
+    /* Layout */
+    --nav-h: 76px;
+    --nav-h-mobile: 68px;
+    --radius: 8px;
+    --t: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* === 1. Base y Tipografía === */
-* {
-    -webkit-tap-highlight-color: transparent;
-    -webkit-text-size-adjust: 100%;
-}
+/* ── 2. Base y Tipografía ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    line-height: 1.5;
+    font-family: 'Montserrat', sans-serif;
+    line-height: 1.6;
     color: var(--wood-text);
     background-color: var(--wood-bg-light);
     overflow-x: hidden;
-    /* Estructura Sticky Footer (ya definida en el Blade HTML) */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
     font-weight: 700;
-    letter-spacing: -0.025em;
-    margin-bottom: 1.25rem;
-    color: var(--wood-dark);
-}
-
-img {
-    max-width: 100%;
-    height: auto;
-    display: block;
+    color: var(--wood-primary);
 }
 
 main {
-    flex: 1; /* Para el sticky footer */
-    padding-top: 3rem;
+    flex: 1;
+    padding-top: 2.5rem;
     padding-bottom: 5rem;
 }
 
-.container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-}
-
-
-/* === 2. Navbar Premium === */
+/* ── 3. Navbar (Estilo Unificado Desktop) ──────────────────────── */
 .navbar {
-    background: linear-gradient(135deg, var(--wood-dark), var(--wood-medium));
-    box-shadow: var(--wood-box-shadow);
-    padding: 0.8rem 0;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.2s ease;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    position: sticky; /* Sticky ya está en el HTML, pero lo reforzamos aquí */
+    height: var(--nav-h);
+    /* Fondo fijo igual al estado con scroll */
+    background: rgba(47, 79, 79, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    transition: transform 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
+    position: sticky;
     top: 0;
-    z-index: 1030;
+    z-index: 1040;
 }
 
-/* [CSS NUEVO] Clases de estado manejadas por JS (layout.js) */
+/* Estado cuando está en la cima (Top) */
 .navbar.is-at-top {
-    box-shadow: none;
+    background: rgba(47, 79, 79, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
+
+/* Estado al hacer scroll hacia abajo (Ocultar) */
 .navbar.is-hidden {
-    transform: translateY(-100%);
-    box-shadow: var(--wood-box-shadow); /* Aseguramos sombra al reaparecer */
+    transform: translateY(-110%);
 }
-/* Fin de clases de estado */
 
-
-.navbar-brand {
-    font-weight: 700;
-    letter-spacing: 0.5px;
+.navbar > .container {
     display: flex;
     align-items: center;
-    transition: var(--wood-transition);
-    color: var(--wood-light) !important;
+    height: 100%;
 }
 
-.navbar-brand:hover {
-    transform: translateY(-2px);
-    color: white !important;
-}
-
-.text-gradient {
-    background: linear-gradient(to right, var(--wood-light), #d4a762);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+/* Marca / Logo */
+.navbar-brand {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    color: var(--wood-white) !important;
 }
 
 .navbar-brand img {
-    transition: transform 0.3s ease;
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+    transition: transform 0.4s ease;
 }
 
 .navbar-brand:hover img {
-    transform: rotate(15deg);
+    transform: scale(1.05);
 }
 
+/* Enlaces Desktop */
 .nav-link {
-    font-weight: 500;
-    padding: 0.5rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    color: var(--wood-white) !important;
+    padding: 0.5rem 1.2rem;
     margin: 0 0.3rem;
-    border-radius: var(--wood-border-radius);
-    transition: var(--wood-transition);
-    color: var(--wood-light) !important;
+    border-radius: var(--radius);
+    transition: transform var(--t), color var(--t);
     position: relative;
-    display: flex;
-    align-items: center;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.nav-link i {
-    margin-right: 6px; /* Espacio para icono BI */
+.nav-link::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--wood-accent);
+    transition: width var(--t), opacity var(--t);
+    opacity: 0;
+}
+
+.nav-link:hover {
+    transform: translateY(-2px);
+}
+
+.nav-link.active::before,
+.nav-link:hover::before {
+    width: 60%;
+    opacity: 1;
 }
 
 .nav-link.active {
-    background: var(--wood-accent);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    color: white !important;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-/* Asegura el menú visible en desktop aunque haya overrides externos */
+/* Botón CTA (Ingresar) */
+.btn-login {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: var(--radius);
+    color: var(--wood-white) !important;
+    padding: 0.48rem 1.2rem !important;
+    transition: all var(--t);
+}
+
+.btn-login::before { display: none; }
+
+.btn-login:hover {
+    background: var(--wood-accent);
+    border-color: var(--wood-accent);
+    color: var(--wood-dark) !important;
+    text-shadow: none;
+    transform: translateY(-2px);
+}
+
+/* Toggler Botón Móvil */
+.navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.5);
+    padding: 0.25rem 0.5rem;
+}
+.navbar-toggler:focus {
+    box-shadow: 0 0 0 3px rgba(216, 183, 90, 0.4); /* dorado translúcido */
+}
+
+/* ── 4. Fix Menú Móvil (Responsivo) ────────────────────────────── */
+@media (max-width: 991.98px) {
+    .navbar { height: var(--nav-h-mobile); }
+    
+    .navbar-brand img { height: 45px; }
+    
+    /* El contenedor fixed que arregla el bug */
+    .navbar-collapse {
+        position: fixed;
+        top: var(--nav-h-mobile);
+        left: 0;
+        right: 0;
+        z-index: 1039;
+        /* Igualar al navbar principal */
+        background: rgba(47, 79, 79, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+        padding: 1rem 1.25rem 1.75rem;
+        max-height: calc(100dvh - var(--nav-h-mobile));
+        overflow-y: auto;
+    }
+
+    .navbar-nav {
+        flex-direction: column !important;
+        gap: 0.3rem;
+    }
+
+    .nav-link {
+        font-size: 1.05rem;
+        padding: 0.8rem 1rem;
+        margin: 0;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    
+    .nav-link::before { display: none; }
+    
+    .nav-item:last-child .nav-link { border-bottom: none; }
+
+    .btn-login {
+        display: block;
+        text-align: center;
+        margin-top: 1rem;
+        padding: 0.8rem !important;
+    }
+}
+
 @media (min-width: 992px) {
     .navbar-expand-lg .navbar-collapse {
-        display: flex !important;
-        flex-basis: auto;
-    }
-
-    .navbar-expand-lg .navbar-nav {
-        flex-direction: row;
+        background: rgba(47, 79, 79, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow: none;
+        border: none;
     }
 }
 
-/* Desactivamos el efecto :after de subrayado; es ruidoso y compite con el .active */
-/*
-.nav-link:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--wood-light);
-    transform: translateX(-100%);
-    transition: var(--wood-transition);
-}
-.nav-link:hover:after {
-    transform: translateX(0);
-}
-*/
-
-
-/* === 3. Footer Mejorado === */
+/* ── 5. Footer Oficial ─────────────────────────────────────────── */
 .footer {
-    background: linear-gradient(135deg, var(--wood-dark), var(--wood-bg-dark));
-    color: var(--wood-light);
+    background: linear-gradient(135deg, #2F4F4F 0%, #1A2E22 100%);
+    color: #F5F5DC;
     padding: 4rem 0 2rem;
     position: relative;
     overflow: hidden;
@@ -175,140 +250,60 @@ main {
     left: 0;
     width: 100%;
     height: 3px;
-    background: linear-gradient(90deg, var(--wood-accent), rgba(255, 255, 255, 0.3), var(--wood-accent));
+    background: linear-gradient(90deg, #C8B560, rgba(255, 255, 255, 0.3), #C8B560);
 }
 
-.footer-brand-container {
-    margin-bottom: 2rem;
-}
+.footer-brand-container { margin-bottom: 2rem; }
 
 .footer-logo {
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
-    color: var(--wood-light);
+    font-family: 'Playfair Display', serif;
+    color: #F5F5DC;
 }
-
-.footer-logo span {
-    color: var(--wood-accent);
-}
+.footer-logo span { color: #C8B560; }
 
 .footer-description {
-    color: rgba(232, 216, 181, 0.9);
+    color: rgba(245, 245, 220, 0.9);
     margin-bottom: 2rem;
     line-height: 1.7;
 }
 
-.footer-column {
-    margin-bottom: 2rem;
-}
+.footer-column { margin-bottom: 2rem; }
 
 .footer-title {
     font-size: 1.2rem;
     margin-bottom: 1.8rem;
     position: relative;
     display: inline-block;
-    color: var(--wood-light);
+    font-family: 'Playfair Display', serif;
+    color: #F5F5DC;
 }
-
 .footer-title::after {
     content: '';
     position: absolute;
     width: 60%;
     height: 2px;
-    background: var(--wood-accent);
+    background: #C8B560;
     bottom: -10px;
     left: 0;
     border-radius: 2px;
 }
 
-.footer-links,
-.footer-contact {
-    list-style: none;
-    padding: 0;
-}
-
-.footer-links li {
-    margin-bottom: 0.8rem;
-    transition: var(--wood-transition);
-}
-
-.footer-links li:hover {
-    transform: translateX(5px);
-}
+.footer-links, .footer-contact { list-style: none; padding: 0; }
+.footer-links li { margin-bottom: 0.8rem; transition: transform 0.3s ease; }
+.footer-links li:hover { transform: translateX(5px); }
 
 .footer-link {
-    color: rgba(232, 216, 181, 0.9);
+    color: rgba(245, 245, 220, 0.9);
     text-decoration: none;
-    transition: var(--wood-transition);
+    transition: all 0.3s ease;
     display: block;
     position: relative;
 }
-
-.footer-link i {
-    color: var(--wood-accent);
-    width: 20px;
-    text-align: center;
-    margin-right: 8px;
-}
-
-.footer-link:hover {
-    color: white;
-    padding-left: 5px;
-}
-
-.contact-item {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 1.2rem;
-    color: rgba(232, 216, 181, 0.9);
-}
-
-.contact-icon {
-    color: var(--wood-accent);
-    margin-right: 15px;
-    margin-top: 3px;
-    font-size: 1.1rem;
-}
-
-.social-icons {
-    display: flex;
-    gap: 15px;
-    margin-top: 1.5rem;
-}
-
-.social-icons a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: rgba(74, 124, 48, 0.2);
-    border-radius: 50%;
-    color: var(--wood-light);
-    transition: var(--wood-transition);
-    font-size: 1rem;
-}
-
-.copyright {
-    border-top: 1px solid rgba(74, 124, 48, 0.2);
-    padding-top: 2rem;
-    margin-top: 2rem;
-    font-size: 0.9rem;
-}
-
-.copyright-text {
-    color: rgba(232, 216, 181, 0.8);
-    margin-bottom: 0.5rem;
-}
-
-.developer-credit {
-    color: rgba(232, 216, 181, 0.7);
-}
-
-.heart-icon {
-    color: #ff6b6b; /* Usamos el icono BI (corazón) definido en el Blade */
-}
+.footer-link i { color: #C8B560; width: 20px; text-align: center; }
+.footer-link:hover { color: #FFFFFF; padding-left: 5px; }
 
 .footer-link::before {
     content: '';
@@ -317,150 +312,75 @@ main {
     height: 1px;
     bottom: -2px;
     left: 25px;
-    background-color: var(--wood-accent);
-    transition: var(--wood-transition);
+    background-color: #C8B560;
+    transition: width 0.3s ease;
+}
+.footer-link:hover::before { width: 20px; }
+
+.contact-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.2rem;
+    color: rgba(245, 245, 220, 0.9);
+}
+.contact-icon {
+    color: #C8B560;
+    margin-right: 15px;
+    margin-top: 3px;
+    font-size: 1.1rem;
 }
 
-.footer-link:hover::before {
-    width: 20px;
+.social-icons { display: flex; gap: 15px; margin-top: 1.5rem; }
+.social-icons a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(200, 181, 96, 0.2);
+    border-radius: 50%;
+    color: #F5F5DC;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    font-size: 1rem;
+}
+.social-icons a:hover {
+    transform: translateY(-3px) scale(1.1);
+    background: #C8B560;
+    color: #2F4F4F;
 }
 
+.copyright {
+    border-top: 1px solid rgba(200, 181, 96, 0.2);
+    padding-top: 2rem;
+    margin-top: 2rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+.copyright-text { color: rgba(245, 245, 220, 0.8); margin-bottom: 0.5rem; }
+.developer-credit { color: rgba(245, 245, 220, 0.7); }
+.heart-icon { color: #ff6b6b; }
 
-/* === 4. Animaciones y Utilidades === */
-
-/* [CONSOLIDACIÓN] Keyframes 'float' definidos una sola vez. */
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
+@media (max-width: 991.98px) {
+    .footer { text-align: center; }
+    .footer-title::after { left: 50%; transform: translateX(-50%); }
+    .footer-links li, .contact-item, .social-icons { justify-content: center; }
+    .footer-link { justify-content: center; }
+    .footer-link:hover { padding-left: 0; }
+    .footer-link::before { display: none; }
 }
 
-.floating {
-    animation: float 3s ease-in-out infinite;
+/* ── 6. Utilidades y Animaciones ───────────────────────────────── */
+.fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
 
-.wood-bg-gradient {
-    background: linear-gradient(135deg, var(--wood-medium), var(--wood-dark));
-}
-
-.wood-text-gradient {
-    background: linear-gradient(to right, var(--wood-light), var(--wood-accent));
+/* Gradiente de texto */
+.text-gradient {
+    background: linear-gradient(to right, var(--wood-accent), var(--wood-light));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-}
-
-.wood-divider {
-    height: 3px;
-    background: linear-gradient(to right, transparent, var(--wood-light), transparent);
-    border: none;
-    margin: 2rem 0;
-}
-
-.wood-badge {
-    display: inline-block;
-    padding: 0.35em 0.65em;
-    font-size: 0.75em;
-    font-weight: 700;
-    line-height: 1;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: baseline;
-    border-radius: 50rem;
-    background: var(--wood-accent);
-    color: white;
-}
-
-.wood-shadow-sm { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
-.wood-shadow { box-shadow: var(--wood-box-shadow); }
-.wood-shadow-lg { box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15); }
-
-
-/* === 5. Media Queries Consolidadas === */
-
-/* Desktop (LG) - Ajustes al navbar colapsado */
-@media (min-width: 992px) {
-    .navbar-collapse {
-        background: transparent;
-        margin-top: 0;
-        padding: 0;
-    }
-    
-    .nav-link {
-        margin: 0 0.25rem;
-    }
-    
-    main {
-        padding: 2rem 0 4rem;
-    }
-}
-
-/* Tablet (MD) y Móvil (SM) */
-@media (max-width: 991.98px) {
-    /* Fondo para menú móvil colapsado */
-    .navbar-collapse {
-        background: linear-gradient(135deg, var(--wood-dark), var(--wood-medium));
-        margin-top: 0.5rem;
-        border-radius: var(--wood-border-radius);
-        padding: 0.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
-
-    .nav-link {
-        margin: 0.15rem 0;
-    }
-    
-    /* Centrado del Footer en móvil */
-    .footer {
-        text-align: center;
-    }
-    .footer-title::after {
-        left: 50%;
-        transform: translateX(-50%);
-    }
-    .footer-links li,
-    .contact-item,
-    .social-icons {
-        justify-content: center;
-    }
-    .footer-link {
-        justify-content: center;
-    }
-    .footer-link:hover {
-        padding-left: 0;
-    }
-    .footer-link::before {
-        display: none;
-    }
-}
-
-/* Tablet (MD) */
-@media (min-width: 768px) and (max-width: 991.98px) {
-    .navbar-brand {
-        font-size: 1.25rem;
-    }
-    .nav-link {
-        padding: 0.5rem 0.75rem;
-    }
-    main {
-        padding: 1.5rem 0 3rem;
-    }
-    .container {
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
-    }
-}
-
-/* Interacciones Hover (Solo para dispositivos que lo soportan) */
-@media (hover: hover) {
-    .nav-link:hover:not(.active) {
-        background-color: rgba(255, 255, 255, 0.1);
-        transform: translateY(-2px);
-    }
-    
-    .social-icons a:hover {
-        transform: translateY(-3px) scale(1.1);
-        background: var(--wood-accent);
-        color: var(--wood-dark);
-    }
 }
