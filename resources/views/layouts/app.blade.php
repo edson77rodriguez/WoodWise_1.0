@@ -130,6 +130,9 @@
                             <a href="#" aria-label="Twitter">
                                 <i class="fab fa-twitter" aria-hidden="true"></i>
                             </a>
+                            <a href="https://wa.me/527226367194" aria-label="WhatsApp" target="_blank" rel="noopener">
+                                <i class="fab fa-whatsapp" aria-hidden="true"></i>
+                            </a>
                             <a href="#" aria-label="LinkedIn">
                                 <i class="fab fa-linkedin-in" aria-hidden="true"></i>
                             </a>
@@ -161,15 +164,19 @@
                         <ul class="footer-contact">
                             <li class="contact-item">
                                 <i class="fas fa-map-marker-alt contact-icon" aria-hidden="true"></i>
-                                <span>Av. Forestal 123, Santiago</span>
+                                <span>Carretera Federal Valle de Bravo Km 30, Ejido San Antonio Laguna, 51200 Valle de Bravo, Mex.</span>
                             </li>
                             <li class="contact-item">
                                 <i class="fas fa-phone-alt contact-icon" aria-hidden="true"></i>
-                                <span>+56 9 1234 5678</span>
+                                <span>+52 7226367194</span>
+                            </li>
+                            <li class="contact-item">
+                                <i class="fab fa-whatsapp contact-icon" aria-hidden="true"></i>
+                                <span>+52 7226367194</span>
                             </li>
                             <li class="contact-item">
                                 <i class="fas fa-envelope contact-icon" aria-hidden="true"></i>
-                                <span>contacto@woodwise.cl</span>
+                                <span>woodwise.sigmad@gmail.com</span>
                             </li>
                         </ul>
                     </div>

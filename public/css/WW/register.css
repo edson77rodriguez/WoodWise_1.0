@@ -108,6 +108,58 @@
     }
 }
 
+/* Tablet y móvil grande (sin impacto en laptop/desktop) */
+@media (max-width: 991.98px) {
+    .card {
+        border-radius: 1rem;
+    }
+
+    .card-body {
+        padding: 1.35rem;
+    }
+
+    .card-header {
+        padding: 1rem;
+    }
+
+    .form-section-title {
+        font-size: 0.98rem;
+    }
+
+    .input-group .form-select,
+    .input-group .input-group-text {
+        min-height: 46px;
+    }
+}
+
+/* Móvil compacto */
+@media (max-width: 576px) {
+    .card-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .card-header p {
+        font-size: 0.82rem;
+    }
+
+    .card-body {
+        padding: 1.05rem;
+    }
+
+    .form-section-title {
+        margin-bottom: 0.55rem;
+    }
+
+    .toggle-password {
+        right: 0.1rem;
+        padding: 0 0.55rem;
+    }
+
+    .btn-primary {
+        font-size: 0.96rem;
+    }
+}
+
 /* Corrección de accesibilidad (iOS Zoom) */
 @media (hover: none) and (max-width: 768px) {
     /* Desactivar efectos hover innecesarios en táctil */
