@@ -13,7 +13,7 @@ class WoodWiseAuthSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        $password = 'Password123!';
+        $password = 'tecnico123';
         $hashedPassword = Hash::make($password);
 
         $personas = [

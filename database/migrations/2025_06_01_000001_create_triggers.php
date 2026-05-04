@@ -213,7 +213,7 @@ return new class extends Migration
         // TRIGGER: before_insert_estimaciones1 (BEFORE INSERT en estimaciones1)
         // Calcula valores cuando se inserta manualmente una estimación de árbol
         // SOLO calcula si calculo es NULL o 0
-        // Maneja tanto Volumen Maderable (id_formula NULL) como Biomasa (id_formula 5-8)
+        // Biomasa en TONELADAS, Volumen Maderable Aproximado en m³
         // =====================================================================
         DB::unprepared('DROP TRIGGER IF EXISTS before_insert_estimaciones1');
         DB::unprepared("
@@ -224,8 +224,9 @@ return new class extends Migration
                 DECLARE altura_total_val DECIMAL(10,5);
                 DECLARE factor_carbono DOUBLE DEFAULT 0.5;
                 DECLARE d_cm DOUBLE;
-                DECLARE area_basal DOUBLE;
-                DECLARE id_tipo_volumen BIGINT;
+                DECLARE biomasa_kg DOUBLE;
+                DECLARE densidad_basica DOUBLE;
+                DECLARE volumen_maderable DOUBLE;
 
                 -- Solo calcular si no se proporcionó un valor
                 IF NEW.calculo IS NULL OR NEW.calculo = 0 THEN
@@ -235,57 +236,48 @@ return new class extends Migration
                     FROM arboles a
                     WHERE a.id_arbol = NEW.id_arbol;
 
-                    -- Convertir diámetro a centímetros (asumiendo que viene en metros)
+                    -- Convertir diámetro a centímetros
                     SET d_cm = diametro_pecho_val * 100;
-                    
-                    -- Calcular área basal (diámetro en metros)
-                    SET area_basal = PI() * POW(diametro_pecho_val / 2, 2);
-                    SET NEW.area_basal = area_basal;
-
-                    -- Obtener ID de tipo Volumen Maderable
-                    SELECT id_tipo_e INTO id_tipo_volumen FROM tipo_estimaciones WHERE desc_estimacion = 'Volumen Maderable' LIMIT 1;
 
                     -- Calcular según tipo de estimación y fórmula
                     IF NEW.id_formula IS NOT NULL THEN
                         CASE NEW.id_formula
-                            WHEN 5 THEN -- Biomasa Pinus montezumae: 0.006 * D^3.038
-                                SET NEW.calculo = 0.006 * POW(d_cm, 3.038);
-                                SET NEW.biomasa = NEW.calculo;
-                                SET NEW.carbono = NEW.biomasa * factor_carbono;
+                            WHEN 5 THEN -- Biomasa Pinus montezumae: 0.006 * D^3.038 (en kg)
+                                SET biomasa_kg = 0.006 * POW(d_cm, 3.038);
+                                SET densidad_basica = 575; -- kg/m³
 
-                            WHEN 6 THEN -- Biomasa Quercus crassifolia: 0.283 * (D²*H)^0.807
-                                SET NEW.calculo = 0.283 * POW(POW(d_cm, 2) * altura_total_val, 0.807);
-                                SET NEW.biomasa = NEW.calculo;
-                                SET NEW.carbono = NEW.biomasa * factor_carbono;
+                            WHEN 6 THEN -- Biomasa Quercus crassifolia: 0.283 * (D²*H)^0.807 (en kg)
+                                SET biomasa_kg = 0.283 * POW(POW(d_cm, 2) * altura_total_val, 0.807);
+                                SET densidad_basica = 720; -- kg/m³
 
-                            WHEN 7 THEN -- Biomasa Quercus rugosa: 0.0192 * D^2.7569
-                                SET NEW.calculo = 0.0192 * POW(d_cm, 2.7569);
-                                SET NEW.biomasa = NEW.calculo;
-                                SET NEW.carbono = NEW.biomasa * factor_carbono;
+                            WHEN 7 THEN -- Biomasa Quercus rugosa: 0.0192 * D^2.7569 (en kg)
+                                SET biomasa_kg = 0.0192 * POW(d_cm, 2.7569);
+                                SET densidad_basica = 780; -- kg/m³
 
-                            WHEN 8 THEN -- Biomasa Pinus pseudostrobus: 0.3553 * D^2.2245
-                                SET NEW.calculo = 0.3553 * POW(d_cm, 2.2245);
-                                SET NEW.biomasa = NEW.calculo;
-                                SET NEW.carbono = NEW.biomasa * factor_carbono;
+                            WHEN 8 THEN -- Biomasa Pinus pseudostrobus: 0.3553 * D^2.2245 (en kg)
+                                SET biomasa_kg = 0.3553 * POW(d_cm, 2.2245);
+                                SET densidad_basica = 570; -- kg/m³
 
                             ELSE
                                 -- Fórmulas 1-4 son para trozas, no aplicar aquí
-                                SET NEW.calculo = IFNULL(NEW.calculo, 0);
-                                SET NEW.biomasa = IFNULL(NEW.biomasa, 0);
-                                SET NEW.carbono = IFNULL(NEW.carbono, 0);
+                                SET biomasa_kg = 0;
+                                SET densidad_basica = 0;
                         END CASE;
+
+                        -- Convertir biomasa de kg a toneladas
+                        SET NEW.biomasa = ROUND(biomasa_kg / 1000, 10);
+                        
+                        -- Calcular Volumen Maderable Aproximado = Biomasa (kg) / Densidad Básica
+                        SET volumen_maderable = biomasa_kg / densidad_basica;
+                        SET NEW.calculo = ROUND(volumen_maderable, 10);
+                        
+                        -- Carbono: 50% de la biomasa (en toneladas)
+                        SET NEW.carbono = ROUND(NEW.biomasa * factor_carbono, 10);
                     ELSE
-                        -- Sin fórmula: Calcular Volumen Maderable
-                        -- V = área_basal * altura * factor_forma (0.5)
-                        IF NEW.id_tipo_e = id_tipo_volumen OR NEW.id_tipo_e = 1 THEN
-                            SET NEW.calculo = area_basal * altura_total_val * 0.5;
-                            SET NEW.biomasa = 0;
-                            SET NEW.carbono = 0;
-                        ELSE
-                            SET NEW.calculo = IFNULL(NEW.calculo, 0);
-                            SET NEW.biomasa = IFNULL(NEW.biomasa, 0);
-                            SET NEW.carbono = IFNULL(NEW.carbono, 0);
-                        END IF;
+                        -- Sin fórmula: valores por defecto
+                        SET NEW.calculo = 0;
+                        SET NEW.biomasa = 0;
+                        SET NEW.carbono = 0;
                     END IF;
                 END IF;
 

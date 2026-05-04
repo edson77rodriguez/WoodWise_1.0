@@ -1052,9 +1052,9 @@
                                 <tr>
                                     <th>Árbol</th>
                                     <th>Tipo</th>
-                                    <th>Cálculo</th>
-                                    <th>Biomasa</th>
-                                    <th>Carbono</th>
+                                    <th>Vol. Maderable Aprox. (m³)</th>
+                                    <th>Biomasa (ton)</th>
+                                    <th>Carbono (ton)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1070,15 +1070,15 @@
                                             <span class="badge-tipo badge-carbono">{{ $est->tipoEstimacion->desc_estimacion }}</span>
                                         @endif
                                     </td>
-                                    <td data-label="Cálculo">{{ number_format($est->calculo, 4) }}</td>
-                                    <td data-label="Biomasa">{{ number_format($est->biomasa, 4) }} ton</td>
-                                    <td data-label="Carbono">{{ number_format($est->carbono, 4) }} ton</td>
+                                    <td data-label="Vol. Maderable Aprox. (m³)">{{ number_format($est->calculo, 4) }} m³</td>
+                                    <td data-label="Biomasa (ton)">{{ number_format($est->biomasa, 4) }}</td>
+                                    <td data-label="Carbono (ton)">{{ number_format($est->carbono, 4) }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td data-label="Total">VOLUMEN TOTAL</td>
+                                    <td data-label="Total">VOLUMEN MADERABLE APROXIMADO (m³)</td>
                                     <td data-label="">{{ number_format($totalVolumenArboles, 4) }}</td>
                                     <td data-label="">-</td>
                                     <td data-label="">-</td>
