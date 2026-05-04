@@ -478,6 +478,7 @@
         </div>
     </div>
 </div>
+    @include('partials.modals.parcela-create')
     @foreach($parcelas as $parcela)
         @include('partials.modals.arbol-create', ['parcela' => $parcela])
         @include('partials.modals.troza-create', ['parcela' => $parcela])
