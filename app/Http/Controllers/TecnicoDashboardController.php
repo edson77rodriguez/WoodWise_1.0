@@ -11,13 +11,12 @@ use App\Models\Productor;
 use App\Models\Especie;
 use App\Models\Formula;
 use App\Models\Tipo_Estimacion;
-use App\Models\TurnoCorta;
 use App\Models\Asigna_Parcela;
 use App\Models\Tecnico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use PDF;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TecnicoDashboardController extends Controller
 {
@@ -83,9 +82,9 @@ class TecnicoDashboardController extends Controller
 
         // Biomasa y Carbono totales
         $totalBiomasa = Estimacion::whereIn('id_troza', $trozaIds)->sum('biomasa')
-                      + Estimacion1::whereIn('id_arbol', $arbolIds)->sum('biomasa');
+                  + Estimacion1::whereIn('id_arbol', $arbolIds)->sum('biomasa');
         $totalCarbono = Estimacion::whereIn('id_troza', $trozaIds)->sum('carbono')
-                      + Estimacion1::whereIn('id_arbol', $arbolIds)->sum('carbono');
+                  + Estimacion1::whereIn('id_arbol', $arbolIds)->sum('carbono');
 
         // --- 4. Consulta PAGINADA (para la tabla) ---
         $parcelas = Parcela::with(['productor.persona', 'trozas.especie', 'arboles.especie'])
@@ -432,7 +431,7 @@ class TecnicoDashboardController extends Controller
             'dap_promedio' => $parcela->arboles->avg('diametro_pecho') ?? 0,
         ];
 
-        $pdf = PDF::loadView('pdf.parcela-tecnico', [
+        $pdf = Pdf::loadView('pdf.parcela-tecnico', [
             'parcela' => $parcela,
             'totales' => $totales,
             'estadisticas' => $estadisticas,
