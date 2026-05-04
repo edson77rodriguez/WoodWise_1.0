@@ -21,7 +21,7 @@
             
             <!-- Contenido principal -->
             <div class="header-content-wrapper">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <!-- Lado izquierdo - Branding -->
                     <div class="d-flex align-items-center">
                         <div class="animated-logo">
@@ -63,57 +63,7 @@
                             <div class="btn-shine"></div>
                         </button>
                         
-                        <!-- Menú de Usuario Dropdown -->
-                        <div class="user-menu-wrapper">
-                            <button class="user-menu-trigger" id="userMenuBtn" type="button">
-                                <div class="user-avatar">
-                                    <span>{{ substr($user->persona->nom ?? 'U', 0, 1) }}{{ substr($user->persona->ap ?? '', 0, 1) }}</span>
-                                </div>
-                                <div class="user-info-mini">
-                                    <span class="user-name">{{ $user->persona->nom ?? 'Usuario' }}</span>
-                                    <span class="user-role">Técnico Forestal</span>
-                                </div>
-                                <i class="fas fa-chevron-down dropdown-arrow"></i>
-                            </button>
-                            
-                            <div class="user-dropdown-menu" id="userDropdown">
-                                <div class="dropdown-header">
-                                    <div class="user-avatar-large">
-                                        <span>{{ substr($user->persona->nom ?? 'U', 0, 1) }}{{ substr($user->persona->ap ?? '', 0, 1) }}</span>
-                                    </div>
-                                    <div class="user-details">
-                                        <span class="name">{{ $user->persona->nom ?? '' }} {{ $user->persona->ap ?? '' }}</span>
-                                        <span class="email">{{ $user->email }}</span>
-                                        <span class="badge-role"><i class="fas fa-leaf me-1"></i>Técnico Forestal</span>
-                                    </div>
-                                </div>
-                                <div class="dropdown-divider"></div>
-                                <a href="{{ route('perfil.index') }}" class="dropdown-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>Mi Perfil</span>
-                                </a>
-                                <a href="{{ route('especies.catalogo') }}" class="dropdown-item">
-                                    <i class="fas fa-seedling"></i>
-                                    <span>Catálogo de Especies</span>
-                                </a>
-                                <button class="dropdown-item" data-bs-toggle="tooltip" title="Próximamente">
-                                    <i class="fas fa-cog"></i>
-                                    <span>Configuración</span>
-                                </button>
-                                <button class="dropdown-item" data-bs-toggle="tooltip" title="Próximamente">
-                                    <i class="fas fa-chart-bar"></i>
-                                    <span>Estadísticas</span>
-                                </button>
-                                <div class="dropdown-divider"></div>
-                                <form action="{{ route('logout') }}" method="POST" class="dropdown-form">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item logout-item">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                        <span>Cerrar Sesión</span>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
+                        <!-- User menu moved to global navbar to avoid duplication -->
                     </div>
                 </div>
             </div>
@@ -149,22 +99,19 @@
                         </div>
                     </div>
                     <div class="profile-info">
-                        <h1 class="profile-title">
-                            Técnico <span class="gradient-name">{{ $user->persona->nom ?? 'Usuario' }}</span>
-                        </h1>
+                        <h1 class="profile-title">Técnico <span class="gradient-name">{{ $user->persona->nom ?? 'Usuario' }}</span></h1>
                         <p class="profile-subtitle">Especialista en Gestión Forestal</p>
-                        
                         <div class="profile-metadata">
                             <div class="meta-item">
-                                <i class="fas fa-fingerprint"></i>
+                                <i class="fas fa-id-card"></i>
                                 <span>{{ $tecnico->cedula_p ?? 'No disponible' }}</span>
                             </div>
                             <div class="meta-item">
                                 <i class="fas fa-key"></i>
-                                    <span>{{ $tecnico->clave_tecnico ?? 'N/A' }}</span>
+                                <span>{{ $tecnico->clave_tecnico ?? 'N/A' }}</span>
                             </div>
                             <div class="meta-item">
-                                <i class="fas fa-calendar"></i>
+                                <i class="fas fa-check-circle"></i>
                                 <span>Activo ahora</span>
                             </div>
                         </div>
@@ -204,16 +151,13 @@
                         <h3 class="metric-value">{{ $parcelas->total() }}</h3>
                         <p class="metric-label">Parcelas Asignadas</p>
                         <div class="metric-progress">
-                            <div class="progress-track">
-                                <div class="progress-fill" style="width: 100%"></div>
-                            </div>
+                            <div class="progress-track"><div class="progress-fill" style="width: 100%"></div></div>
                             <span class="progress-text">Completo</span>
                         </div>
                     </div>
                     <div class="metric-footer">
                         <span class="metric-info">
-                            <i class="fas fa-info-circle"></i>
-                            Gestión activa
+                            <i class="fas fa-info-circle"></i> Gestión activa
                         </span>
                     </div>
                 </div>
@@ -234,16 +178,13 @@
                         <h3 class="metric-value">{{ $totalTrozas }}</h3>
                         <p class="metric-label">Trozas Registradas</p>
                         <div class="metric-progress">
-                            <div class="progress-track">
-                                <div class="progress-fill" style="width: 75%"></div>
-                            </div>
-                            <span class="progress-text">75% capacidad</span>
+                            <div class="progress-track"><div class="progress-fill" style="width: 75%"></div></div>
+                            <span class="progress-text">75% Cap.</span>
                         </div>
                     </div>
                     <div class="metric-footer">
                         <span class="metric-info">
-                            <i class="fas fa-clock"></i>
-                            Actualizado hoy
+                            <i class="fas fa-clock"></i> Actualizado hoy
                         </span>
                     </div>
                 </div>
@@ -264,56 +205,48 @@
                         <h3 class="metric-value">{{ $totalEstimaciones ?? 0 }}</h3>
                         <p class="metric-label">Estimaciones Realizadas</p>
                         <div class="metric-progress">
-                            <div class="progress-track">
-                                <div class="progress-fill" style="width: 60%"></div>
-                            </div>
-                            <span class="progress-text">60% del objetivo</span>
+                            <div class="progress-track"><div class="progress-fill" style="width: 60%"></div></div>
+                            <span class="progress-text">60% Obj.</span>
                         </div>
                     </div>
                     <div class="metric-footer">
                         <span class="metric-info">
-                            <i class="fas fa-chart-line"></i>
-                            En crecimiento
+                            <i class="fas fa-chart-line"></i> En crecimiento
                         </span>
                     </div>
                 </div>
 
                 <!-- Métrica 4: Volumen -->
-                            <div class="metric-card" data-aos="fade-up" data-aos-delay="300">
-                <div class="metric-header">
-                    <div class="metric-icon-wrapper">
-                        <div class="metric-icon-bg"></div>
-                        <i class="fas fa-cubes"></i>
-                    </div>
-                    <div class="metric-trend excellent">
-                        <i class="fas fa-rocket"></i>
-                        <span>45%</span>
-                    </div>
-                </div>
-                <div class="metric-content">
-                        <h3 class="metric-value">{{ number_format($totalVolumenMaderable ?? 0, 2) }}</h3>
-                    <p class="metric-label">Volumen Total (m³)</p>
-                    <div class="metric-progress">
-                        <div class="progress-track">
-                            <div class="progress-fill" style="width: 85%"></div>
+                <div class="metric-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="metric-header">
+                        <div class="metric-icon-wrapper">
+                            <div class="metric-icon-bg"></div>
+                            <i class="fas fa-cubes"></i>
                         </div>
-                        <span class="progress-text">85% récord</span>
+                        <div class="metric-trend excellent">
+                            <i class="fas fa-rocket"></i>
+                            <span>45%</span>
+                        </div>
+                    </div>
+                    <div class="metric-content">
+                        <h3 class="metric-value">{{ number_format($totalVolumenMaderable ?? 0, 2) }}</h3>
+                        <p class="metric-label">Volumen Total (m³)</p>
+                        <div class="metric-progress">
+                            <div class="progress-track"><div class="progress-fill" style="width: 85%"></div></div>
+                            <span class="progress-text">85% Rec.</span>
+                        </div>
+                    </div>
+                    <div class="metric-footer">
+                        <span class="metric-info">
+                            <i class="fas fa-trophy"></i> Récord personal
+                        </span>
                     </div>
                 </div>
-                <div class="metric-footer">
-                    <span class="metric-info">
-                        <i class="fas fa-trophy"></i>
-                        Récord personal
-                    </span>
-                </div>
             </div>
-            </div>
-
-           
         </div>
     </div>
 </div>
-       <!-- Tabla de Parcelas Épica -->
+<!-- Tabla de Parcelas Épica -->
 <div class="row">
     <div class="col-12">
         <div class="advanced-table-container">
@@ -330,13 +263,9 @@
                             <p class="table-subtitle">Gestión integral de recursos forestales</p>
                         </div>
                     </div>
-                    
                     <div class="header-controls">
-                        <!-- Búsqueda Avanzada -->
                         <div class="search-advanced">
-                            <div class="search-icon">
-                                <i class="fas fa-search"></i>
-                            </div>
+                            <div class="search-icon"><i class="fas fa-search"></i></div>
                             <input type="text" class="search-input" placeholder="Buscar parcela, productor, ubicación...">
                             <div class="search-actions">
                                 <button class="search-clear" type="button">
@@ -344,67 +273,61 @@
                                 </button>
                             </div>
                         </div>
-                        
-                        <!-- Filtros Avanzados -->
                         <div class="filters-group">
                             <div class="dropdown filter-dropdown">
-                                <button class="btn-filter" data-bs-toggle="dropdown">
-                                    <i class="fas fa-filter"></i>
-                                    Filtros
+                                <button class="btn-filter" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-sliders-h"></i>
+                                    <span>Filtros</span>
                                     <span class="filter-badge">3</span>
                                 </button>
                                 <div class="dropdown-menu filter-menu">
                                     <div class="filter-section">
-                                        <h6>Estado</h6>
+                                        <h6>Estado de Parcela</h6>
                                         <div class="filter-options">
                                             <label class="filter-checkbox">
                                                 <input type="checkbox" checked>
-                                                <span class="checkmark"></span>
-                                                Activas
+                                                <span>Activas</span>
                                             </label>
                                             <label class="filter-checkbox">
                                                 <input type="checkbox">
-                                                <span class="checkmark"></span>
-                                                Inactivas
+                                                <span>Inactivas</span>
                                             </label>
                                         </div>
                                     </div>
                                     <div class="filter-section">
-                                        <h6>Extensión</h6>
+                                        <h6>Extensión (hectáreas)</h6>
                                         <div class="range-inputs">
                                             <input type="number" placeholder="Mín" class="form-control">
-                                            <span>-</span>
+                                            <span>—</span>
                                             <input type="number" placeholder="Máx" class="form-control">
                                         </div>
                                     </div>
                                     <div class="filter-actions">
-                                        <button class="btn-apply">Aplicar</button>
-                                        <button class="btn-reset">Limpiar</button>
+                                        <button type="button" class="btn-apply">Aplicar</button>
+                                        <button type="button" class="btn-reset">Limpiar</button>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <button class="btn-export">
+                            <button class="btn-export" type="button">
                                 <i class="fas fa-download"></i>
-                                Exportar
+                                <span>Exportar</span>
                             </button>
                         </div>
                     </div>
                 </div>
-                
                 <!-- Stats Rápidas -->
                 <div class="table-stats">
                     <div class="stat-item">
                         <span class="stat-value">{{ $parcelas->total() }}</span>
-                        <span class="stat-label">Total Parcelas</span>
+                        <span class="stat-label">Parcelas</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-value">{{ $totalTrozas }}</span>
-                        <span class="stat-label">Trozas Totales</span>
+                        <span class="stat-label">Trozas</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-value">{{ number_format($totalVolumenMaderable ?? 0, 1) }}m³</span>
-                        <span class="stat-label">Volumen Total</span>
+                        <span class="stat-value">{{ number_format($totalVolumenMaderable ?? 0, 1) }}</span>
+                        <span class="stat-label">Volumen m³</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-value">{{ $parcelas->count() }}</span>
@@ -425,19 +348,7 @@
                                 $producerName = trim(($parcela->productor->persona->nom ?? '') . ' ' . ($parcela->productor->persona->ap ?? ''));
                             }
                         @endphp
-
-                        <div
-                            class="parcela-float-card"
-                            data-parcela-id="{{ $parcela->id_parcela }}"
-                            data-parcela-name="{{ $parcela->nom_parcela }}"
-                            data-producer="{{ $producerName }}"
-                            data-location="{{ $parcela->ubicacion }}"
-                            data-extension="{{ (float) $parcela->extension }}"
-                            data-arboles="{{ (int) ($parcela->arboles_count ?? 0) }}"
-                            data-trozas="{{ (int) $parcela->trozas_count }}"
-                            data-estimaciones="{{ (int) $total_estimaciones_parcela }}"
-                            data-volumen="{{ number_format($volumen_parcela, 2, '.', '') }}"
-                        >
+                        <div class="parcela-float-card" data-parcela-id="{{ $parcela->id_parcela }}" data-parcela-name="{{ $parcela->nom_parcela }}" data-producer="{{ $producerName }}" data-location="{{ $parcela->ubicacion }}" data-extension="{{ (float) $parcela->extension }}" data-arboles="{{ (int) ($parcela->arboles_count ?? 0) }}" data-trozas="{{ (int) $parcela->trozas_count }}" data-estimaciones="{{ (int) $total_estimaciones_parcela }}" data-volumen="{{ number_format($volumen_parcela, 2, '.', '') }}">
                             <div class="parcela-float-card__top">
                                 <div class="parcela-float-card__title">
                                     <div class="parcela-float-card__icon">
@@ -452,7 +363,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <div class="action-menu-mobile action-menu-inline" aria-label="Acciones">
                                     <button class="action-menu-trigger" type="button" aria-haspopup="true" aria-expanded="false">
                                         <i class="fas fa-ellipsis-vertical"></i>
@@ -485,7 +395,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div class="parcela-float-card__info">
                                 <div class="parcela-float-card__info-row">
                                     <div class="parcela-float-card__info-k">
@@ -509,7 +418,6 @@
                                     <div class="parcela-float-card__info-v">{{ number_format($parcela->extension, 2) }} ha</div>
                                 </div>
                             </div>
-
                             <div class="parcela-float-card__metrics">
                                 <div class="parcela-float-metric">
                                     <div class="parcela-float-metric__icon trees"><i class="fas fa-tree"></i></div>
@@ -570,9 +478,6 @@
         </div>
     </div>
 </div>
-
-    <!-- Los modales permanecen similares pero con clases modernizadas -->
-    @include('partials.modals.parcela-create')
     @foreach($parcelas as $parcela)
         @include('partials.modals.arbol-create', ['parcela' => $parcela])
         @include('partials.modals.troza-create', ['parcela' => $parcela])
@@ -591,53 +496,7 @@
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
 
-        // User Dropdown Menu
-        const userMenuBtn = document.getElementById('userMenuBtn');
-        const userDropdown = document.getElementById('userDropdown');
-        
-        if (userMenuBtn && userDropdown) {
-            // Mover dropdown al body para evitar problemas de z-index
-            document.body.appendChild(userDropdown);
-            
-            function positionDropdown() {
-                const rect = userMenuBtn.getBoundingClientRect();
-                userDropdown.style.position = 'fixed';
-                userDropdown.style.top = (rect.bottom + 10) + 'px';
-                userDropdown.style.right = (window.innerWidth - rect.right) + 'px';
-                userDropdown.style.left = 'auto';
-            }
-            
-            userMenuBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                positionDropdown();
-                userMenuBtn.classList.toggle('active');
-                userDropdown.classList.toggle('show');
-            });
-            
-            // Reposicionar en scroll/resize
-            window.addEventListener('scroll', function() {
-                if (userDropdown.classList.contains('show')) {
-                    positionDropdown();
-                }
-            });
-            window.addEventListener('resize', positionDropdown);
-            
-            // Cerrar al hacer clic fuera
-            document.addEventListener('click', function(e) {
-                if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-                    userMenuBtn.classList.remove('active');
-                    userDropdown.classList.remove('show');
-                }
-            });
-            
-            // Cerrar con ESC
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    userMenuBtn.classList.remove('active');
-                    userDropdown.classList.remove('show');
-                }
-            });
-        }
+        // User dropdown is handled globally in public/js/WW/layout.js
 
         // Acciones compactas por fila (móvil)
         document.querySelectorAll('.action-menu-trigger').forEach(trigger => {

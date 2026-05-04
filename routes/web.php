@@ -46,6 +46,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/perfil', [PerfilController::class, 'index'])->name('perfil.index');
     Route::put('/perfil', [PerfilController::class, 'update'])->name('perfil.update');
     Route::put('/perfil/password', [PerfilController::class, 'updatePassword'])->name('perfil.updatePassword');
+
+    // Catálogo de especies accesible para usuarios autenticados (técnicos incluidos)
+    Route::get('/catalogo-especies', [EspecieController::class, 'catalogo'])->name('especies.catalogo');
 });
 
 Route::middleware(['auth'])->group(function() {
@@ -75,7 +78,7 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::resource('asigna_parcelas', AsignaParcelaController::class);
     Route::resource('estimaciones', EstimacionController::class);
     Route::get('/estimaciones/formulas-por-tipo/{tipoId}', [EstimacionController::class, 'getFormulasByTipo']);
-    Route::get('/catalogo-especies', [EspecieController::class, 'catalogo'])->name('especies.catalogo');
+    // Catalogo de especies permanece aquí para administración CRUD.
 });
 
 // =====================================================================
