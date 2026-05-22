@@ -31,7 +31,7 @@ class BotController extends Controller
             'mensaje' => ['required', 'string'],
         ]);
 
-        $telefono = $data['telefono'];
+        $telefono = $this->normalizarTelefono($data['telefono']);
         $mensajeCrudo = trim($data['mensaje']);
         $mensajeLimpio = mb_strtolower($mensajeCrudo);
 
@@ -152,7 +152,7 @@ class BotController extends Controller
             'excel_data' => ['required', 'array'],
         ]);
 
-        $telefono = $data['telefono'];
+        $telefono = $this->normalizarTelefono($data['telefono']);
         $persona = $this->findPersonaByTelefono($telefono);
         if (!$persona) {
             return response()->json(['error' => 'Usuario no encontrado'], 404);
@@ -173,10 +173,69 @@ class BotController extends Controller
             ]
         );
 
+        $trozasCount = count($data['excel_data']['trozas'] ?? []);
+        $arbolesCount = count($data['excel_data']['arboles'] ?? []);
+        $totalCount = $trozasCount + $arbolesCount;
+
+        $parcelas = $parcelasIds->isEmpty()
+            ? collect()
+            : DB::table('parcelas')
+                ->whereIn('id_parcela', $parcelasIds)
+                ->select('id_parcela', 'nom_parcela')
+                ->orderBy('nom_parcela')
+                ->get();
+
+        $parcelasTexto = $parcelas->isEmpty()
+            ? 'No tienes parcelas asignadas.'
+            : $parcelas->map(fn ($p, $i) => ($i + 1) . '. ' . $p->nom_parcela)->implode("\n");
+
+        $interactivePayload = null;
+        if ($parcelas->isNotEmpty()) {
+            $rows = $parcelas->take(10)->map(function ($parcela) {
+                return [
+                    'id' => 'excel_parcela_' . $parcela->id_parcela,
+                    'title' => $parcela->nom_parcela,
+                    'description' => 'Seleccionar parcela',
+                ];
+            })->values()->all();
+
+            $interactivePayload = [
+                'type' => 'list',
+                'header' => [
+                    'type' => 'text',
+                    'text' => '📍 Selecciona la parcela',
+                ],
+                'body' => [
+                    'text' => "Se detectaron {$totalCount} registros.\nElige la parcela para continuar:",
+                ],
+                'footer' => [
+                    'text' => 'SIGMAD | Importacion Excel',
+                ],
+                'action' => [
+                    'button' => 'Ver parcelas',
+                    'sections' => [
+                        [
+                            'title' => 'Parcelas asignadas',
+                            'rows' => $rows,
+                        ],
+                    ],
+                ],
+            ];
+        }
+
         return response()->json([
             'ok' => true,
             'estado' => self::ESPERANDO_PARCELA_EXCEL,
-            'mensaje' => "✅ Archivo recibido.\n\n¿A que parcela corresponden los datos que vas a subir? (Escribe el nombre de la parcela).",
+            'resumen' => [
+                'trozas_recibidas' => $trozasCount,
+                'arboles_recibidos' => $arbolesCount,
+                'total_registros' => $totalCount,
+            ],
+            'parcelas' => $parcelas,
+            'interactive_payload' => $interactivePayload,
+            'mensaje' => "✅ Archivo recibido.\n\n"
+                . "📊 Registros detectados: {$totalCount} (🌲 {$arbolesCount} arboles, 🪵 {$trozasCount} trozas).\n\n"
+                . "¿A que parcela corresponden los datos? Responde con el nombre o numero:\n{$parcelasTexto}",
         ], 200);
     }
 
@@ -1411,6 +1470,22 @@ class BotController extends Controller
             ->toString();
 
         return $limpio;
+    }
+
+    private function normalizarTelefono(string $telefono): string
+    {
+        $raw = trim($telefono);
+        $digits = preg_replace('/\D+/', '', $raw);
+
+        if ($digits === '') {
+            return $raw;
+        }
+
+        if (str_starts_with($digits, '521')) {
+            return '52' . substr($digits, 3);
+        }
+
+        return $digits;
     }
 
     private function obtenerEspeciesDisponiblesTexto(int $max = 20): string
