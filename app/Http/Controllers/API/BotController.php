@@ -24,6 +24,8 @@ class BotController extends Controller
 
     public function asistenteGuiado(Request $request)
     {
+        $this->limpiarSesionesExcelExpiradas();
+
         $data = $request->validate([
             'telefono' => ['required', 'string', 'max:30'],
             'mensaje' => ['required', 'string'],
@@ -139,6 +141,43 @@ class BotController extends Controller
                 $sesion->delete();
                 return response()->json(['error' => 'Sesión corrupta. Por favor, inicia de nuevo.'], 500);
         }
+    }
+
+    public function recibirExcelWebhook(Request $request)
+    {
+        $this->limpiarSesionesExcelExpiradas();
+
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+            'excel_data' => ['required', 'array'],
+        ]);
+
+        $telefono = $data['telefono'];
+        $persona = $this->findPersonaByTelefono($telefono);
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+        if ($rol !== 'Tecnico' && $rol !== 'Productor') {
+            return response()->json(['error' => 'Tu perfil no tiene acceso al Asistente.'], 403);
+        }
+
+        BotSesion::updateOrCreate(
+            ['telefono' => $telefono],
+            [
+                'estado' => self::ESPERANDO_PARCELA_EXCEL,
+                'payload' => [
+                    'excel_data' => $data['excel_data'],
+                ],
+            ]
+        );
+
+        return response()->json([
+            'ok' => true,
+            'estado' => self::ESPERANDO_PARCELA_EXCEL,
+            'mensaje' => "✅ Archivo recibido.\n\n¿A que parcela corresponden los datos que vas a subir? (Escribe el nombre de la parcela).",
+        ], 200);
     }
 
     public function listarParcelas(Request $request)
@@ -818,6 +857,9 @@ class BotController extends Controller
         }
 
         $payload = $sesion->payload ?? [];
+        if (isset($payload['excel_data'])) {
+            return $this->finalizarCargaExcel($sesion, $parcela, $payload['excel_data']);
+        }
         $payload['id_parcela'] = (int) $parcela->id_parcela;
         $payload['nom_parcela'] = (string) $parcela->nom_parcela;
 
@@ -841,6 +883,163 @@ class BotController extends Controller
             'estado' => self::ESPERANDO_ARCHIVO_EXCEL,
             'mensaje' => "⚠️ Por favor, sube el archivo de Excel (.xlsx o .csv). Si deseas cancelar el proceso, escribe *Menu*.",
         ], 200);
+    }
+
+    private function finalizarCargaExcel(BotSesion $sesion, object $parcela, array $excelData)
+    {
+        $trozas = collect($excelData['trozas'] ?? []);
+        $arboles = collect($excelData['arboles'] ?? []);
+
+        if ($trozas->isEmpty() && $arboles->isEmpty()) {
+            return response()->json([
+                'ok' => false,
+                'estado' => self::ESPERANDO_PARCELA_EXCEL,
+                'mensaje' => '⚠️ No se detectaron filas validas en el archivo. Por favor, revisa la plantilla e intenta de nuevo.',
+            ], 200);
+        }
+
+        $idParcela = (int) $parcela->id_parcela;
+        $nomParcela = (string) $parcela->nom_parcela;
+
+        $resultado = DB::transaction(function () use ($trozas, $arboles, $idParcela) {
+            $receiptTrozas = [];
+            $receiptArboles = [];
+
+            foreach ($trozas->values() as $idx => $row) {
+                try {
+                    [$idEspecie, $especieNombre, $especieError] = $this->resolveEspecieForRow($row['id_especie'] ?? null, $row['especie_texto'] ?? null);
+                    if ($especieError) {
+                        $receiptTrozas[] = [
+                            'ok' => false,
+                            'fila' => $idx + 1,
+                            'error' => $especieError,
+                        ];
+                        continue;
+                    }
+
+                    $densidad = $row['densidad'] ?? null;
+                    if ($densidad === null || (float) $densidad <= 0) {
+                        $receiptTrozas[] = [
+                            'ok' => false,
+                            'fila' => $idx + 1,
+                            'error' => 'Densidad invalida o faltante.',
+                        ];
+                        continue;
+                    }
+
+                    $payload = [
+                        'id_especie' => (int) $idEspecie,
+                        'id_parcela' => $idParcela,
+                        'diametro' => (float) ($row['diametro'] ?? 0),
+                        'longitud' => (float) ($row['longitud'] ?? 0),
+                        'densidad' => (float) $densidad,
+                        'diametro_otro_extremo' => isset($row['diametro_otro_extremo']) ? (float) $row['diametro_otro_extremo'] : null,
+                        'diametro_medio' => isset($row['diametro_medio']) ? (float) $row['diametro_medio'] : null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    if ($payload['diametro'] <= 0 || $payload['longitud'] <= 0) {
+                        $receiptTrozas[] = [
+                            'ok' => false,
+                            'fila' => $idx + 1,
+                            'error' => 'Diametro o longitud invalidos.',
+                        ];
+                        continue;
+                    }
+
+                    $idTroza = (int) DB::table('trozas')->insertGetId($payload);
+
+                    $receiptTrozas[] = [
+                        'ok' => true,
+                        'fila' => $idx + 1,
+                        'id_troza' => $idTroza,
+                        'especie' => $especieNombre,
+                    ];
+                } catch (\Throwable $e) {
+                    $receiptTrozas[] = [
+                        'ok' => false,
+                        'fila' => $idx + 1,
+                        'error' => 'Error inesperado al insertar la troza.',
+                    ];
+                }
+            }
+
+            foreach ($arboles->values() as $idx => $row) {
+                try {
+                    [$idEspecie, $especieNombre, $especieError] = $this->resolveEspecieForRow($row['id_especie'] ?? null, $row['especie_texto'] ?? null);
+                    if ($especieError) {
+                        $receiptArboles[] = [
+                            'ok' => false,
+                            'fila' => $idx + 1,
+                            'error' => $especieError,
+                        ];
+                        continue;
+                    }
+
+                    $payload = [
+                        'id_especie' => (int) $idEspecie,
+                        'id_parcela' => $idParcela,
+                        'altura_total' => (float) ($row['altura_total'] ?? 0),
+                        'diametro_pecho' => (float) ($row['diametro_pecho'] ?? 0),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    if ($payload['altura_total'] <= 0 || $payload['diametro_pecho'] <= 0) {
+                        $receiptArboles[] = [
+                            'ok' => false,
+                            'fila' => $idx + 1,
+                            'error' => 'Altura o DAP invalidos.',
+                        ];
+                        continue;
+                    }
+
+                    $idArbol = (int) DB::table('arboles')->insertGetId($payload);
+
+                    $receiptArboles[] = [
+                        'ok' => true,
+                        'fila' => $idx + 1,
+                        'id_arbol' => $idArbol,
+                        'especie' => $especieNombre,
+                    ];
+                } catch (\Throwable $e) {
+                    $receiptArboles[] = [
+                        'ok' => false,
+                        'fila' => $idx + 1,
+                        'error' => 'Error inesperado al insertar el arbol.',
+                    ];
+                }
+            }
+
+            return [
+                'trozas' => $receiptTrozas,
+                'arboles' => $receiptArboles,
+            ];
+        });
+
+        $sesion->delete();
+
+        $trozasOk = collect($resultado['trozas'])->where('ok', true)->count();
+        $arbolesOk = collect($resultado['arboles'])->where('ok', true)->count();
+
+        return response()->json([
+            'ok' => true,
+            'estado' => 'FINALIZADO',
+            'mensaje' => "✅ Carga finalizada para *{$nomParcela}*.\n\n"
+                . "🌲 Arboles guardados: *{$arbolesOk}*\n"
+                . "🪵 Trozas guardadas: *{$trozasOk}*",
+            'detalle' => $resultado,
+        ], 200);
+    }
+
+    private function limpiarSesionesExcelExpiradas(): void
+    {
+        $limite = now()->subHours(24);
+
+        BotSesion::whereIn('estado', [self::ESPERANDO_PARCELA_EXCEL, self::ESPERANDO_ARCHIVO_EXCEL])
+            ->where('updated_at', '<', $limite)
+            ->delete();
     }
 
     private function procesarParcelaEstimacion(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
