@@ -777,14 +777,10 @@ class BotController extends Controller
             ]
         );
 
-        $urlPlantilla = 'https://woodwise.me/storage/plantillas/plantilla_inventario_sigmad.xlsx';
-
         return response()->json([
-            'ok' => true,
-            'estado' => self::ESPERANDO_PARCELA_EXCEL,
-            'mensaje' => "📄 *Plantilla Oficial de Inventario SIGMAD*\n"
-                . "Descargala aqui para llenar tus datos:\n{$urlPlantilla}\n\n"
-                . "¿A que parcela pertenecen los datos que vas a subir? (Escribe el nombre de la parcela).",
+            'tipo' => 'envio_documento',
+            'url' => 'https://woodwise.me/storage/plantillas/plantilla_inventario_sigmad.xlsx',
+            'mensaje' => "📄 *Plantilla Oficial de Inventario SIGMAD*\n\n¿A que parcela pertenecen los datos que vas a subir?",
         ], 200);
     }
 
