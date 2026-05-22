@@ -980,8 +980,7 @@ class BotController extends Controller
         });
 
         if ($trozas->isEmpty() && $arboles->isEmpty()) {
-                . "📚 *Especies disponibles (actualizado):*\n{$especiesTexto}\n\n"
-                . "¿A que parcela corresponden los datos? Responde con el nombre o numero:\n{$parcelasTexto}",
+            return response()->json([
                 'ok' => false,
                 'estado' => self::ESPERANDO_PARCELA_EXCEL,
                 'mensaje' => '⚠️ No se detectaron filas validas en el archivo. Por favor, revisa la plantilla e intenta de nuevo.',
@@ -999,14 +998,13 @@ class BotController extends Controller
                 try {
                     [$idEspecie, $especieNombre, $especieError] = $this->resolveEspecieForRow($row['id_especie'] ?? null, $row['especie_texto'] ?? null);
                     if ($especieError) {
-                    $especiesTexto = $this->obtenerEspeciesDisponiblesTexto();
                         $receiptTrozas[] = [
                             'ok' => false,
                             'fila' => $idx + 1,
                             'error' => $especieError,
-                        'mensaje' => "📄 *Plantilla Oficial de Inventario SIGMAD*\n\n"
-                            . "📚 *Especies disponibles (actualizado):*\n{$especiesTexto}\n\n"
-                            . "¿A que parcela pertenecen los datos que vas a subir?",
+                        ];
+                        continue;
+                    }
 
                     $densidad = $row['densidad'] ?? null;
                     if ($densidad === null || (float) $densidad <= 0) {
