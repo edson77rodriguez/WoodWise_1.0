@@ -19,6 +19,8 @@ class BotController extends Controller
     public const ESPERANDO_PARCELA_ESTIMACION = 'esperando_parcela_estimacion';
     public const ESPERANDO_ALCANCE_ESTIMACION = 'esperando_alcance_estimacion';
     public const ESPERANDO_FORMULA_ESTIMACION = 'esperando_formula_estimacion';
+    public const ESPERANDO_PARCELA_EXCEL = 'esperando_parcela_excel';
+    public const ESPERANDO_ARCHIVO_EXCEL = 'esperando_archivo_excel';
 
     public function asistenteGuiado(Request $request)
     {
@@ -81,6 +83,10 @@ class BotController extends Controller
                 return $this->iniciarFlujoEstimaciones($telefono, $parcelasIds);
             }
 
+            if (in_array($mensajeClave, ['menu_importar_excel', 'importar excel'], true)) {
+                return $this->iniciarFlujoImportacionExcel($telefono, $parcelasIds);
+            }
+
             // Si mandó cualquier texto random y no tiene plática activa, lo mandamos al menú.
             return response()->json([
                 'ok' => true,
@@ -112,6 +118,12 @@ class BotController extends Controller
 
             case self::ESPERANDO_FORMULA_ESTIMACION:
                 return $this->procesarFormulaEstimacion($sesion, $mensajeCrudo);
+
+            case self::ESPERANDO_PARCELA_EXCEL:
+                return $this->procesarParcelaExcel($sesion, $mensajeCrudo, $parcelasIds);
+
+            case self::ESPERANDO_ARCHIVO_EXCEL:
+                return $this->procesarArchivoExcel($sesion, $mensajeCrudo);
 
             default:
                 $sesion->delete();
@@ -252,6 +264,11 @@ class BotController extends Controller
                         'id' => 'menu_ingreso_guiado',
                         'title' => '🤖 Asistente Guiado',
                         'description' => 'Captura asistida paso a paso',
+                    ],
+                    [
+                        'id' => 'menu_importar_excel',
+                        'title' => '📥 Importar Excel',
+                        'description' => 'Carga inventario con plantilla oficial',
                     ],
                     [
                         'id' => 'menu_ingreso_archivo',
@@ -737,6 +754,86 @@ class BotController extends Controller
             'ok' => true,
             'estado' => self::ESPERANDO_PARCELA_ESTIMACION,
             'mensaje' => "🧮 *Generar Estimaciones*\n\nSelecciona la parcela para procesar pendientes.\n\n📍 *Tus Parcelas:*\n{$parcelasTexto}\n\n👉 Escribe el nombre de la parcela.",
+        ], 200);
+    }
+
+    private function iniciarFlujoImportacionExcel(string $telefono, $parcelasIds)
+    {
+        BotSesion::updateOrCreate(
+            ['telefono' => $telefono],
+            [
+                'estado' => self::ESPERANDO_PARCELA_EXCEL,
+                'payload' => [],
+            ]
+        );
+
+        $urlPlantilla = 'https://woodwise.me/storage/plantillas/plantilla_inventario_sigmad.xlsx';
+
+        return response()->json([
+            'ok' => true,
+            'estado' => self::ESPERANDO_PARCELA_EXCEL,
+            'mensaje' => "📄 *Plantilla Oficial de Inventario SIGMAD*\n"
+                . "Descargala aqui para llenar tus datos:\n{$urlPlantilla}\n\n"
+                . "¿A que parcela pertenecen los datos que vas a subir? (Escribe el nombre de la parcela).",
+        ], 200);
+    }
+
+    private function procesarParcelaExcel(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
+    {
+        $selector = trim($mensajeCrudo);
+        $busquedaNormalizada = $this->normalizarTextoBusqueda($selector);
+
+        $parcela = DB::table('parcelas')
+            ->whereIn('id_parcela', $parcelasIds)
+            ->select('id_parcela', 'nom_parcela')
+            ->get()
+            ->first(function ($row) use ($selector, $busquedaNormalizada) {
+                if (is_numeric($selector) && (int) $selector > 0 && (int) $row->id_parcela === (int) $selector) {
+                    return true;
+                }
+
+                if ($busquedaNormalizada === '') {
+                    return false;
+                }
+
+                $nombreNormalizado = $this->normalizarTextoBusqueda((string) $row->nom_parcela);
+
+                return $nombreNormalizado === $busquedaNormalizada
+                    || str_contains($nombreNormalizado, $busquedaNormalizada)
+                    || str_contains($busquedaNormalizada, $nombreNormalizado);
+            });
+
+        if (!$parcela) {
+            return response()->json([
+                'ok' => false,
+                'estado' => self::ESPERANDO_PARCELA_EXCEL,
+                'mensaje' => "❌ No tienes asignada una parcela con ese nombre. Por favor, verifica e intenta de nuevo:",
+            ], 200);
+        }
+
+        $payload = $sesion->payload ?? [];
+        $payload['id_parcela'] = (int) $parcela->id_parcela;
+        $payload['nom_parcela'] = (string) $parcela->nom_parcela;
+
+        $sesion->update([
+            'estado' => self::ESPERANDO_ARCHIVO_EXCEL,
+            'payload' => $payload,
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'estado' => self::ESPERANDO_ARCHIVO_EXCEL,
+            'mensaje' => "✅ Parcela *{$parcela->nom_parcela}* seleccionada con exito.\n\n"
+                . "Por favor, adjunta tu archivo de Excel (.xlsx) o CSV completado en este chat para iniciar la carga masiva.",
+        ], 200);
+    }
+
+    private function procesarArchivoExcel(BotSesion $sesion, string $mensajeCrudo)
+    {
+        return response()->json([
+            'ok' => false,
+            'estado' => self::ESPERANDO_ARCHIVO_EXCEL,
+            'mensaje' => "⚠️ Por favor, sube el archivo de Excel (.xlsx o .csv). Si deseas cancelar el proceso, escribe *Menu*.",
         ], 200);
     }
 

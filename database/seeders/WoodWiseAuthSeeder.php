@@ -31,7 +31,7 @@ class WoodWiseAuthSeeder extends Seeder
                 'nom' => 'Ana',
                 'ap' => 'Ramírez',
                 'am' => 'López',
-                'telefono' => '5550000002',
+                'telefono' => '527226367194',
                 'correo' => 'tecnico1@woodwise.test',
                 'contrasena' => $hashedPassword,
                 'id_rol' => 2,
