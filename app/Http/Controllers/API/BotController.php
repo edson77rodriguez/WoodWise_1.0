@@ -1002,6 +1002,11 @@ class BotController extends Controller
                             'ok' => false,
                             'fila' => $idx + 1,
                             'error' => $especieError,
+
+                private function procesarParcelaEstimacion(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
+                {
+                    $selector = trim($mensajeCrudo);
+                    $busquedaNormalizada = $this->normalizarTextoBusqueda($selector);
                         ];
                         continue;
                     }
@@ -1052,7 +1057,6 @@ class BotController extends Controller
                         'error' => 'Error inesperado al insertar la troza.',
                     ];
                 }
-                            $especiesTexto = $this->obtenerEspeciesDisponiblesTexto();
             }
 
             foreach ($arboles->values() as $idx => $row) {
@@ -1118,41 +1122,8 @@ class BotController extends Controller
         $errores = collect($resultado['trozas'])
             ->concat($resultado['arboles'])
             ->where('ok', false)
-            ->take(20)
-            ->map(function ($row) {
-                $fila = $row['fila'] ?? '?';
-                $error = $row['error'] ?? 'Error desconocido.';
-                return "• Fila {$fila}: {$error}";
-            })
-            ->implode("\n");
-
-        $detalleErrores = $errores !== ''
-            ? "\n\n⚠️ *Errores detectados (max 20):*\n{$errores}"
-            : '';
-
-        return response()->json([
-            'ok' => true,
-            'estado' => 'FINALIZADO',
-            'mensaje' => "✅ Carga finalizada para *{$nomParcela}*.\n\n"
-                . "🌲 Arboles guardados: *{$arbolesOk}* (errores: {$arbolesErr})\n"
-                . "🪵 Trozas guardadas: *{$trozasOk}* (errores: {$trozasErr})"
-                . $detalleErrores,
-            'detalle' => $resultado,
-        ], 200);
-    }
-
-    private function limpiarSesionesExcelExpiradas(): void
-    {
-        $limite = now()->subHours(24);
-
-        BotSesion::whereIn('estado', [self::ESPERANDO_PARCELA_EXCEL, self::ESPERANDO_ARCHIVO_EXCEL])
-            ->where('updated_at', '<', $limite)
-                        return response()->json([
-                            'ok' => false,
-                            'estado' => self::ESPERANDO_PARCELA_EXCEL,
-                            'mensaje' => '⚠️ No se detectaron filas validas en el archivo. Por favor, revisa la plantilla e intenta de nuevo.',
-                        ], 200);
-        $busquedaNormalizada = $this->normalizarTextoBusqueda($selector);
+                ->where('updated_at', '<', $limite)
+                ->delete();
 
         $parcela = DB::table('parcelas')
             ->whereIn('id_parcela', $parcelasIds)
