@@ -17,5 +17,6 @@ Route::prefix('v1/bot')
         Route::post('/asistente-guiado', [BotController::class, 'asistenteGuiado']);
         Route::post('/excel-webhook', [BotController::class, 'recibirExcelWebhook']);
         Route::post('/registro-masivo', [BotController::class, 'registroMasivo']);
+        Route::post('/inf', [BotController::class, 'descargarInformeBotPdf']);
         Route::get('/parcelas/{id_parcela}/reporte.pdf', [BotController::class, 'descargarReporteParcelaPdf']);
     });

@@ -2232,6 +2232,66 @@ class BotController extends Controller
         ], 422);
     }
 
+    public function descargarInformeBotPdf(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+        ]);
+
+        $returnLink = (bool) $request->boolean('link') || $request->wantsJson();
+
+        $persona = $this->findPersonaByTelefono($data['telefono']);
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        $rol = $persona->rol?->nom_rol;
+        if (!$rol) {
+            return response()->json(['error' => 'Rol no asignado'], 409);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+        $parcelas = $parcelasIds->isEmpty()
+            ? collect()
+            : DB::table('parcelas')
+                ->whereIn('id_parcela', $parcelasIds)
+                ->select('id_parcela', 'nom_parcela', 'ubicacion')
+                ->orderBy('nom_parcela')
+                ->get();
+
+        $especies = DB::table('especies')
+            ->select('nom_comun', 'nom_cientifico')
+            ->orderBy('nom_comun')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.bot-informe', [
+            'persona' => $persona,
+            'rol' => $rol,
+            'parcelas' => $parcelas,
+            'especies' => $especies,
+            'fecha' => Carbon::now()->format('d/m/Y H:i'),
+        ])->setPaper('letter', 'portrait');
+
+        $fileName = 'Informe_SIGMAD_' . now()->format('Y-m-d_His') . '.pdf';
+
+        if ($returnLink) {
+            $path = 'reportes/' . now()->format('Ymd') . '/informe_' . now()->format('His') . '_' . Str::random(10) . '.pdf';
+            Storage::disk('public')->put($path, $pdf->output());
+
+            return response()->json([
+                'ok' => true,
+                'tipo' => 'pdf',
+                'file_name' => $fileName,
+                'path' => $path,
+                'url' => asset('storage/' . $path),
+                'expires_suggestion' => 'Recomendacion: borrar reportes antiguos (ej. >24h) con un cron.',
+            ], 200);
+        }
+
+        return $pdf->stream($fileName);
+    }
+
     private function findPersonaByTelefono(string $telefono): ?Persona
     {
         $raw = trim($telefono);
