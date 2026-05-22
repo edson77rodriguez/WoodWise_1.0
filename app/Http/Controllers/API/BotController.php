@@ -1002,11 +1002,6 @@ class BotController extends Controller
                             'ok' => false,
                             'fila' => $idx + 1,
                             'error' => $especieError,
-
-                private function procesarParcelaEstimacion(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
-                {
-                    $selector = trim($mensajeCrudo);
-                    $busquedaNormalizada = $this->normalizarTextoBusqueda($selector);
                         ];
                         continue;
                     }
@@ -1122,8 +1117,32 @@ class BotController extends Controller
         $errores = collect($resultado['trozas'])
             ->concat($resultado['arboles'])
             ->where('ok', false)
-                ->where('updated_at', '<', $limite)
-                ->delete();
+            ->values();
+
+        $detalleErrores = '';
+        if ($errores->isNotEmpty()) {
+            $detalleErrores = "\n\n⚠️ Errores detectados (resumen):";
+            $resumen = $errores->groupBy('error')->map->count();
+            foreach ($resumen as $motivo => $total) {
+                $detalleErrores .= "\n• {$motivo}: {$total} fila(s)";
+            }
+        }
+
+        return response()->json([
+            'ok' => true,
+            'estado' => 'FINALIZADO',
+            'mensaje' => "✅ Carga finalizada para *{$nomParcela}*.\n\n"
+                . "🌲 Arboles guardados: *{$arbolesOk}* (errores: {$arbolesErr})\n"
+                . "🪵 Trozas guardadas: *{$trozasOk}* (errores: {$trozasErr})"
+                . $detalleErrores,
+            'detalle' => $resultado,
+        ], 200);
+    }
+
+    private function procesarParcelaEstimacion(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
+    {
+        $selector = trim($mensajeCrudo);
+        $busquedaNormalizada = $this->normalizarTextoBusqueda($selector);
 
         $parcela = DB::table('parcelas')
             ->whereIn('id_parcela', $parcelasIds)
