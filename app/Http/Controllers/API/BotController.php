@@ -808,11 +808,14 @@ class BotController extends Controller
 
     private function iniciarFlujoImportacionExcel(string $telefono, $parcelasIds)
     {
+        $sesion = BotSesion::where('telefono', $telefono)->first();
+        $payload = $sesion?->payload ?? [];
+
         BotSesion::updateOrCreate(
             ['telefono' => $telefono],
             [
                 'estado' => self::ESPERANDO_PARCELA_EXCEL,
-                'payload' => [],
+                'payload' => $payload,
             ]
         );
 
@@ -887,8 +890,29 @@ class BotController extends Controller
 
     private function finalizarCargaExcel(BotSesion $sesion, object $parcela, array $excelData)
     {
-        $trozas = collect($excelData['trozas'] ?? []);
-        $arboles = collect($excelData['arboles'] ?? []);
+        $trozas = collect($excelData['trozas'] ?? [])->map(function ($row) {
+            if (!isset($row['especie_texto']) && isset($row['especie'])) {
+                $row['especie_texto'] = $row['especie'];
+            }
+
+            if (!isset($row['diametro']) && isset($row['diametro_1'])) {
+                $row['diametro'] = $row['diametro_1'];
+            }
+
+            if (!isset($row['diametro_otro_extremo']) && isset($row['diametro_2'])) {
+                $row['diametro_otro_extremo'] = $row['diametro_2'];
+            }
+
+            return $row;
+        });
+
+        $arboles = collect($excelData['arboles'] ?? [])->map(function ($row) {
+            if (!isset($row['especie_texto']) && isset($row['especie'])) {
+                $row['especie_texto'] = $row['especie'];
+            }
+
+            return $row;
+        });
 
         if ($trozas->isEmpty() && $arboles->isEmpty()) {
             return response()->json([
