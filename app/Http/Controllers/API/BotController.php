@@ -888,6 +888,9 @@ class BotController extends Controller
     private function procesarParcelaExcel(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
     {
         $selector = trim($mensajeCrudo);
+        if (str_starts_with($selector, 'excel_parcela_')) {
+            $selector = substr($selector, strlen('excel_parcela_'));
+        }
         $busquedaNormalizada = $this->normalizarTextoBusqueda($selector);
 
         $parcela = DB::table('parcelas')
