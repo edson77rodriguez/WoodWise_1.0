@@ -68,6 +68,16 @@ class BotController extends Controller
             ], 200);
         }
 
+        // Permite disparar importación de Excel desde cualquier estado.
+        $mensajeClaveGlobal = trim($mensajeLimpio, " \t\n\r\0\x0B\"'");
+        if (in_array($mensajeClaveGlobal, ['menu_importar_excel', 'importar excel'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return $this->iniciarFlujoImportacionExcel($telefono, $parcelasIds);
+        }
+
         // 3. LA MÁQUINA DE ESTADOS (El flujo conversacional)
         if (!$sesion) {
             // Normalizamos comillas/espacios para tolerar variaciones típicas de n8n/Meta.
