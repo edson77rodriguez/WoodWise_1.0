@@ -869,6 +869,7 @@ class BotController extends Controller
     {
         $sesion = BotSesion::where('telefono', $telefono)->first();
         $payload = $sesion?->payload ?? [];
+        $especiesTexto = $this->obtenerEspeciesDisponiblesTexto();
 
         BotSesion::updateOrCreate(
             ['telefono' => $telefono],
@@ -881,7 +882,9 @@ class BotController extends Controller
         return response()->json([
             'tipo' => 'envio_documento',
             'url' => 'https://woodwise.me/storage/plantillas/plantilla_inventario_sigmad.xlsx',
-            'mensaje' => "📄 *Plantilla Oficial de Inventario SIGMAD*\n\n¿A que parcela pertenecen los datos que vas a subir?",
+            'mensaje' => "📄 *Plantilla Oficial de Inventario SIGMAD*\n\n"
+                . "📚 *Especies disponibles (actualizado):*\n{$especiesTexto}\n\n"
+                . "¿A que parcela pertenecen los datos que vas a subir?",
         ], 200);
     }
 
@@ -977,7 +980,8 @@ class BotController extends Controller
         });
 
         if ($trozas->isEmpty() && $arboles->isEmpty()) {
-            return response()->json([
+                . "📚 *Especies disponibles (actualizado):*\n{$especiesTexto}\n\n"
+                . "¿A que parcela corresponden los datos? Responde con el nombre o numero:\n{$parcelasTexto}",
                 'ok' => false,
                 'estado' => self::ESPERANDO_PARCELA_EXCEL,
                 'mensaje' => '⚠️ No se detectaron filas validas en el archivo. Por favor, revisa la plantilla e intenta de nuevo.',
@@ -995,13 +999,14 @@ class BotController extends Controller
                 try {
                     [$idEspecie, $especieNombre, $especieError] = $this->resolveEspecieForRow($row['id_especie'] ?? null, $row['especie_texto'] ?? null);
                     if ($especieError) {
+                    $especiesTexto = $this->obtenerEspeciesDisponiblesTexto();
                         $receiptTrozas[] = [
                             'ok' => false,
                             'fila' => $idx + 1,
                             'error' => $especieError,
-                        ];
-                        continue;
-                    }
+                        'mensaje' => "📄 *Plantilla Oficial de Inventario SIGMAD*\n\n"
+                            . "📚 *Especies disponibles (actualizado):*\n{$especiesTexto}\n\n"
+                            . "¿A que parcela pertenecen los datos que vas a subir?",
 
                     $densidad = $row['densidad'] ?? null;
                     if ($densidad === null || (float) $densidad <= 0) {
@@ -1049,6 +1054,7 @@ class BotController extends Controller
                         'error' => 'Error inesperado al insertar la troza.',
                     ];
                 }
+                            $especiesTexto = $this->obtenerEspeciesDisponiblesTexto();
             }
 
             foreach ($arboles->values() as $idx => $row) {
@@ -1107,14 +1113,32 @@ class BotController extends Controller
         $sesion->delete();
 
         $trozasOk = collect($resultado['trozas'])->where('ok', true)->count();
+        $trozasErr = collect($resultado['trozas'])->where('ok', false)->count();
         $arbolesOk = collect($resultado['arboles'])->where('ok', true)->count();
+        $arbolesErr = collect($resultado['arboles'])->where('ok', false)->count();
+
+        $errores = collect($resultado['trozas'])
+            ->concat($resultado['arboles'])
+            ->where('ok', false)
+            ->take(20)
+            ->map(function ($row) {
+                $fila = $row['fila'] ?? '?';
+                $error = $row['error'] ?? 'Error desconocido.';
+                return "• Fila {$fila}: {$error}";
+            })
+            ->implode("\n");
+
+        $detalleErrores = $errores !== ''
+            ? "\n\n⚠️ *Errores detectados (max 20):*\n{$errores}"
+            : '';
 
         return response()->json([
             'ok' => true,
             'estado' => 'FINALIZADO',
             'mensaje' => "✅ Carga finalizada para *{$nomParcela}*.\n\n"
-                . "🌲 Arboles guardados: *{$arbolesOk}*\n"
-                . "🪵 Trozas guardadas: *{$trozasOk}*",
+                . "🌲 Arboles guardados: *{$arbolesOk}* (errores: {$arbolesErr})\n"
+                . "🪵 Trozas guardadas: *{$trozasOk}* (errores: {$trozasErr})"
+                . $detalleErrores,
             'detalle' => $resultado,
         ], 200);
     }
@@ -1125,12 +1149,11 @@ class BotController extends Controller
 
         BotSesion::whereIn('estado', [self::ESPERANDO_PARCELA_EXCEL, self::ESPERANDO_ARCHIVO_EXCEL])
             ->where('updated_at', '<', $limite)
-            ->delete();
-    }
-
-    private function procesarParcelaEstimacion(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
-    {
-        $selector = trim($mensajeCrudo);
+                        return response()->json([
+                            'ok' => false,
+                            'estado' => self::ESPERANDO_PARCELA_EXCEL,
+                            'mensaje' => '⚠️ No se detectaron filas validas en el archivo. Por favor, revisa la plantilla e intenta de nuevo.',
+                        ], 200);
         $busquedaNormalizada = $this->normalizarTextoBusqueda($selector);
 
         $parcela = DB::table('parcelas')
