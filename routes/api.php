@@ -13,6 +13,7 @@ Route::prefix('v1/bot')
         Route::post('/mis-estimaciones-trozas', [BotController::class, 'obtenerResumenEstimacionesTrozas']);
         Route::post('/mis-arboles', [BotController::class, 'obtenerResumenArboles']);
         Route::post('/mis-estimaciones-arboles', [BotController::class, 'obtenerResumenEstimacionesArboles']);
+        Route::post('/impacto-ambiental', [BotController::class, 'obtenerImpactoAmbiental']);
         Route::post('/kit-campo', [BotController::class, 'obtenerKitCampo']);
         Route::post('/asistente-guiado', [BotController::class, 'asistenteGuiado']);
         Route::post('/excel-webhook', [BotController::class, 'recibirExcelWebhook']);
