@@ -2706,6 +2706,71 @@ class BotController extends Controller
         return $pdf->stream($fileName);
     }
 
+    public function descargarImpactoAmbientalPdf(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+            'id_parcela' => ['nullable'],
+        ]);
+
+        $returnLink = (bool) $request->boolean('link') || $request->wantsJson();
+
+        $telefono = $this->normalizarTelefono($data['telefono']);
+        $persona = $this->findPersonaByTelefono($telefono);
+
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+        if ($rol === null) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => null,
+                'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
+            ], 409);
+        }
+
+        [$idParcela, $selectorError] = $this->parseParcelaSelector($data['id_parcela'] ?? null);
+        if ($selectorError) {
+            return response()->json(['error' => $selectorError], 422);
+        }
+
+        if ($idParcela !== null && !$parcelasIds->contains($idParcela)) {
+            return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+        }
+
+        $impacto = $this->construirImpactoAmbiental($persona, $rol, $parcelasIds, $idParcela);
+
+        $viewData = [
+            'impacto' => $impacto,
+            'persona' => $persona,
+            'fecha' => Carbon::now()->format('d/m/Y H:i'),
+        ];
+
+        $pdf = Pdf::loadView('pdf.impacto', $viewData)->setPaper('A4', 'portrait');
+
+        $fileName = 'Impacto_Ambiental_' . ($idParcela ? 'parcela_' . $idParcela . '_' : '') . now()->format('Y-m-d_His') . '.pdf';
+
+        if ($returnLink) {
+            $safeName = $idParcela ? ('impacto_parcela_' . $idParcela) : 'impacto_general';
+            $path = 'reportes/' . now()->format('Ymd') . '/' . $safeName . '_' . now()->format('His') . '_' . Str::random(8) . '.pdf';
+            Storage::disk('public')->put($path, $pdf->output());
+
+            return response()->json([
+                'ok' => true,
+                'tipo' => 'pdf',
+                'file_name' => $fileName,
+                'path' => $path,
+                'url' => asset('storage/' . $path),
+                'expires_suggestion' => 'Recomendación: borrar reportes antiguos (ej. >24h) con un cron.',
+            ], 200);
+        }
+
+        return $pdf->stream($fileName);
+    }
+
     private function findPersonaByTelefono(string $telefono): ?Persona
     {
         $raw = trim($telefono);
