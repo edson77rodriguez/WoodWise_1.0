@@ -1486,6 +1486,15 @@ class BotController extends Controller
         return $limpio;
     }
 
+    private function limpiarSesionesExcelExpiradas(): void
+    {
+        $limite = now()->subHours(24);
+
+        BotSesion::whereIn('estado', [self::ESPERANDO_PARCELA_EXCEL, self::ESPERANDO_ARCHIVO_EXCEL])
+            ->where('updated_at', '<', $limite)
+            ->delete();
+    }
+
     private function normalizarTelefono(string $telefono): string
     {
         $raw = trim($telefono);
