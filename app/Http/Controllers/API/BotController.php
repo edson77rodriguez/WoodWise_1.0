@@ -81,7 +81,7 @@ class BotController extends Controller
             return $this->iniciarFlujoImportacionExcel($telefono, $parcelasIds);
         }
 
-        if (in_array($mensajeClaveGlobal, ['btn_estimaciones', 'menu_impacto_ambiental', 'impacto ambiental'], true)) {
+        if (in_array($mensajeClaveGlobal, ['menu_impacto_ambiental', 'impacto ambiental'], true)) {
             if ($sesion) {
                 $sesion->delete();
             }
@@ -104,7 +104,7 @@ class BotController extends Controller
             }
 
             // Disparador del flujo de generación de estimaciones pendientes.
-            if (in_array($mensajeClave, ['menu_generar_estimaciones', 'btn_estimaciones', 'generar estimaciones'], true)) {
+            if (in_array($mensajeClave, ['menu_generar_estimaciones', 'generar estimaciones'], true)) {
                 return $this->iniciarFlujoEstimaciones($telefono, $parcelasIds);
             }
 
@@ -112,7 +112,7 @@ class BotController extends Controller
                 return $this->iniciarFlujoImportacionExcel($telefono, $parcelasIds);
             }
 
-            if (in_array($mensajeClave, ['btn_estimaciones', 'menu_impacto_ambiental', 'impacto ambiental'], true)) {
+            if (in_array($mensajeClave, ['menu_impacto_ambiental', 'impacto ambiental'], true)) {
                 return $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, null);
             }
 
@@ -423,7 +423,7 @@ class BotController extends Controller
                         'description' => 'Consulta trozas y arboles registrados',
                     ],
                     [
-                        'id' => 'btn_estimaciones',
+                        'id' => 'menu_impacto_ambiental',
                         'title' => '🌍 Impacto Ambiental',
                         'description' => 'Biomasa, carbono y resultados clave',
                     ],
