@@ -80,6 +80,10 @@ class BotController extends Controller
             return $this->iniciarFlujoImportacionExcel($telefono, $parcelasIds);
         }
 
+        if (in_array($mensajeClaveGlobal, ['menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo'], true)) {
+            return $this->responderIngresoArchivo();
+        }
+
         // 3. LA MÁQUINA DE ESTADOS (El flujo conversacional)
         if (!$sesion) {
             // Normalizamos comillas/espacios para tolerar variaciones típicas de n8n/Meta.
@@ -97,6 +101,10 @@ class BotController extends Controller
 
             if (in_array($mensajeClave, ['menu_importar_excel', 'importar excel'], true)) {
                 return $this->iniciarFlujoImportacionExcel($telefono, $parcelasIds);
+            }
+
+            if (in_array($mensajeClave, ['menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo'], true)) {
+                return $this->responderIngresoArchivo();
             }
 
             // Si mandó cualquier texto random y no tiene plática activa, lo mandamos al menú.
@@ -885,6 +893,17 @@ class BotController extends Controller
             'mensaje' => "📄 *Plantilla Oficial de Inventario SIGMAD*\n\n"
                 . "📚 *Especies disponibles (actualizado):*\n{$especiesTexto}\n\n"
                 . "¿A que parcela pertenecen los datos que vas a subir?",
+        ], 200);
+    }
+
+    private function responderIngresoArchivo()
+    {
+        return response()->json([
+            'ok' => true,
+            'mensaje' => "📎 *Ingreso por archivo listo*\n\n"
+                . "Solo envía tu archivo directamente en este chat y yo lo detectaré automáticamente para registrarlo.\n\n"
+                . "✨ Puedes mandar imágenes, PDF o documentos compatibles sin llenar formularios.\n"
+                . "En cuanto llegue el archivo, el sistema lo tomará y comenzará el registro de forma inteligente y segura.",
         ], 200);
     }
 
