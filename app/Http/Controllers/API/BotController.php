@@ -737,9 +737,7 @@ class BotController extends Controller
             return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
         }
 
-        $impacto = $this->construirImpactoAmbiental($persona, $rol, $parcelasIds, $idParcela);
-
-        return response()->json($impacto, 200);
+        return $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, $idParcela);
     }
 
     public function obtenerResumenEstimacionesArboles(Request $request)
