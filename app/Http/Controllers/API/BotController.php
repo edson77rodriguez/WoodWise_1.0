@@ -561,27 +561,33 @@ class BotController extends Controller
     public function generarCotizacion(Request $request, int $id_parcela)
     {
         $data = $request->validate([
-            'telefono' => ['required', 'string', 'max:30'],
+            'telefono' => ['nullable', 'string', 'max:30'],
         ]);
 
-        $persona = $this->findPersonaByTelefono($data['telefono']);
+        $persona = null;
+        $rol = null;
+        $parcelasIds = collect();
 
-        if (!$persona) {
-            return response()->json(['error' => 'Usuario no encontrado'], 404);
-        }
+        if (!empty($data['telefono'])) {
+            $persona = $this->findPersonaByTelefono($data['telefono']);
 
-        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+            if (!$persona) {
+                return response()->json(['error' => 'Usuario no encontrado'], 404);
+            }
 
-        if ($rol === null) {
-            return response()->json([
-                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
-                'rol' => null,
-                'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
-            ], 409);
-        }
+            [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
 
-        if (!$parcelasIds->contains($id_parcela)) {
-            return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+            if ($rol === null) {
+                return response()->json([
+                    'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                    'rol' => null,
+                    'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
+                ], 409);
+            }
+
+            if (!$parcelasIds->contains($id_parcela)) {
+                return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+            }
         }
 
         $trozas = Troza::with('especie')
@@ -594,13 +600,14 @@ class BotController extends Controller
 
         foreach ($trozas as $troza) {
             $nombreEspecie = $troza->especie?->nom_comun ?? 'Sin especie';
-            $claveEspecie = Str::lower(trim($nombreEspecie));
+            $claveEspecie = $this->normalizarClaveMercadoEspecie($nombreEspecie);
 
             if (!isset($resumenEspecies[$claveEspecie])) {
-                $precioDB = PrecioMercado::where('especie', $claveEspecie)->first();
+                $precioDB = PrecioMercado::where('especie', $claveEspecie)->first()
+                    ?? PrecioMercado::whereIn('especie', $this->variantesClaveMercadoEspecie($claveEspecie))->first();
 
                 $resumenEspecies[$claveEspecie] = [
-                    'especie' => $nombreEspecie,
+                    'especie' => $this->etiquetaEspecieMercado($claveEspecie, $nombreEspecie),
                     'cantidad' => 0,
                     'volumen_m3' => 0.0,
                     'precio_unitario' => (float) ($precioDB?->precio_por_m3 ?? 0),
@@ -651,6 +658,49 @@ class BotController extends Controller
                 'gran_total_estimado_mxn' => round($valorTotalGeneral, 2),
             ],
         ], 200);
+    }
+
+    private function normalizarClaveMercadoEspecie(string $nombreEspecie): string
+    {
+        $texto = Str::of($nombreEspecie)
+            ->lower()
+            ->ascii()
+            ->trim()
+            ->toString();
+
+        if (str_contains($texto, 'pino') || str_contains($texto, 'pinus')) {
+            return 'pino';
+        }
+
+        if (str_contains($texto, 'encino') || str_contains($texto, 'quercus')) {
+            return 'encino';
+        }
+
+        if (str_contains($texto, 'oyamel') || str_contains($texto, 'abies')) {
+            return 'oyamel';
+        }
+
+        return $texto;
+    }
+
+    private function variantesClaveMercadoEspecie(string $claveEspecie): array
+    {
+        return match ($claveEspecie) {
+            'pino' => ['pino', 'pino lacio', 'pino moctezuma', 'pinus pseudostrobus', 'pinus montezumae'],
+            'encino' => ['encino', 'encino blanco', 'encino avellano', 'quercus rugosa', 'quercus crassifolia'],
+            'oyamel' => ['oyamel', 'abies', 'oyamel blanco'],
+            default => [$claveEspecie],
+        };
+    }
+
+    private function etiquetaEspecieMercado(string $claveEspecie, string $nombreEspecie): string
+    {
+        return match ($claveEspecie) {
+            'pino' => 'Pino',
+            'encino' => 'Encino',
+            'oyamel' => 'Oyamel',
+            default => $nombreEspecie,
+        };
     }
 
     public function obtenerResumenEstimacionesTrozas(Request $request)
