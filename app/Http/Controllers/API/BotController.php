@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\BotSesion;
 use App\Models\Persona;
 use App\Models\Parcela;
+use App\Models\PrecioMercado;
+use App\Models\Troza;
 use App\Models\Tecnico;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -89,6 +91,14 @@ class BotController extends Controller
             return $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, null);
         }
 
+        if (in_array($mensajeClaveGlobal, ['menu_cotizacion_mercado', 'cotizacion mercado', 'cotización mercado'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return $this->responderCotizacionMercado($persona, $rol, $parcelasIds);
+        }
+
         if (in_array($mensajeClaveGlobal, ['menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo'], true)) {
             return $this->responderIngresoArchivo();
         }
@@ -114,6 +124,10 @@ class BotController extends Controller
 
             if (in_array($mensajeClave, ['menu_impacto_ambiental', 'impacto ambiental'], true)) {
                 return $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, null);
+            }
+
+            if (in_array($mensajeClave, ['menu_cotizacion_mercado', 'cotizacion mercado', 'cotización mercado'], true)) {
+                return $this->responderCotizacionMercado($persona, $rol, $parcelasIds);
             }
 
             if (in_array($mensajeClave, ['menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo'], true)) {
@@ -427,6 +441,11 @@ class BotController extends Controller
                         'title' => '🌍 Impacto Ambiental',
                         'description' => 'Biomasa, carbono y resultados clave',
                     ],
+                    [
+                        'id' => 'menu_cotizacion_mercado',
+                        'title' => '💰 Cotizacion Mercado',
+                        'description' => 'Calcula valor estimado de trozas por especie',
+                    ],
                 ],
             ];
 
@@ -536,6 +555,101 @@ class BotController extends Controller
             'total_parcelas' => $parcelasFiltro->count(),
             'total_trozas_inventario' => $totalGeneral,
             'desglose_por_especie' => $resumenTrozas,
+        ], 200);
+    }
+
+    public function generarCotizacion(Request $request, int $id_parcela)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+        ]);
+
+        $persona = $this->findPersonaByTelefono($data['telefono']);
+
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+        if ($rol === null) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => null,
+                'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
+            ], 409);
+        }
+
+        if (!$parcelasIds->contains($id_parcela)) {
+            return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+        }
+
+        $trozas = Troza::with('especie')
+            ->where('id_parcela', $id_parcela)
+            ->get();
+
+        $resumenEspecies = [];
+        $volumenTotalGeneral = 0.0;
+        $valorTotalGeneral = 0.0;
+
+        foreach ($trozas as $troza) {
+            $nombreEspecie = $troza->especie?->nom_comun ?? 'Sin especie';
+            $claveEspecie = Str::lower(trim($nombreEspecie));
+
+            if (!isset($resumenEspecies[$claveEspecie])) {
+                $precioDB = PrecioMercado::where('especie', $claveEspecie)->first();
+
+                $resumenEspecies[$claveEspecie] = [
+                    'especie' => $nombreEspecie,
+                    'cantidad' => 0,
+                    'volumen_m3' => 0.0,
+                    'precio_unitario' => (float) ($precioDB?->precio_por_m3 ?? 0),
+                    'moneda' => $precioDB?->moneda ?? 'MXN',
+                    'fuente_precio' => $precioDB?->fuente,
+                    'subtotal' => 0.0,
+                ];
+            }
+
+            $diametroMayor = (float) ($troza->diametro ?? 0);
+            $diametroMenor = (float) ($troza->diametro_otro_extremo ?? 0);
+            $diametroMedio = (float) ($troza->diametro_medio ?? 0);
+            $longitud = (float) ($troza->longitud ?? 0);
+
+            if ($diametroMayor > 0 && $diametroMenor > 0) {
+                $radio1 = $diametroMayor / 2;
+                $radio2 = $diametroMenor / 2;
+                $area1 = pi() * pow($radio1, 2);
+                $area2 = pi() * pow($radio2, 2);
+                $volumenTroza = (($area1 + $area2) / 2) * $longitud;
+            } elseif ($diametroMedio > 0) {
+                $radio = $diametroMedio / 2;
+                $volumenTroza = pi() * pow($radio, 2) * $longitud;
+            } else {
+                $volumenTroza = pi() * pow($diametroMayor / 2, 2) * $longitud;
+            }
+
+            $resumenEspecies[$claveEspecie]['cantidad'] += 1;
+            $resumenEspecies[$claveEspecie]['volumen_m3'] += $volumenTroza;
+
+            $volumenTotalGeneral += $volumenTroza;
+        }
+
+        foreach ($resumenEspecies as $claveEspecie => $datos) {
+            $subtotal = $datos['volumen_m3'] * $datos['precio_unitario'];
+            $resumenEspecies[$claveEspecie]['volumen_m3'] = round($datos['volumen_m3'], 4);
+            $resumenEspecies[$claveEspecie]['subtotal'] = round($subtotal, 2);
+            $valorTotalGeneral += $subtotal;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'parcela_id' => $id_parcela,
+                'detalles_por_especie' => array_values($resumenEspecies),
+                'gran_total_trozas' => $trozas->count(),
+                'gran_total_volumen_m3' => round($volumenTotalGeneral, 4),
+                'gran_total_estimado_mxn' => round($valorTotalGeneral, 2),
+            ],
         ], 200);
     }
 
@@ -927,6 +1041,72 @@ class BotController extends Controller
             'mensaje' => $impacto['resumen_whatsapp'],
             'interactive_payload' => $interactivePayload,
             'reporte' => $impacto,
+        ], 200);
+    }
+
+    private function responderCotizacionMercado($persona, string $rol, $parcelasIds)
+    {
+        if ($rol !== 'Tecnico' && $rol !== 'Productor') {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'Tu perfil no tiene acceso a la Cotizacion de Mercado.',
+            ], 403);
+        }
+
+        if ($parcelasIds->isEmpty()) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'No tienes parcelas asignadas actualmente.',
+            ], 200);
+        }
+
+        $nombreUsuario = trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? ''));
+
+        $parcelas = DB::table('parcelas')
+            ->whereIn('id_parcela', $parcelasIds)
+            ->select('id_parcela', 'nom_parcela')
+            ->orderBy('nom_parcela')
+            ->get();
+
+        $rows = $parcelas->take(10)->map(function ($parcela) {
+            return [
+                'id' => 'cotizacion_parcela_' . $parcela->id_parcela,
+                'title' => $parcela->nom_parcela,
+                'description' => 'Generar cotizacion de mercado',
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'ok' => true,
+            'tipo' => 'cotizacion_mercado',
+            'usuario' => $nombreUsuario,
+            'rol' => $rol,
+            'total_parcelas' => $parcelas->count(),
+            'parcelas' => $parcelas,
+            'mensaje' => "💰 *Cotizacion de Mercado SIGMAD*\n\nSelecciona la parcela para calcular el valor estimado de tus trozas.",
+            'interactive_payload' => [
+                'type' => 'list',
+                'header' => [
+                    'type' => 'text',
+                    'text' => '💰 Cotizacion de Mercado',
+                ],
+                'body' => [
+                    'text' => 'Elige la parcela para generar la cotizacion comercial.',
+                ],
+                'footer' => [
+                    'text' => 'SIGMAD | Cotizacion comercial',
+                ],
+                'action' => [
+                    'button' => 'Ver parcelas',
+                    'sections' => [
+                        [
+                            'title' => 'Parcelas disponibles',
+                            'rows' => $rows,
+                        ],
+                    ],
+                ],
+            ],
+            'endpoint_sugerido' => 'GET /api/v1/bot/cotizacion/parcela/{id_parcela}?telefono=' . $persona->telefono,
         ], 200);
     }
 

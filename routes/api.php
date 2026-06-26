@@ -10,6 +10,7 @@ Route::prefix('v1/bot')
         Route::post('/menu-principal', [BotController::class, 'obtenerMenuPrincipal']);
         Route::post('/mis-parcelas', [BotController::class, 'listarParcelas']);
         Route::post('/mis-trozas', [BotController::class, 'obtenerResumenTrozas']);
+        Route::get('/cotizacion/parcela/{id_parcela}', [BotController::class, 'generarCotizacion']);
         Route::post('/mis-estimaciones-trozas', [BotController::class, 'obtenerResumenEstimacionesTrozas']);
         Route::post('/mis-arboles', [BotController::class, 'obtenerResumenArboles']);
         Route::post('/mis-estimaciones-arboles', [BotController::class, 'obtenerResumenEstimacionesArboles']);
