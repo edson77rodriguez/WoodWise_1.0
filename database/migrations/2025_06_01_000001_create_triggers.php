@@ -10,6 +10,12 @@ return new class extends Migration
         // =====================================================================
         // TRIGGER: calcular_todo_estimacion (BEFORE INSERT en estimaciones)
         // Calcula volumen, biomasa y carbono para TROZAS
+        //
+        // NOTA IMPORTANTE: c0, c1, cm son CIRCUNFERENCIAS (no diámetros),
+        // igual que en el libro de referencia (sección 4.4/4.5). Por eso
+        // las fórmulas dividen entre 4π, 12π y 24π en vez de multiplicar
+        // por π/4, π/12, π/24 (que serían las fórmulas equivalentes si
+        // se usara diámetro).
         // =====================================================================
         DB::unprepared('DROP TRIGGER IF EXISTS calcular_todo_estimacion');
         DB::unprepared("
@@ -46,38 +52,38 @@ return new class extends Migration
 
                 CASE NEW.id_formula
                     WHEN 1 THEN 
-                        -- HUBER: V = (π/4) × dm² × L
+                        -- HUBER: V = L/(4π) × c0.5²
                         IF cm IS NULL OR cm <= 0 OR cm > 5 THEN 
                             SIGNAL SQLSTATE '45000' 
-                            SET MESSAGE_TEXT = 'Diámetro medio inválido: debe ser 0 < d <= 5 para Huber';
+                            SET MESSAGE_TEXT = 'Circunferencia media inválida: debe ser 0 < c <= 5 para Huber';
                         END IF;
-                        SET v = TRUNCATE((pi_val / 4) * POW(cm, 2) * l, 30);
+                        SET v = TRUNCATE((l / (4 * pi_val)) * POW(cm, 2), 30);
 
                     WHEN 2 THEN 
-                        -- SMALIAN: V = (π/4) × ((d₀² + d₁²)/2) × L
+                        -- SMALIAN: V = L/(4π) × ((c0² + c1²)/2)
                         IF c0 IS NULL OR c1 IS NULL OR c0 <= 0 OR c1 <= 0 OR c0 > 5 OR c1 > 5 THEN
                             SIGNAL SQLSTATE '45000' 
-                            SET MESSAGE_TEXT = 'Diámetros extremos inválidos: deben ser 0 < d <= 5 para Smalian';
+                            SET MESSAGE_TEXT = 'Circunferencias extremas inválidas: deben ser 0 < c <= 5 para Smalian';
                         END IF;
-                        SET v = TRUNCATE((pi_val / 4) * ((POW(c0, 2) + POW(c1, 2)) / 2) * l, 30);
+                        SET v = TRUNCATE((l / (4 * pi_val)) * ((POW(c0, 2) + POW(c1, 2)) / 2), 30);
 
                     WHEN 3 THEN 
-                        -- TRONCO CONO: V = (π/12) × L × (d₀² + d₁² + d₀×d₁)
+                        -- TRONCO CONO: V = L/(12π) × (c0² + c1² + c0×c1)
                         IF c0 IS NULL OR c1 IS NULL OR c0 <= 0 OR c1 <= 0 OR c0 > 5 OR c1 > 5 THEN
                             SIGNAL SQLSTATE '45000' 
-                            SET MESSAGE_TEXT = 'Diámetros extremos inválidos: deben ser 0 < d <= 5 para Tronco de Cono';
+                            SET MESSAGE_TEXT = 'Circunferencias extremas inválidas: deben ser 0 < c <= 5 para Tronco de Cono';
                         END IF;
-                        SET v = TRUNCATE((pi_val / 12) * l * (POW(c0, 2) + POW(c1, 2) + (c0 * c1)), 30);
+                        SET v = TRUNCATE((l / (12 * pi_val)) * (POW(c0, 2) + POW(c1, 2) + (c0 * c1)), 30);
 
                     WHEN 4 THEN 
-                        -- NEWTON: V = (π/24) × L × (d₀² + 4×dm² + d₁²)
+                        -- NEWTON: V = L/(24π) × (c0² + 4×cm² + c1²)
                         IF c0 IS NULL OR c1 IS NULL OR cm IS NULL OR 
                            c0 <= 0 OR c1 <= 0 OR cm <= 0 OR
                            c0 > 5 OR c1 > 5 OR cm > 5 THEN
                             SIGNAL SQLSTATE '45000' 
-                            SET MESSAGE_TEXT = 'Diámetros inválidos: deben ser 0 < d <= 5 para Newton';
+                            SET MESSAGE_TEXT = 'Circunferencias inválidas: deben ser 0 < c <= 5 para Newton';
                         END IF;
-                        SET v = TRUNCATE((pi_val / 24) * l * (POW(c0, 2) + 4 * POW(cm, 2) + POW(c1, 2)), 30);
+                        SET v = TRUNCATE((l / (24 * pi_val)) * (POW(c0, 2) + 4 * POW(cm, 2) + POW(c1, 2)), 30);
 
                     ELSE
                         SIGNAL SQLSTATE '45000' 
@@ -103,6 +109,7 @@ return new class extends Migration
         // =====================================================================
         // TRIGGER: actualizar_todo_estimacion (BEFORE UPDATE en estimaciones)
         // Recalcula cuando cambia la fórmula o troza
+        // Mismas fórmulas (circunferencia) que el trigger de INSERT.
         // =====================================================================
         DB::unprepared('DROP TRIGGER IF EXISTS actualizar_todo_estimacion');
         DB::unprepared("
@@ -129,32 +136,32 @@ return new class extends Migration
 
                     CASE NEW.id_formula
                         WHEN 1 THEN 
-                            -- HUBER: V = (π/4) × dm² × L
+                            -- HUBER: V = L/(4π) × c0.5²
                             IF cm IS NULL THEN
-                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Diámetro medio requerido para Huber';
+                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Circunferencia media requerida para Huber';
                             END IF;
-                            SET v = (PI() / 4) * POW(cm, 2) * l;
+                            SET v = (l / (4 * PI())) * POW(cm, 2);
 
                         WHEN 2 THEN 
-                            -- SMALIAN: V = (π/4) × ((d₀² + d₁²)/2) × L
+                            -- SMALIAN: V = L/(4π) × ((c0² + c1²)/2)
                             IF c0 IS NULL OR c1 IS NULL THEN
-                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ambos diámetros extremos requeridos para Smalian';
+                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ambas circunferencias extremas requeridas para Smalian';
                             END IF;
-                            SET v = (PI() / 4) * ((POW(c0, 2) + POW(c1, 2)) / 2) * l;
+                            SET v = (l / (4 * PI())) * ((POW(c0, 2) + POW(c1, 2)) / 2);
 
                         WHEN 3 THEN 
-                            -- TRONCO CONO: V = (π/12) × L × (d₀² + d₁² + d₀×d₁)
+                            -- TRONCO CONO: V = L/(12π) × (c0² + c1² + c0×c1)
                             IF c0 IS NULL OR c1 IS NULL THEN
-                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ambos diámetros extremos requeridos para Tronco de Cono';
+                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ambas circunferencias extremas requeridas para Tronco de Cono';
                             END IF;
-                            SET v = (PI() / 12) * l * (POW(c0, 2) + POW(c1, 2) + (c0 * c1));
+                            SET v = (l / (12 * PI())) * (POW(c0, 2) + POW(c1, 2) + (c0 * c1));
 
                         WHEN 4 THEN 
-                            -- NEWTON: V = (π/24) × L × (d₀² + 4×dm² + d₁²)
+                            -- NEWTON: V = L/(24π) × (c0² + 4×cm² + c1²)
                             IF c0 IS NULL OR c1 IS NULL OR cm IS NULL THEN
-                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Diámetros extremos y medio requeridos para Newton';
+                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Circunferencias extremas y media requeridas para Newton';
                             END IF;
-                            SET v = (PI() / 24) * l * (POW(c0, 2) + 4 * POW(cm, 2) + POW(c1, 2));
+                            SET v = (l / (24 * PI())) * (POW(c0, 2) + 4 * POW(cm, 2) + POW(c1, 2));
 
                         ELSE
                             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fórmula no reconocida';
@@ -169,7 +176,7 @@ return new class extends Migration
 
         // =====================================================================
         // TRIGGER: validar_arbol (BEFORE INSERT en arboles)
-        // Valida datos del árbol antes de insertar
+        // Sin cambios: no depende de las fórmulas de volumen de trozas.
         // =====================================================================
         DB::unprepared('DROP TRIGGER IF EXISTS validar_arbol');
         DB::unprepared("
@@ -214,6 +221,8 @@ return new class extends Migration
         // Calcula valores cuando se inserta manualmente una estimación de árbol
         // SOLO calcula si calculo es NULL o 0
         // Biomasa en TONELADAS, Volumen Maderable Aproximado en m³
+        // Estas son fórmulas alométricas independientes (no de trozas), no
+        // requieren corrección de circunferencia/diámetro.
         // =====================================================================
         DB::unprepared('DROP TRIGGER IF EXISTS before_insert_estimaciones1');
         DB::unprepared("
