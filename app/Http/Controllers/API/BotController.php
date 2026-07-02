@@ -562,6 +562,7 @@ class BotController extends Controller
     {
         $data = $request->validate([
             'telefono' => ['nullable', 'string', 'max:30'],
+            'estado' => ['nullable', 'string', 'max:255'],
         ]);
 
         $persona = null;
@@ -594,6 +595,8 @@ class BotController extends Controller
             ->where('id_parcela', $id_parcela)
             ->get();
 
+        $estadoMercado = $this->normalizarEstadoMercado((string) ($data['estado'] ?? 'Estado de Mexico'));
+
         $resumenEspecies = [];
         $volumenTotalGeneral = 0.0;
         $valorTotalGeneral = 0.0;
@@ -604,7 +607,9 @@ class BotController extends Controller
 
             if (!isset($resumenEspecies[$claveEspecie])) {
                 $precioDB = PrecioMercado::where('especie', $claveEspecie)->first()
-                    ?? PrecioMercado::whereIn('especie', $this->variantesClaveMercadoEspecie($claveEspecie))->first();
+                    ?? PrecioMercado::where('especie', $claveEspecie)->where('estado', $estadoMercado)->first()
+                    ?? PrecioMercado::whereIn('especie', $this->variantesClaveMercadoEspecie($claveEspecie))->where('estado', $estadoMercado)->first()
+                    ?? PrecioMercado::where('especie', $claveEspecie)->first();
 
                 $resumenEspecies[$claveEspecie] = [
                     'especie' => $this->etiquetaEspecieMercado($claveEspecie, $nombreEspecie),
@@ -613,6 +618,7 @@ class BotController extends Controller
                     'precio_unitario' => (float) ($precioDB?->precio_por_m3 ?? 0),
                     'moneda' => $precioDB?->moneda ?? 'MXN',
                     'fuente_precio' => $precioDB?->fuente,
+                    'estado' => $precioDB?->estado ?? $estadoMercado,
                     'subtotal' => 0.0,
                 ];
             }
@@ -652,12 +658,32 @@ class BotController extends Controller
             'status' => 'success',
             'data' => [
                 'parcela_id' => $id_parcela,
+                'estado_mercado' => $estadoMercado,
                 'detalles_por_especie' => array_values($resumenEspecies),
                 'gran_total_trozas' => $trozas->count(),
                 'gran_total_volumen_m3' => round($volumenTotalGeneral, 4),
                 'gran_total_estimado_mxn' => round($valorTotalGeneral, 2),
             ],
         ], 200);
+    }
+
+    private function normalizarEstadoMercado(string $estado): string
+    {
+        $texto = Str::of($estado)
+            ->lower()
+            ->ascii()
+            ->trim()
+            ->toString();
+
+        if ($texto === '') {
+            return 'Estado de Mexico';
+        }
+
+        if (str_contains($texto, 'estado de mexico') || str_contains($texto, 'edomex') || str_contains($texto, 'mexico')) {
+            return 'Estado de Mexico';
+        }
+
+        return ucwords($texto);
     }
 
     private function normalizarClaveMercadoEspecie(string $nombreEspecie): string

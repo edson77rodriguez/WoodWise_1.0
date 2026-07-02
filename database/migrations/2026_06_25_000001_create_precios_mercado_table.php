@@ -9,12 +9,15 @@ return new class extends Migration {
     {
         Schema::create('precios_mercado', function (Blueprint $table) {
             $table->id();
-            $table->string('especie')->unique();
+            $table->string('especie');
+            $table->string('estado');
             $table->decimal('precio_por_m3', 10, 2);
             $table->string('moneda')->default('MXN');
             $table->string('fuente')->nullable();
             $table->date('ultima_actualizacion');
             $table->timestamps();
+
+            $table->unique(['especie', 'estado'], 'precios_mercado_especie_estado_unique');
         });
     }
 

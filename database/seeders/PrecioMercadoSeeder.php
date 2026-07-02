@@ -12,6 +12,7 @@ class PrecioMercadoSeeder extends Seeder
         $precios = [
             [
                 'especie' => 'pino',
+                'estado' => 'Estado de Mexico',
                 'precio_por_m3' => 2500.00,
                 'moneda' => 'MXN',
                 'fuente' => 'Estimacion comercial base',
@@ -19,6 +20,7 @@ class PrecioMercadoSeeder extends Seeder
             ],
             [
                 'especie' => 'encino',
+                'estado' => 'Estado de Mexico',
                 'precio_por_m3' => 2800.00,
                 'moneda' => 'MXN',
                 'fuente' => 'Estimacion comercial base',
@@ -26,6 +28,7 @@ class PrecioMercadoSeeder extends Seeder
             ],
             [
                 'especie' => 'oyamel',
+                'estado' => 'Estado de Mexico',
                 'precio_por_m3' => 2200.00,
                 'moneda' => 'MXN',
                 'fuente' => 'Estimacion comercial base',
@@ -36,6 +39,7 @@ class PrecioMercadoSeeder extends Seeder
         foreach ($precios as $precio) {
             PrecioMercado::updateOrCreate([
                 'especie' => $precio['especie'],
+                'estado' => $precio['estado'],
             ], $precio);
         }
     }

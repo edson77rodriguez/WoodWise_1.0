@@ -13,6 +13,7 @@ class PrecioMercado extends Model
 
     protected $fillable = [
         'especie',
+        'estado',
         'precio_por_m3',
         'moneda',
         'fuente',

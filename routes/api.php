@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\BotController;
+use App\Http\Controllers\CotizacionController;
 
 Route::prefix('v1/bot')
     ->middleware(['botkey'])
@@ -22,4 +23,10 @@ Route::prefix('v1/bot')
         Route::post('/registro-masivo', [BotController::class, 'registroMasivo']);
         Route::post('/inf', [BotController::class, 'descargarInformeBotPdf']);
         Route::get('/parcelas/{id_parcela}/reporte.pdf', [BotController::class, 'descargarReporteParcelaPdf']);
+    });
+
+Route::prefix('v1/cotizacion')
+    ->middleware(['botkey'])
+    ->group(function () {
+        Route::post('/sincronizar-precios-ia', [CotizacionController::class, 'sincronizarPreciosIA']);
     });
