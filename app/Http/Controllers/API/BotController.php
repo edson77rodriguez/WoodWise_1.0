@@ -1270,7 +1270,6 @@ class BotController extends Controller
             $dominancia = round(((int) $especieDominanteArboles->total / $totalArboles) * 100, 1);
             if ($dominancia >= 70) {
                 $alertas[] = "Alta dominancia de una sola especie en árboles ({$dominancia}%).";
-                $recomendaciones[] = 'Evalúa si conviene diversificar la composición para reducir vulnerabilidad.';
             }
         }
 
@@ -1278,16 +1277,48 @@ class BotController extends Controller
             $dominancia = round(((int) $especieDominanteTrozas->total / $totalTrozas) * 100, 1);
             if ($dominancia >= 70) {
                 $alertas[] = "Alta dominancia de una sola especie en trozas ({$dominancia}%).";
-                $recomendaciones[] = 'Revisa si la estructura del aprovechamiento está demasiado concentrada en una especie.';
             }
         }
 
-        if ($biomasaTotal > 0 && $carbonoTotal > 0) {
-            $recomendaciones[] = 'Mantén el monitoreo periódico: la biomasa y el carbono permiten seguir la evolución del rodal.';
-        }
+        $recomendacionesDetalladas = $this->construirRecomendacionesImpactoAmbiental([
+            'total_arboles' => $totalArboles,
+            'total_trozas' => $totalTrozas,
+            'total_estimaciones_arboles' => $totalEstimacionesArboles,
+            'total_estimaciones_trozas' => $totalEstimacionesTrozas,
+            'cobertura_arboles' => $coberturaArboles,
+            'cobertura_trozas' => $coberturaTrozas,
+            'biomasa_total' => $biomasaTotal,
+            'carbono_total' => $carbonoTotal,
+            'diversidad_arboles' => $diversidadArboles,
+            'diversidad_trozas' => $diversidadTrozas,
+            'especie_dominante_arboles' => $especieDominanteArboles?->especie,
+            'especie_dominante_trozas' => $especieDominanteTrozas?->especie,
+            'dominancia_arboles' => isset($especieDominanteArboles) && $totalArboles > 0
+                ? round(((int) $especieDominanteArboles->total / $totalArboles) * 100, 1)
+                : null,
+            'dominancia_trozas' => isset($especieDominanteTrozas) && $totalTrozas > 0
+                ? round(((int) $especieDominanteTrozas->total / $totalTrozas) * 100, 1)
+                : null,
+        ]);
+
+        $recomendaciones = array_map(
+            fn (array $recomendacion) => (string) $recomendacion['recommendation'],
+            $recomendacionesDetalladas
+        );
 
         if (empty($recomendaciones)) {
-            $recomendaciones[] = 'La información disponible luce consistente. Puedes generar un reporte formal para seguimiento.';
+            $recomendaciones = ['La información disponible luce consistente. Puedes generar un reporte formal para seguimiento.'];
+            $recomendacionesDetalladas = [[
+                'title' => 'Generar seguimiento básico',
+                'priority' => 'media',
+                'metric_impacted' => 'datos insuficientes',
+                'recommendation' => $recomendaciones[0],
+                'actions' => [
+                    'Repetir el diagnóstico en la siguiente actualización de BD.',
+                    'Comparar resultados contra inventarios anteriores.',
+                    'Usar el reporte PDF para documentar el avance.',
+                ],
+            ]];
         }
 
         $nivel = 'verde';
@@ -1325,6 +1356,7 @@ class BotController extends Controller
             ],
             'alertas' => $alertas,
             'recomendaciones' => $recomendaciones,
+            'recomendaciones_detalladas' => $recomendacionesDetalladas,
             'nivel' => $nivel,
         ]);
 
@@ -1352,6 +1384,8 @@ class BotController extends Controller
         if (!empty($analisisIA['resumen'])) {
             $resumenWhatsapp .= "\n🧠 *Lectura inteligente*\n{$analisisIA['resumen']}\n";
         }
+
+        $resumenWhatsapp .= $this->formatearRecomendacionesParaWhatsapp($recomendacionesDetalladas);
 
         $resumenWhatsapp .= "\n✅ *Qué puedes hacer ahora*\n• Completa los registros faltantes\n• Revisa si conviene diversificar especies\n• Genera un reporte PDF para seguimiento técnico\n• Si quieres, puedo convertir esto en un texto más ejecutivo o más técnico\n";
 
@@ -1382,10 +1416,190 @@ class BotController extends Controller
             ],
             'alertas' => $alertas,
             'recomendaciones' => $recomendaciones,
+            'recomendaciones_detalladas' => $recomendacionesDetalladas,
             'nivel' => $nivel,
             'analisis_ia' => $analisisIA,
             'resumen_whatsapp' => $resumenWhatsapp,
         ];
+    }
+
+    private function construirRecomendacionesImpactoAmbiental(array $contexto): array
+    {
+        $recomendaciones = [];
+
+        $totalArboles = (int) ($contexto['total_arboles'] ?? 0);
+        $totalTrozas = (int) ($contexto['total_trozas'] ?? 0);
+        $coberturaArboles = (float) ($contexto['cobertura_arboles'] ?? 0);
+        $coberturaTrozas = (float) ($contexto['cobertura_trozas'] ?? 0);
+        $biomasaTotal = (float) ($contexto['biomasa_total'] ?? 0);
+        $carbonoTotal = (float) ($contexto['carbono_total'] ?? 0);
+        $diversidadArboles = (int) ($contexto['diversidad_arboles'] ?? 0);
+        $diversidadTrozas = (int) ($contexto['diversidad_trozas'] ?? 0);
+        $especieDominanteArboles = (string) ($contexto['especie_dominante_arboles'] ?? 'Sin datos');
+        $especieDominanteTrozas = (string) ($contexto['especie_dominante_trozas'] ?? 'Sin datos');
+        $dominanciaArboles = $contexto['dominancia_arboles'] ?? null;
+        $dominanciaTrozas = $contexto['dominancia_trozas'] ?? null;
+
+        $agregar = function (string $title, string $priority, string $metric, string $recommendation, array $actions) use (&$recomendaciones): void {
+            $recomendaciones[] = [
+                'title' => $title,
+                'priority' => $priority,
+                'metric_impacted' => $metric,
+                'recommendation' => $recommendation,
+                'actions' => $actions,
+            ];
+        };
+
+        if ($totalArboles === 0 && $totalTrozas === 0) {
+            $agregar(
+                'Iniciar inventario base',
+                'alta',
+                'inventario total',
+                'No hay inventario suficiente para emitir un diagnóstico ambiental confiable. Primero registra árboles o trozas para obtener métricas útiles y comparables.',
+                [
+                    'Capturar registros de árboles y trozas en la parcela.',
+                    'Verificar que las especies estén bien clasificadas en BD.',
+                    'Volver a ejecutar el diagnóstico después de cargar datos.',
+                ]
+            );
+        }
+
+        if ($totalArboles > 0 && $coberturaArboles < 80) {
+            $agregar(
+                'Completar estimaciones de árboles',
+                'alta',
+                "cobertura de árboles ({$coberturaArboles}%)",
+                'La cobertura de estimación en árboles sigue incompleta. Conviene terminar los registros pendientes para mejorar la lectura del rodal.',
+                [
+                    'Revisar los árboles que faltan por estimar.',
+                    'Completar biomasa y carbono en la base de datos.',
+                    'Validar que no existan registros duplicados o inconclusos.',
+                ]
+            );
+        }
+
+        if ($totalTrozas > 0 && $coberturaTrozas < 80) {
+            $agregar(
+                'Completar estimaciones de trozas',
+                'alta',
+                "cobertura de trozas ({$coberturaTrozas}%)",
+                'La cobertura de estimación en trozas todavía es baja. Completarla ayuda a estabilizar biomasa, carbono y el diagnóstico general.',
+                [
+                    'Revisar las trozas pendientes en la parcela.',
+                    'Cerrar los cálculos faltantes en la tabla estimaciones.',
+                    'Confirmar que la especie y la fórmula usadas sean correctas.',
+                ]
+            );
+        }
+
+        if ($dominanciaArboles !== null && $dominanciaArboles >= 70) {
+            $agregar(
+                'Diversificar el arbolado',
+                'media',
+                "dominancia de árboles ({$dominanciaArboles}%)",
+                "La especie dominante en árboles es {$especieDominanteArboles}. La composición está muy concentrada y conviene diversificar para reducir vulnerabilidad.",
+                [
+                    'Revisar si conviene enriquecer con otras especies nativas.',
+                    'Proteger individuos semilleros de especies distintas.',
+                    'Evitar que el manejo simplifique demasiado la composición.',
+                ]
+            );
+        }
+
+        if ($dominanciaTrozas !== null && $dominanciaTrozas >= 70) {
+            $agregar(
+                'Balancear el aprovechamiento',
+                'media',
+                "dominancia de trozas ({$dominanciaTrozas}%)",
+                "La especie dominante en trozas es {$especieDominanteTrozas}. El aprovechamiento está muy concentrado y conviene revisar la distribución por especie.",
+                [
+                    'Analizar si la extracción está concentrada en una sola especie.',
+                    'Distribuir mejor el aprovechamiento entre especies disponibles.',
+                    'Mantener un seguimiento más frecuente del inventario.',
+                ]
+            );
+        }
+
+        if ($biomasaTotal > 0 && $carbonoTotal > 0) {
+            $agregar(
+                'Mantener monitoreo periódico',
+                'media',
+                'biomasa y carbono',
+                'La biomasa y el carbono ya permiten seguir la evolución del rodal. Mantener mediciones periódicas ayuda a detectar cambios a tiempo.',
+                [
+                    'Programar nuevos inventarios con periodicidad fija.',
+                    'Comparar biomasa y carbono entre consultas.',
+                    'Usar el historial para evaluar tendencias de manejo.',
+                ]
+            );
+        }
+
+        if ($diversidadArboles >= 2 || $diversidadTrozas >= 2) {
+            $agregar(
+                'Conservar la diversidad detectada',
+                'media',
+                'diversidad de especies',
+                'La base de datos muestra más de una especie en el inventario. Eso es bueno para resiliencia y conviene conservarlo con manejo selectivo.',
+                [
+                    'Evitar uniformar la parcela con una sola especie.',
+                    'Mantener árboles semilleros y ejemplares sanos.',
+                    'Monitorear la regeneración natural de las especies presentes.',
+                ]
+            );
+        }
+
+        if ($totalArboles > 0 && $totalTrozas > 0 && $totalTrozas > $totalArboles) {
+            $agregar(
+                'Equilibrar trozas y arbolado vivo',
+                'alta',
+                'relación trozas/arboles',
+                'Hay más trozas registradas que árboles en pie. Conviene revisar que el aprovechamiento no vaya por delante de la regeneración.',
+                [
+                    'Revisar la intensidad de corte por zona.',
+                    'Asegurar reposición natural o plantación de apoyo.',
+                    'Conservar arbolado vivo suficiente para sostener la estructura del bosque.',
+                ]
+            );
+        }
+
+        if (empty($recomendaciones)) {
+            $agregar(
+                'Generar seguimiento básico',
+                'media',
+                'datos suficientes',
+                'La información disponible luce consistente. Puedes generar un reporte formal para seguimiento técnico.',
+                [
+                    'Repetir el diagnóstico en la siguiente actualización de BD.',
+                    'Comparar resultados contra inventarios anteriores.',
+                    'Usar el reporte PDF para documentar el avance.',
+                ]
+            );
+        }
+
+        return $recomendaciones;
+    }
+
+    private function formatearRecomendacionesParaWhatsapp(array $recomendaciones, int $limite = 4): string
+    {
+        if (empty($recomendaciones)) {
+            return '';
+        }
+
+        $salida = "\n🧩 *Recomendaciones*\n";
+
+        foreach (array_slice($recomendaciones, 0, $limite) as $recomendacion) {
+            $titulo = (string) ($recomendacion['title'] ?? 'Recomendación');
+            $prioridad = (string) ($recomendacion['priority'] ?? 'media');
+            $texto = (string) ($recomendacion['recommendation'] ?? '');
+
+            $salida .= "• *{$titulo}* ({$prioridad}): {$texto}\n";
+        }
+
+        if (count($recomendaciones) > $limite) {
+            $salida .= "• Hay más recomendaciones en el reporte PDF.\n";
+        }
+
+        return $salida;
     }
 
     private function generarAnalisisImpactoAmbientalConIA(array $reporte): array

@@ -9,6 +9,10 @@
         .section { margin-bottom: 12px; }
         .kv { display:flex; gap:8px }
         .small { font-size: 11px; color:#555 }
+        .rec { margin-bottom: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .rec h3 { margin: 0 0 4px 0; font-size: 13px; }
+        .rec-meta { font-size: 11px; color: #666; margin-bottom: 4px; }
+        .rec ul { margin: 4px 0 0 16px; padding: 0; }
     </style>
 </head>
 <body>
@@ -43,11 +47,30 @@
 
     <div class="section">
         <h2>Recomendaciones</h2>
-        @if(!empty($impacto['recomendaciones']))
-            <ul>
-            @foreach($impacto['recomendaciones'] as $r)
-                <li>{{ $r }}</li>
+        @if(!empty($impacto['recomendaciones_detalladas']))
+            @foreach($impacto['recomendaciones_detalladas'] as $r)
+                <div class="rec">
+                    <h3>{{ $r['title'] ?? 'Recomendación' }}</h3>
+                    <div class="rec-meta">
+                        Prioridad: {{ $r['priority'] ?? 'media' }} |
+                        Métrica: {{ $r['metric_impacted'] ?? 'no especificada' }}
+                    </div>
+                    <div>{{ $r['recommendation'] ?? '' }}</div>
+                    @if(!empty($r['actions']))
+                        <strong>Acciones sugeridas:</strong>
+                        <ul>
+                            @foreach($r['actions'] as $action)
+                                <li>{{ $action }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
             @endforeach
+        @elseif(!empty($impacto['recomendaciones']))
+            <ul>
+                @foreach($impacto['recomendaciones'] as $r)
+                    <li>{{ $r }}</li>
+                @endforeach
             </ul>
         @else
             <div>No hay recomendaciones específicas.</div>
