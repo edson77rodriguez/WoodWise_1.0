@@ -562,7 +562,6 @@ class BotController extends Controller
     {
         $data = $request->validate([
             'telefono' => ['nullable', 'string', 'max:30'],
-            'estado' => ['nullable', 'string', 'max:255'],
         ]);
 
         $persona = null;
@@ -591,11 +590,57 @@ class BotController extends Controller
             }
         }
 
+        $parcela = Parcela::query()
+            ->select('id_parcela', 'nom_parcela', 'CP')
+            ->where('id_parcela', $id_parcela)
+            ->first();
+
+        if (!$parcela) {
+            return response()->json([
+                'error' => 'La parcela no existe.',
+            ], 404);
+        }
+
+        if (empty($parcela->CP)) {
+            return response()->json([
+                'error' => 'La parcela no tiene CP registrado. No es posible determinar el estado de mercado.',
+                'parcela' => [
+                    'id_parcela' => $parcela->id_parcela,
+                    'nom_parcela' => $parcela->nom_parcela,
+                ],
+            ], 422);
+        }
+
+        $estadoMercado = $this->resolverEstadoMercadoDesdeCP((int) $parcela->CP);
+
+        if (!$estadoMercado) {
+            return response()->json([
+                'error' => 'No fue posible determinar el estado de mercado a partir del CP de la parcela.',
+                'parcela' => [
+                    'id_parcela' => $parcela->id_parcela,
+                    'nom_parcela' => $parcela->nom_parcela,
+                    'CP' => (int) $parcela->CP,
+                ],
+            ], 422);
+        }
+
         $trozas = Troza::with('especie')
             ->where('id_parcela', $id_parcela)
             ->get();
 
-        $estadoMercado = $this->normalizarEstadoMercado((string) ($data['estado'] ?? 'Estado de Mexico'));
+        if ($trozas->isEmpty()) {
+            return response()->json([
+                'error' => 'La parcela no tiene trozas registradas para cotizar.',
+                'parcela' => [
+                    'id_parcela' => $parcela->id_parcela,
+                    'nom_parcela' => $parcela->nom_parcela,
+                    'CP' => (int) $parcela->CP,
+                    'estado_mercado' => $estadoMercado,
+                ],
+            ], 422);
+        }
+
+        $estadoMercado = $this->normalizarEstadoMercado($estadoMercado);
 
         $resumenEspecies = [];
         $volumenTotalGeneral = 0.0;
@@ -606,10 +651,22 @@ class BotController extends Controller
             $claveEspecie = $this->normalizarClaveMercadoEspecie($nombreEspecie);
 
             if (!isset($resumenEspecies[$claveEspecie])) {
-                $precioDB = PrecioMercado::where('especie', $claveEspecie)->first()
-                    ?? PrecioMercado::where('especie', $claveEspecie)->where('estado', $estadoMercado)->first()
+                $precioDB = PrecioMercado::where('especie', $claveEspecie)->where('estado', $estadoMercado)->first()
                     ?? PrecioMercado::whereIn('especie', $this->variantesClaveMercadoEspecie($claveEspecie))->where('estado', $estadoMercado)->first()
                     ?? PrecioMercado::where('especie', $claveEspecie)->first();
+
+                if (!$precioDB) {
+                    return response()->json([
+                        'error' => 'No existe un precio de mercado configurado para esta especie en el estado de la parcela.',
+                        'especie' => $this->etiquetaEspecieMercado($claveEspecie, $nombreEspecie),
+                        'estado_mercado' => $estadoMercado,
+                        'parcela' => [
+                            'id_parcela' => $parcela->id_parcela,
+                            'nom_parcela' => $parcela->nom_parcela,
+                            'CP' => (int) $parcela->CP,
+                        ],
+                    ], 422);
+                }
 
                 $resumenEspecies[$claveEspecie] = [
                     'especie' => $this->etiquetaEspecieMercado($claveEspecie, $nombreEspecie),
@@ -658,6 +715,10 @@ class BotController extends Controller
             'status' => 'success',
             'data' => [
                 'parcela_id' => $id_parcela,
+                'parcela' => [
+                    'nom_parcela' => $parcela->nom_parcela,
+                    'CP' => (int) $parcela->CP,
+                ],
                 'estado_mercado' => $estadoMercado,
                 'detalles_por_especie' => array_values($resumenEspecies),
                 'gran_total_trozas' => $trozas->count(),
@@ -665,6 +726,33 @@ class BotController extends Controller
                 'gran_total_estimado_mxn' => round($valorTotalGeneral, 2),
             ],
         ], 200);
+    }
+
+    private function resolverEstadoMercadoDesdeCP(int $cp): ?string
+    {
+        if ($cp <= 0) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(8)
+                ->acceptJson()
+                ->get("https://api.zippopotam.us/MX/{$cp}");
+
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $estado = data_get($response->json(), 'places.0.state');
+
+            if (!is_string($estado) || trim($estado) === '') {
+                return null;
+            }
+
+            return $this->normalizarEstadoMercado($estado);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private function normalizarEstadoMercado(string $estado): string
