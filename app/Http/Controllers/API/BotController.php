@@ -99,6 +99,14 @@ class BotController extends Controller
             return $this->responderCotizacionMercado($persona, $rol, $parcelasIds);
         }
 
+        if (in_array($mensajeClaveGlobal, ['cotizacion_no_pdf', 'cotizacion no pdf', 'ahora no', 'por ahora no', 'no pdf'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return $this->obtenerMenuPrincipal($request);
+        }
+
         if (in_array($mensajeClaveGlobal, ['menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo'], true)) {
             return $this->responderIngresoArchivo();
         }
@@ -128,6 +136,10 @@ class BotController extends Controller
 
             if (in_array($mensajeClave, ['menu_cotizacion_mercado', 'cotizacion mercado', 'cotización mercado'], true)) {
                 return $this->responderCotizacionMercado($persona, $rol, $parcelasIds);
+            }
+
+            if (in_array($mensajeClave, ['cotizacion_no_pdf', 'cotizacion no pdf', 'ahora no', 'por ahora no', 'no pdf'], true)) {
+                return $this->obtenerMenuPrincipal($request);
             }
 
             if (in_array($mensajeClave, ['menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo'], true)) {
@@ -725,6 +737,34 @@ class BotController extends Controller
                 'gran_total_volumen_m3' => round($volumenTotalGeneral, 4),
                 'gran_total_estimado_mxn' => round($valorTotalGeneral, 2),
             ],
+            'mensaje_whatsapp' => "📊 *Resumen de Cotizacion Estimada*\n\n📍 Parcela: *{$parcela->nom_parcela}*\n🏷️ Estado aplicado: *{$estadoMercado}*\n🪵 Total trozas: *" . $trozas->count() . "*\n📦 Volumen total: *" . round($volumenTotalGeneral, 4) . " m³*\n\n💰 *Valor Estimado Comercial:* $" . number_format(round($valorTotalGeneral, 2), 2, '.', ',') . " MXN\n\n_Puedo generarte el PDF formal o regresar al menu principal._",
+            'interactive_payload' => [
+                'type' => 'button',
+                'body' => [
+                    'text' => "¿Qué deseas hacer ahora?",
+                ],
+                'footer' => [
+                    'text' => 'SIGMAD | Cotizacion comercial',
+                ],
+                'action' => [
+                    'buttons' => [
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => 'cotizacion_generar_pdf',
+                                'title' => '📄 Generar PDF',
+                            ],
+                        ],
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => 'cotizacion_no_pdf',
+                                'title' => 'Ahora no',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ], 200);
     }
 
@@ -1249,13 +1289,13 @@ class BotController extends Controller
             'parcelas' => $parcelas,
             'mensaje' => "💰 *Cotizacion de Mercado SIGMAD*\n\nSelecciona la parcela para calcular el valor estimado de tus trozas.",
             'interactive_payload' => [
-                'type' => 'list',
+                'type' => 'button',
                 'header' => [
                     'type' => 'text',
                     'text' => '💰 Cotizacion de Mercado',
                 ],
                 'body' => [
-                    'text' => 'Elige la parcela para generar la cotizacion comercial.',
+                    'text' => 'Elige la parcela para generar la cotizacion comercial. Cuando te entregue el resultado podras pedir el PDF formal o regresar al menu.',
                 ],
                 'footer' => [
                     'text' => 'SIGMAD | Cotizacion comercial',
