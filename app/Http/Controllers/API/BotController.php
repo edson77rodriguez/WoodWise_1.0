@@ -570,89 +570,155 @@ class BotController extends Controller
         ], 200);
     }
 
-    public function generarCotizacion(Request $request, int $id_parcela)
+    public function descargarCotizacionMercadoPdf(Request $request, int $id_parcela)
     {
         $data = $request->validate([
             'telefono' => ['nullable', 'string', 'max:30'],
         ]);
 
+        $cotizacion = $this->construirCotizacionMercado($id_parcela, $data['telefono'] ?? null);
+
+        if (!$cotizacion['ok']) {
+            return response()->json($cotizacion['response'], $cotizacion['status']);
+        }
+
+        $logoBase64 = '';
+        $logoPath = public_path('assets/images/SIGMAD.svg');
+        if (file_exists($logoPath)) {
+            $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
+        }
+
+        $pdf = Pdf::loadView('pdf.cotizacion', [
+            'cotizacion' => $cotizacion['data'],
+            'logo' => $logoBase64,
+            'fecha' => Carbon::now()->format('d/m/Y H:i'),
+        ])->setPaper('A4', 'portrait');
+
+        $fileName = 'Cotizacion_' . Str::slug($cotizacion['data']['parcela']['nom_parcela'] ?? 'parcela') . '_' . now()->format('Y-m-d_His') . '.pdf';
+        $returnLink = (bool) $request->boolean('link') || $request->wantsJson();
+
+        if ($returnLink) {
+            $path = 'reportes/' . now()->format('Ymd') . '/cotizacion_' . now()->format('His') . '_' . Str::random(10) . '.pdf';
+            Storage::disk('public')->put($path, $pdf->output());
+
+            return response()->json([
+                'ok' => true,
+                'tipo' => 'pdf',
+                'file_name' => $fileName,
+                'path' => $path,
+                'url' => asset('storage/' . $path),
+                'mensaje' => 'PDF de cotizacion generado correctamente.',
+            ], 200);
+        }
+
+        return $pdf->stream($fileName);
+    }
+
+    private function construirCotizacionMercado(int $idParcela, ?string $telefono = null): array
+    {
         $persona = null;
         $rol = null;
         $parcelasIds = collect();
 
-        if (!empty($data['telefono'])) {
-            $persona = $this->findPersonaByTelefono($data['telefono']);
+        if (!empty($telefono)) {
+            $persona = $this->findPersonaByTelefono($telefono);
 
             if (!$persona) {
-                return response()->json(['error' => 'Usuario no encontrado'], 404);
+                return [
+                    'ok' => false,
+                    'status' => 404,
+                    'response' => ['error' => 'Usuario no encontrado'],
+                ];
             }
 
             [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
 
             if ($rol === null) {
-                return response()->json([
-                    'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
-                    'rol' => null,
-                    'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
-                ], 409);
+                return [
+                    'ok' => false,
+                    'status' => 409,
+                    'response' => [
+                        'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                        'rol' => null,
+                        'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
+                    ],
+                ];
             }
 
-            if (!$parcelasIds->contains($id_parcela)) {
-                return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+            if (!$parcelasIds->contains($idParcela)) {
+                return [
+                    'ok' => false,
+                    'status' => 403,
+                    'response' => ['error' => 'No tienes acceso a esa parcela'],
+                ];
             }
         }
 
         $parcela = Parcela::query()
             ->select('id_parcela', 'nom_parcela', 'CP')
-            ->where('id_parcela', $id_parcela)
+            ->where('id_parcela', $idParcela)
             ->first();
 
         if (!$parcela) {
-            return response()->json([
-                'error' => 'La parcela no existe.',
-            ], 404);
+            return [
+                'ok' => false,
+                'status' => 404,
+                'response' => ['error' => 'La parcela no existe.'],
+            ];
         }
 
         if (empty($parcela->CP)) {
-            return response()->json([
-                'error' => 'La parcela no tiene CP registrado. No es posible determinar el estado de mercado.',
-                'parcela' => [
-                    'id_parcela' => $parcela->id_parcela,
-                    'nom_parcela' => $parcela->nom_parcela,
+            return [
+                'ok' => false,
+                'status' => 422,
+                'response' => [
+                    'error' => 'La parcela no tiene CP registrado. No es posible determinar el estado de mercado.',
+                    'parcela' => [
+                        'id_parcela' => $parcela->id_parcela,
+                        'nom_parcela' => $parcela->nom_parcela,
+                    ],
                 ],
-            ], 422);
+            ];
         }
 
         $estadoMercado = $this->resolverEstadoMercadoDesdeCP((int) $parcela->CP);
 
         if (!$estadoMercado) {
-            return response()->json([
-                'error' => 'No fue posible determinar el estado de mercado a partir del CP de la parcela.',
-                'parcela' => [
-                    'id_parcela' => $parcela->id_parcela,
-                    'nom_parcela' => $parcela->nom_parcela,
-                    'CP' => (int) $parcela->CP,
+            return [
+                'ok' => false,
+                'status' => 422,
+                'response' => [
+                    'error' => 'No fue posible determinar el estado de mercado a partir del CP de la parcela.',
+                    'parcela' => [
+                        'id_parcela' => $parcela->id_parcela,
+                        'nom_parcela' => $parcela->nom_parcela,
+                        'CP' => (int) $parcela->CP,
+                    ],
                 ],
-            ], 422);
-        }
-
-        $trozas = Troza::with('especie')
-            ->where('id_parcela', $id_parcela)
-            ->get();
-
-        if ($trozas->isEmpty()) {
-            return response()->json([
-                'error' => 'La parcela no tiene trozas registradas para cotizar.',
-                'parcela' => [
-                    'id_parcela' => $parcela->id_parcela,
-                    'nom_parcela' => $parcela->nom_parcela,
-                    'CP' => (int) $parcela->CP,
-                    'estado_mercado' => $estadoMercado,
-                ],
-            ], 422);
+            ];
         }
 
         $estadoMercado = $this->normalizarEstadoMercado($estadoMercado);
+
+        $trozas = Troza::with('especie')
+            ->where('id_parcela', $idParcela)
+            ->get();
+
+        if ($trozas->isEmpty()) {
+            return [
+                'ok' => false,
+                'status' => 422,
+                'response' => [
+                    'error' => 'La parcela no tiene trozas registradas para cotizar.',
+                    'parcela' => [
+                        'id_parcela' => $parcela->id_parcela,
+                        'nom_parcela' => $parcela->nom_parcela,
+                        'CP' => (int) $parcela->CP,
+                        'estado_mercado' => $estadoMercado,
+                    ],
+                ],
+            ];
+        }
 
         $resumenEspecies = [];
         $volumenTotalGeneral = 0.0;
@@ -663,31 +729,43 @@ class BotController extends Controller
             $claveEspecie = $this->normalizarClaveMercadoEspecie($nombreEspecie);
 
             if (!isset($resumenEspecies[$claveEspecie])) {
-                $precioDB = PrecioMercado::where('especie', $claveEspecie)->where('estado', $estadoMercado)->first()
-                    ?? PrecioMercado::whereIn('especie', $this->variantesClaveMercadoEspecie($claveEspecie))->where('estado', $estadoMercado)->first()
-                    ?? PrecioMercado::where('especie', $claveEspecie)->first();
+                $precioDB = PrecioMercado::query()
+                    ->where('especie', $claveEspecie)
+                    ->where('estado', $estadoMercado)
+                    ->first()
+                    ?? PrecioMercado::query()
+                        ->whereIn('especie', $this->variantesClaveMercadoEspecie($claveEspecie))
+                        ->where('estado', $estadoMercado)
+                        ->first()
+                    ?? PrecioMercado::query()
+                        ->where('especie', $claveEspecie)
+                        ->first();
 
                 if (!$precioDB) {
-                    return response()->json([
-                        'error' => 'No existe un precio de mercado configurado para esta especie en el estado de la parcela.',
-                        'especie' => $this->etiquetaEspecieMercado($claveEspecie, $nombreEspecie),
-                        'estado_mercado' => $estadoMercado,
-                        'parcela' => [
-                            'id_parcela' => $parcela->id_parcela,
-                            'nom_parcela' => $parcela->nom_parcela,
-                            'CP' => (int) $parcela->CP,
+                    return [
+                        'ok' => false,
+                        'status' => 422,
+                        'response' => [
+                            'error' => 'No existe un precio de mercado configurado para esta especie en el estado de la parcela.',
+                            'especie' => $this->etiquetaEspecieMercado($claveEspecie, $nombreEspecie),
+                            'estado_mercado' => $estadoMercado,
+                            'parcela' => [
+                                'id_parcela' => $parcela->id_parcela,
+                                'nom_parcela' => $parcela->nom_parcela,
+                                'CP' => (int) $parcela->CP,
+                            ],
                         ],
-                    ], 422);
+                    ];
                 }
 
                 $resumenEspecies[$claveEspecie] = [
                     'especie' => $this->etiquetaEspecieMercado($claveEspecie, $nombreEspecie),
                     'cantidad' => 0,
                     'volumen_m3' => 0.0,
-                    'precio_unitario' => (float) ($precioDB?->precio_por_m3 ?? 0),
-                    'moneda' => $precioDB?->moneda ?? 'MXN',
-                    'fuente_precio' => $precioDB?->fuente,
-                    'estado' => $precioDB?->estado ?? $estadoMercado,
+                    'precio_unitario' => (float) ($precioDB->precio_por_m3 ?? 0),
+                    'moneda' => $precioDB->moneda ?? 'MXN',
+                    'fuente_precio' => $precioDB->fuente,
+                    'estado' => $precioDB->estado ?? $estadoMercado,
                     'subtotal' => 0.0,
                 ];
             }
@@ -712,7 +790,6 @@ class BotController extends Controller
 
             $resumenEspecies[$claveEspecie]['cantidad'] += 1;
             $resumenEspecies[$claveEspecie]['volumen_m3'] += $volumenTroza;
-
             $volumenTotalGeneral += $volumenTroza;
         }
 
@@ -723,25 +800,29 @@ class BotController extends Controller
             $valorTotalGeneral += $subtotal;
         }
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'parcela_id' => $id_parcela,
-                'parcela' => [
-                    'nom_parcela' => $parcela->nom_parcela,
-                    'CP' => (int) $parcela->CP,
-                ],
-                'estado_mercado' => $estadoMercado,
-                'detalles_por_especie' => array_values($resumenEspecies),
-                'gran_total_trozas' => $trozas->count(),
-                'gran_total_volumen_m3' => round($volumenTotalGeneral, 4),
-                'gran_total_estimado_mxn' => round($valorTotalGeneral, 2),
+        $data = [
+            'parcela_id' => $parcela->id_parcela,
+            'parcela' => [
+                'nom_parcela' => $parcela->nom_parcela,
+                'CP' => (int) $parcela->CP,
             ],
-            'mensaje_whatsapp' => "📊 *Resumen de Cotizacion Estimada*\n\n📍 Parcela: *{$parcela->nom_parcela}*\n🏷️ Estado aplicado: *{$estadoMercado}*\n🪵 Total trozas: *" . $trozas->count() . "*\n📦 Volumen total: *" . round($volumenTotalGeneral, 4) . " m³*\n\n💰 *Valor Estimado Comercial:* $" . number_format(round($valorTotalGeneral, 2), 2, '.', ',') . " MXN\n\n_Puedo generarte el PDF formal o regresar al menu principal._",
+            'estado_mercado' => $estadoMercado,
+            'detalles_por_especie' => array_values($resumenEspecies),
+            'gran_total_trozas' => $trozas->count(),
+            'gran_total_volumen_m3' => round($volumenTotalGeneral, 4),
+            'gran_total_estimado_mxn' => round($valorTotalGeneral, 2),
+        ];
+
+        $mensajeWhatsapp = "📊 *Resumen de Cotizacion Estimada*\n\n📍 Parcela: *{$parcela->nom_parcela}*\n🏷️ Estado aplicado: *{$estadoMercado}*\n🪵 Total trozas: *" . $trozas->count() . "*\n📦 Volumen total: *" . round($volumenTotalGeneral, 4) . " m³*\n\n💰 *Valor Estimado Comercial:* $" . number_format(round($valorTotalGeneral, 2), 2, '.', ',') . " MXN\n\n_Puedo generarte el PDF formal o regresar al menu principal._";
+
+        return [
+            'ok' => true,
+            'data' => $data,
+            'mensaje_whatsapp' => $mensajeWhatsapp,
             'interactive_payload' => [
                 'type' => 'button',
                 'body' => [
-                    'text' => "¿Qué deseas hacer ahora?",
+                    'text' => '¿Qué deseas hacer ahora?',
                 ],
                 'footer' => [
                     'text' => 'SIGMAD | Cotizacion comercial',
@@ -765,7 +846,8 @@ class BotController extends Controller
                     ],
                 ],
             ],
-        ], 200);
+            'pdf_endpoint_sugerido' => '/api/v1/bot/cotizacion/parcela/' . $parcela->id_parcela . '/pdf?telefono=' . ($telefono ?? ''),
+        ];
     }
 
     private function resolverEstadoMercadoDesdeCP(int $cp): ?string
@@ -1289,7 +1371,7 @@ class BotController extends Controller
             'parcelas' => $parcelas,
             'mensaje' => "💰 *Cotizacion de Mercado SIGMAD*\n\nSelecciona la parcela para calcular el valor estimado de tus trozas.",
             'interactive_payload' => [
-                'type' => 'button',
+                'type' => 'list',
                 'header' => [
                     'type' => 'text',
                     'text' => '💰 Cotizacion de Mercado',
