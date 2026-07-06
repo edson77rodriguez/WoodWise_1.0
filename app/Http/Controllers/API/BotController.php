@@ -853,14 +853,14 @@ class BotController extends Controller
                         [
                             'type' => 'reply',
                             'reply' => [
-                                'id' => 'cotizacion_generar_pdf',
+                                'id' => 'cotizacion_generar_pdf|' . $parcela->id_parcela,
                                 'title' => '📄 Generar PDF',
                             ],
                         ],
                         [
                             'type' => 'reply',
                             'reply' => [
-                                'id' => 'cotizacion_no_pdf',
+                                'id' => 'cotizacion_no_pdf|' . $parcela->id_parcela,
                                 'title' => 'Ahora no',
                             ],
                         ],
