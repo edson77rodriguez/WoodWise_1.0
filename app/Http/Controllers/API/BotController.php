@@ -570,6 +570,27 @@ class BotController extends Controller
         ], 200);
     }
 
+    public function generarCotizacion(Request $request, int $id_parcela)
+    {
+        $data = $request->validate([
+            'telefono' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $cotizacion = $this->construirCotizacionMercado($id_parcela, $data['telefono'] ?? null);
+
+        if (!$cotizacion['ok']) {
+            return response()->json($cotizacion['response'], $cotizacion['status']);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $cotizacion['data'],
+            'mensaje_whatsapp' => $cotizacion['mensaje_whatsapp'],
+            'interactive_payload' => $cotizacion['interactive_payload'],
+            'pdf_endpoint_sugerido' => $cotizacion['pdf_endpoint_sugerido'],
+        ], 200);
+    }
+
     public function descargarCotizacionMercadoPdf(Request $request, int $id_parcela)
     {
         $data = $request->validate([
