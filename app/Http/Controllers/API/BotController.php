@@ -108,7 +108,16 @@ class BotController extends Controller
         }
 
         if (in_array($mensajeClaveGlobal, ['menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
             return $this->responderIngresoArchivo();
+        }
+
+        if ($sesion && in_array($sesion->estado, [self::ESPERANDO_PARCELA_EXCEL, self::ESPERANDO_ARCHIVO_EXCEL], true) && $this->esBotonInteractivoDelMenu($mensajeLimpio)) {
+            $sesion->delete();
+            return $this->despacharBotonInteractivoDelMenu($mensajeLimpio, $request, $persona, $rol, $parcelasIds);
         }
 
         // 3. LA MÁQUINA DE ESTADOS (El flujo conversacional)
@@ -2611,6 +2620,28 @@ class BotController extends Controller
             ->ascii()
             ->trim(" \t\n\r\0\x0B\"'`*_-.,;:!¡¿?()")
             ->toString();
+    }
+
+    private function esBotonInteractivoDelMenu(string $mensaje): bool
+    {
+        return Str::startsWith($mensaje, ['menu_', 'btn_']);
+    }
+
+    private function despacharBotonInteractivoDelMenu(string $mensaje, Request $request, Persona $persona, string $rol, $parcelasIds)
+    {
+        return match ($mensaje) {
+            'menu_ingreso_guiado', 'ingreso_guiado', 'asistente_guiado' => $this->iniciarAsistente($request->input('telefono'), $parcelasIds),
+            'menu_generar_estimaciones', 'generar estimaciones' => $this->iniciarFlujoEstimaciones($request->input('telefono'), $parcelasIds),
+            'menu_importar_excel', 'importar excel' => $this->iniciarFlujoImportacionExcel($request->input('telefono'), $parcelasIds),
+            'menu_kit_campo' => $this->obtenerKitCampo($request),
+            'menu_impacto_ambiental', 'impacto ambiental' => $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, null),
+            'menu_cotizacion_mercado', 'cotizacion mercado', 'cotización mercado' => $this->responderCotizacionMercado($persona, $rol, $parcelasIds),
+            'cotizacion_no_pdf', 'cotizacion no pdf', 'ahora no', 'por ahora no', 'no pdf' => $this->obtenerMenuPrincipal($request),
+            'menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo' => $this->responderIngresoArchivo(),
+            'btn_reporte' => $this->descargarInformeBotPdf($request),
+            'btn_inventario' => $this->obtenerMenuPrincipal($request),
+            default => $this->obtenerMenuPrincipal($request),
+        };
     }
 
     private function limpiarSesionesExcelExpiradas(): void
