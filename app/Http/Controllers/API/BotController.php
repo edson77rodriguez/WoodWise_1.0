@@ -36,7 +36,7 @@ class BotController extends Controller
 
         $telefono = $this->normalizarTelefono($data['telefono']);
         $mensajeCrudo = trim($data['mensaje']);
-        $mensajeLimpio = mb_strtolower($mensajeCrudo);
+        $mensajeLimpio = $this->normalizarClaveMensajeBot($mensajeCrudo);
 
         $persona = $this->findPersonaByTelefono($telefono);
         if (!$persona) {
@@ -62,7 +62,7 @@ class BotController extends Controller
 
         $sesion = BotSesion::where('telefono', $telefono)->first();
 
-        if (in_array($mensajeLimpio, ['cancelar', 'salir', 'detener', 'abortar'], true)) {
+        if (in_array($mensajeLimpio, ['cancelar', 'salir', 'detener', 'abortar', 'cancel', 'salir del asistente'], true)) {
             if ($sesion) {
                 $sesion->delete();
             }
@@ -74,7 +74,7 @@ class BotController extends Controller
         }
 
         // Permite disparar importación de Excel desde cualquier estado.
-        $mensajeClaveGlobal = trim($mensajeLimpio, " \t\n\r\0\x0B\"'");
+        $mensajeClaveGlobal = $this->normalizarClaveMensajeBot($mensajeCrudo);
         if (in_array($mensajeClaveGlobal, ['menu_importar_excel', 'importar excel'], true)) {
             if ($sesion) {
                 $sesion->delete();
@@ -2602,6 +2602,15 @@ class BotController extends Controller
             ->toString();
 
         return $limpio;
+    }
+
+    private function normalizarClaveMensajeBot(string $mensaje): string
+    {
+        return Str::of($mensaje)
+            ->lower()
+            ->ascii()
+            ->trim(" \t\n\r\0\x0B\"'`*_-.,;:!¡¿?()")
+            ->toString();
     }
 
     private function limpiarSesionesExcelExpiradas(): void
