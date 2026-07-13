@@ -1340,13 +1340,6 @@ class BotController extends Controller
                             'title' => '📄 Generar PDF',
                         ],
                     ],
-                    [
-                        'type' => 'reply',
-                        'reply' => [
-                            'id' => 'impacto_no_pdf',
-                            'title' => 'Ahora no',
-                        ],
-                    ],
                 ],
             ],
         ];
