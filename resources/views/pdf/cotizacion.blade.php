@@ -9,7 +9,7 @@
         * { box-sizing: border-box; }
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 9pt;
+            font-size: 9.2pt;
             color: #24313f;
             margin: 0;
             background: #ffffff;
@@ -62,7 +62,7 @@
             margin-bottom: 16px;
         }
         .hero h1 { margin: 0 0 4px 0; font-size: 17pt; }
-        .hero p { margin: 0; font-size: 10pt; opacity: .95; }
+        .hero p { margin: 0; font-size: 10pt; opacity: .95; line-height: 1.45; }
         .cards { width: 100%; border-collapse: separate; border-spacing: 8px; margin-bottom: 16px; }
         .card {
             width: 25%;
@@ -123,6 +123,21 @@
         .note {
             font-size: 8pt; color: #475569; background: #f8fafc;
             border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 12px;
+            line-height: 1.45;
+        }
+        .small-title {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #115e2d;
+            margin: 0 0 6px 0;
+        }
+        .bullet-list {
+            margin: 6px 0 0 18px;
+            padding: 0;
+        }
+        .bullet-list li {
+            margin: 0 0 4px 0;
+            line-height: 1.45;
         }
         .footer {
             position: fixed;
@@ -164,7 +179,11 @@
 
     <div class="hero">
         <h1>Cotización formal de mercado forestal</h1>
-        <p>{{ $cotizacion['parcela']['nom_parcela'] ?? 'Parcela sin nombre' }} | CP {{ $cotizacion['parcela']['CP'] ?? 'N/A' }} | Estado aplicado: {{ $cotizacion['estado_mercado'] ?? 'N/A' }}</p>
+        <p>
+            {{ $cotizacion['parcela']['nom_parcela'] ?? 'Parcela sin nombre' }}
+            | CP {{ $cotizacion['parcela']['CP'] ?? 'N/A' }}
+            | Estado aplicado: {{ $cotizacion['estado_mercado'] ?? 'N/A' }}
+        </p>
     </div>
 
     <table class="cards">
@@ -273,8 +292,16 @@
     </div>
 
     <div class="note">
-        Cotización comercial generada automáticamente por SIGMAD a partir de la parcela, su código postal y el precio regional más cercano disponible para la especie.
-        Este documento es de referencia comercial y puede ajustarse si cambian los precios de mercado o la composición del inventario.
+        <div class="small-title">Lectura rápida</div>
+        Este documento estima el valor comercial a partir de la parcela, su código postal y el precio regional más cercano disponible para cada especie.
+        Si cambian los precios de mercado o el inventario, el valor puede variar.
+
+        <div class="small-title" style="margin-top:10px;">Qué incluye este cálculo</div>
+        <ul class="bullet-list">
+            <li>Solo se consideran las trozas registradas en la parcela seleccionada.</li>
+            <li>El precio aplicado depende del estado o región detectada por código postal.</li>
+            <li>El valor mostrado es orientativo y sirve como base comercial o técnica.</li>
+        </ul>
     </div>
 
     <div class="footer">
