@@ -63,6 +63,30 @@
 
                 <div style="border-top: 1px solid rgba(16, 185, 129, 0.1); margin: 2rem 0;"></div>
 
+                <h6 class="fw-800 text-dark mb-3" style="font-size: 1rem;">Cómo queda estructurada una fórmula</h6>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background: rgba(59, 130, 246, 0.05); border-left: 3px solid #3b82f6;">
+                            <strong style="color: #2563eb;">Modo de ejecución</strong>
+                            <p class="mb-0 mt-2" style="color: #64748b; font-size: 0.9rem;">`trigger` deja el cálculo en base de datos. `app` deja que Laravel calcule y luego guarda el resultado.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background: rgba(59, 130, 246, 0.05); border-left: 3px solid #3b82f6;">
+                            <strong style="color: #2563eb;">Variables</strong>
+                            <p class="mb-0 mt-2" style="color: #64748b; font-size: 0.9rem;">Cada letra debe tener nombre, origen y valor por defecto si aplica. El sistema las serializa en JSON.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background: rgba(59, 130, 246, 0.05); border-left: 3px solid #3b82f6;">
+                            <strong style="color: #2563eb;">Especies</strong>
+                            <p class="mb-0 mt-2" style="color: #64748b; font-size: 0.9rem;">Si una fórmula es específica de una especie, la relacionas aquí y el sistema la asigna automáticamente.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid rgba(16, 185, 129, 0.1); margin: 2rem 0;"></div>
+
                 <h6 class="fw-800 text-dark mb-3" style="font-size: 1rem;">Ejemplos de Fórmulas</h6>
                 <div class="row g-3">
                     <div class="col-md-6">

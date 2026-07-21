@@ -9,6 +9,7 @@ use App\Models\Arbol;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use App\Services\FormulaEngineService;
 
 class Estimacion1Controller extends Controller
 {
@@ -38,12 +39,11 @@ $estimaciones = Estimacion1::with(['tipoEstimacion', 'formula', 'arbol.especie',
     // CORRECCIÓN: Usar whereIn directamente con get()
     $tiposEstimacion = Tipo_Estimacion::whereIn('desc_estimacion', ['Volumen Maderable'])->get();
     
-   $formulas = Formula::whereIn('nom_formula', [
-    'Biomasa Pinus montezumae',
-    'Biomasa Quercus crassifolia',
-    'Biomasa Quercus rugosa',
-    'Biomasa Pinus pseudostrobus'
-])->get();
+$formulas = Formula::where('id_tipo_e', 2)
+    ->where('id_cat', 2)
+    ->where('estado_revision', 'aprobada')
+    ->orderBy('nom_formula')
+    ->get();
     
     $arboles = Arbol::with(['especie', 'parcela'])->get();
     
@@ -55,7 +55,9 @@ $estimaciones = Estimacion1::with(['tipoEstimacion', 'formula', 'arbol.especie',
      */
     public function getFormulasByTipo($tipoId)
     {
-        $formulas = Formula::where('id_tipo_e', $tipoId)->get();
+        $formulas = Formula::where('id_tipo_e', $tipoId)
+            ->where('estado_revision', 'aprobada')
+            ->get();
         return response()->json($formulas);
     }
 
@@ -71,16 +73,13 @@ $estimaciones = Estimacion1::with(['tipoEstimacion', 'formula', 'arbol.especie',
             return response()->json(['error' => 'Árbol no encontrado'], 404);
         }
 
-        // Mapeo especie → fórmula
-        $especieToFormula = [
-            1 => 8, // Pinus pseudostrobus
-            2 => 7, // Quercus rugosa
-            3 => 5, // Pinus montezumae
-            4 => 6, // Quercus crassifolia
-        ];
+        $formula = Formula::where('id_tipo_e', 2)
+            ->where('id_cat', 2)
+            ->where('estado_revision', 'aprobada')
+            ->whereJsonContains('especies_relacionadas', (int) $arbol->id_especie)
+            ->first();
 
-        $formulaId = $especieToFormula[$arbol->id_especie] ?? null;
-        $formula = $formulaId ? Formula::find($formulaId) : null;
+        $formulaId = $formula?->id_formula;
 
         return response()->json([
             'arbol' => $arbol,
@@ -109,7 +108,17 @@ $estimaciones = Estimacion1::with(['tipoEstimacion', 'formula', 'arbol.especie',
             'calculo' => 'nullable|numeric'
         ]);
 
-       
+       $formula = Formula::findOrFail($validatedData['id_formula']);
+       $arbol = Arbol::findOrFail($validatedData['id_arbol']);
+
+       if ($formula->modo_ejecucion === 'app') {
+           try {
+               $outputs = app(FormulaEngineService::class)->calculateForModel($formula, $arbol);
+               $validatedData = array_merge($validatedData, $outputs);
+           } catch (\InvalidArgumentException $exception) {
+               return back()->withInput()->with('error', $exception->getMessage());
+           }
+       }
 
         Estimacion1::create($validatedData);
 
@@ -138,6 +147,18 @@ $estimaciones = Estimacion1::with(['tipoEstimacion', 'formula', 'arbol.especie',
             'id_arbol' => 'required|exists:arboles,id_arbol',
             'calculo' => 'nullable|numeric'
         ]);
+        
+        $formula = Formula::findOrFail($validatedData['id_formula']);
+        $arbol = Arbol::findOrFail($validatedData['id_arbol']);
+
+        if ($formula->modo_ejecucion === 'app') {
+            try {
+                $outputs = app(FormulaEngineService::class)->calculateForModel($formula, $arbol);
+                $validatedData = array_merge($validatedData, $outputs);
+            } catch (\InvalidArgumentException $exception) {
+                return back()->withInput()->with('error', $exception->getMessage());
+            }
+        }
 
 
         $estimacion->update($validatedData);

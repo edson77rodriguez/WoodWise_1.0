@@ -21,7 +21,23 @@ class Formula extends Model
         'expresion',
         'id_tipo_e',
         'id_cat',
+        'modo_ejecucion',
+        'estado_revision',
+        'variables_schema',
+        'especies_relacionadas',
+        'resultado_tipo',
+        'biomasa_factor',
+        'carbono_factor',
+        'revision_notas',
+        'revision_at',
 
+    ];
+    protected $casts = [
+        'variables_schema' => 'array',
+        'especies_relacionadas' => 'array',
+        'biomasa_factor' => 'decimal:6',
+        'carbono_factor' => 'decimal:6',
+        'revision_at' => 'datetime',
     ];
    public function tipoEstimacion()
     {

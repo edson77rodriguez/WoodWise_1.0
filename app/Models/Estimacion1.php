@@ -15,6 +15,8 @@ class Estimacion1 extends Model
         'id_tipo_e',
         'id_formula',
         'calculo',
+        'biomasa',
+        'carbono',
         'id_arbol',
     ];
 

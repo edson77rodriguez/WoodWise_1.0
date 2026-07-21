@@ -131,7 +131,7 @@ class TecnicoDashboardController extends Controller
             'productores' => Productor::with('persona')->get(),
             'especies' => Especie::all(),
             'tiposEstimacion' => Tipo_Estimacion::all(),
-            'formulas' => Formula::all(),
+            'formulas' => Formula::where('estado_revision', 'aprobada')->orderBy('nom_formula')->get(),
         ];
 
         return view('T.index', $data);
@@ -176,7 +176,7 @@ class TecnicoDashboardController extends Controller
             'tecnico' => $this->tecnico,
             'especies' => Especie::all(),
             'tiposEstimacion' => Tipo_Estimacion::all(),
-            'formulas' => Formula::all(),
+            'formulas' => Formula::where('estado_revision', 'aprobada')->orderBy('nom_formula')->get(),
         ];
 
         return view('T.parcela-detalle', $data);
@@ -306,6 +306,17 @@ class TecnicoDashboardController extends Controller
             ->where('id_parcela', $validated['id_parcela'])
             ->firstOrFail();
 
+        $formula = Formula::findOrFail($validated['id_formula']);
+
+        if ($formula->modo_ejecucion === 'app') {
+            try {
+                $outputs = app(\App\Services\FormulaEngineService::class)->calculateForModel($formula, $troza);
+                $validated = array_merge($validated, $outputs);
+            } catch (\InvalidArgumentException $exception) {
+                return back()->withInput()->with('error', $exception->getMessage());
+            }
+        }
+
         try {
             Estimacion::create($validated);
             return back()->with('success', 'Estimación para troza creada exitosamente.');
@@ -338,6 +349,17 @@ class TecnicoDashboardController extends Controller
         $arbol = Arbol::where('id_arbol', $validated['id_arbol'])
             ->where('id_parcela', $validated['id_parcela'])
             ->firstOrFail();
+
+        $formula = Formula::findOrFail($validated['id_formula']);
+
+        if ($formula->modo_ejecucion === 'app') {
+            try {
+                $outputs = app(\App\Services\FormulaEngineService::class)->calculateForModel($formula, $arbol);
+                $validated = array_merge($validated, $outputs);
+            } catch (\InvalidArgumentException $exception) {
+                return back()->withInput()->with('error', $exception->getMessage());
+            }
+        }
 
         try {
             Estimacion1::create($validated);

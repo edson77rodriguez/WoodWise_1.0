@@ -247,31 +247,39 @@ document.addEventListener('DOMContentLoaded', function() {
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
     tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 
-    // Mapeo especie → fórmula (debe coincidir con el backend)
-    const especieToFormula = {
-        1: 8, // Pinus pseudostrobus
-        2: 7, // Quercus rugosa
-        3: 5, // Pinus montezumae
-        4: 6  // Quercus crassifolia
-    };
+    const formulaByArbolUrlTemplate = @json(route('estimaciones1.formulaPorArbol', ['arbolId' => '__ID__']));
+
+    function formulaUrlForArbol(arbolId) {
+        return formulaByArbolUrlTemplate.replace('__ID__', arbolId);
+    }
 
     // Función para auto-seleccionar fórmula
-    function autoSelectFormula(arbolSelect, formulaSelect) {
+    async function autoSelectFormula(arbolSelect, formulaSelect) {
         const selectedOption = arbolSelect.options[arbolSelect.selectedIndex];
-        const especieId = parseInt(selectedOption.dataset.especie);
-        const formulaId = especieToFormula[especieId];
+        const arbolId = arbolSelect.value;
 
-        if (formulaId) {
-            formulaSelect.value = formulaId;
-            
-            // Destacar visualmente que se auto-seleccionó
-            formulaSelect.style.borderColor = 'var(--succulent-medium)';
-            formulaSelect.style.boxShadow = '0 0 0 0.2rem rgba(124, 144, 112, 0.25)';
-            
-            setTimeout(() => {
-                formulaSelect.style.borderColor = '';
-                formulaSelect.style.boxShadow = '';
-            }, 1500);
+        if (!arbolId) {
+            return;
+        }
+
+        try {
+            const response = await fetch(formulaUrlForArbol(arbolId));
+            const data = await response.json();
+
+            if (data.formula_id) {
+                formulaSelect.value = data.formula_id;
+
+                // Destacar visualmente que se auto-seleccionó
+                formulaSelect.style.borderColor = 'var(--succulent-medium)';
+                formulaSelect.style.boxShadow = '0 0 0 0.2rem rgba(124, 144, 112, 0.25)';
+
+                setTimeout(() => {
+                    formulaSelect.style.borderColor = '';
+                    formulaSelect.style.boxShadow = '';
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('No se pudo auto-seleccionar la fórmula:', error);
         }
     }
 
