@@ -452,6 +452,16 @@ class BotController extends Controller
                         'title' => '🧮 Generar Estimaciones',
                         'description' => 'Procesa pendientes por parcela y alcance',
                     ],
+                        [
+                            'id' => 'menu_mis_estimaciones_trozas',
+                            'title' => '📑 Mis estimaciones (Trozas)',
+                            'description' => 'Ver resumen de estimaciones de trozas',
+                        ],
+                        [
+                            'id' => 'menu_mis_estimaciones_arboles',
+                            'title' => '📑 Mis estimaciones (Árboles)',
+                            'description' => 'Ver resumen de estimaciones de árboles',
+                        ],
                     [
                         'id' => 'btn_inventario',
                         'title' => '🪵 Ver Inventarios',
@@ -2627,6 +2637,8 @@ class BotController extends Controller
             'menu_generar_estimaciones', 'generar estimaciones' => $this->iniciarFlujoEstimaciones($request->input('telefono'), $parcelasIds),
             'menu_importar_excel', 'importar excel' => $this->iniciarFlujoImportacionExcel($request->input('telefono'), $parcelasIds),
             'menu_kit_campo' => $this->obtenerKitCampo($request),
+            'menu_mis_estimaciones_trozas' => $this->obtenerResumenEstimacionesTrozas($request),
+            'menu_mis_estimaciones_arboles' => $this->obtenerResumenEstimacionesArboles($request),
             'menu_impacto_ambiental', 'impacto ambiental' => $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, null),
             'menu_cotizacion_mercado', 'cotizacion mercado', 'cotización mercado' => $this->responderCotizacionMercado($persona, $rol, $parcelasIds),
             'cotizacion_no_pdf', 'cotizacion no pdf', 'ahora no', 'por ahora no', 'no pdf' => $this->obtenerMenuPrincipal($request),
