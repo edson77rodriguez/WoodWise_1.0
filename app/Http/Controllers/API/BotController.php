@@ -83,6 +83,14 @@ class BotController extends Controller
             return $this->iniciarFlujoImportacionExcel($telefono, $parcelasIds);
         }
 
+        if (in_array($mensajeClaveGlobal, ['menu_mis_estimaciones', 'mis estimaciones'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return $this->despacharBotonInteractivoDelMenu('menu_mis_estimaciones', $request, $persona, $rol, $parcelasIds);
+        }
+
         if (in_array($mensajeClaveGlobal, ['menu_impacto_ambiental', 'impacto ambiental'], true)) {
             if ($sesion) {
                 $sesion->delete();
@@ -453,14 +461,9 @@ class BotController extends Controller
                         'description' => 'Procesa pendientes por parcela y alcance',
                     ],
                         [
-                            'id' => 'menu_mis_estimaciones_trozas',
-                            'title' => '📑 Mis estimaciones (Trozas)',
-                            'description' => 'Ver resumen de estimaciones de trozas',
-                        ],
-                        [
-                            'id' => 'menu_mis_estimaciones_arboles',
-                            'title' => '📑 Mis estimaciones (Árboles)',
-                            'description' => 'Ver resumen de estimaciones de árboles',
+                            'id' => 'menu_mis_estimaciones',
+                            'title' => '📑 Mis estimaciones',
+                            'description' => 'Ver resumen de estimaciones (Trozas / Árboles)',
                         ],
                     [
                         'id' => 'btn_inventario',
@@ -2637,6 +2640,44 @@ class BotController extends Controller
             'menu_generar_estimaciones', 'generar estimaciones' => $this->iniciarFlujoEstimaciones($request->input('telefono'), $parcelasIds),
             'menu_importar_excel', 'importar excel' => $this->iniciarFlujoImportacionExcel($request->input('telefono'), $parcelasIds),
             'menu_kit_campo' => $this->obtenerKitCampo($request),
+            'menu_mis_estimaciones' => response()->json([
+                'ok' => true,
+                'tipo' => 'mis_estimaciones_submenu',
+                'mensaje' => 'Selecciona el tipo de estimaciones que deseas consultar:',
+                'interactive_payload' => [
+                    'type' => 'list',
+                    'header' => [
+                        'type' => 'text',
+                        'text' => '📑 Mis estimaciones',
+                    ],
+                    'body' => [
+                        'text' => 'Elige si quieres ver estimaciones de Trozas o de Árboles.',
+                    ],
+                    'footer' => [
+                        'text' => 'SIGMAD | Estimaciones',
+                    ],
+                    'action' => [
+                        'button' => 'Ver estimaciones',
+                        'sections' => [
+                            [
+                                'title' => 'Opciones',
+                                'rows' => [
+                                    [
+                                        'id' => 'menu_mis_estimaciones_trozas',
+                                        'title' => '🪵 Trozas',
+                                        'description' => 'Resumen por especie y totales',
+                                    ],
+                                    [
+                                        'id' => 'menu_mis_estimaciones_arboles',
+                                        'title' => '🌳 Árboles',
+                                        'description' => 'Resumen por especie y totales',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
             'menu_mis_estimaciones_trozas' => $this->obtenerResumenEstimacionesTrozas($request),
             'menu_mis_estimaciones_arboles' => $this->obtenerResumenEstimacionesArboles($request),
             'menu_impacto_ambiental', 'impacto ambiental' => $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, null),
