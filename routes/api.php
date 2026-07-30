@@ -5,7 +5,7 @@ use App\Http\Controllers\API\BotController;
 use App\Http\Controllers\CotizacionController;
 
 Route::prefix('v1/bot')
-    ->middleware(['botkey'])
+    ->middleware(['botkey', 'verify.hmac'])
     ->group(function () {
         Route::post('/verificar', [BotController::class, 'verificarUsuario']);
         Route::post('/menu-principal', [BotController::class, 'obtenerMenuPrincipal']);
