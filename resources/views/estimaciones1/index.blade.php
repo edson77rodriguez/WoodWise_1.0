@@ -86,8 +86,8 @@
                                 <p class="mb-0 text-muted"><i class="fas fa-seedling me-2"></i>{{ $estimacion->arbol->especie->nom_comun ?? 'N/A' }} / <i class="fas fa-draw-polygon ms-1 me-2"></i>{{ $estimacion->arbol->parcela->nom_parcela ?? 'N/A' }}</p>
                             </td>
                             <td>
-                                <p class="mb-1"><span class="data-label">Biomasa:</span> <span class="data-value">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 2) }} t</span></p>
-                                <p class="mb-0"><span class="data-label">Carbono:</span> <span class="data-value">{{ number_format($estimacion->carbono ?? 0, 2) }} t</span></p>
+                                <p class="mb-1"><span class="data-label">Biomasa:</span> <span class="data-value">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 10) }} t</span></p>
+                                <p class="mb-0"><span class="data-label">Carbono:</span> <span class="data-value">{{ number_format($estimacion->carbono ?? 0, 10) }} t</span></p>
                             </td>
                             <td class="pe-4 text-center">
                                 <div class="btn-group" role="group">
@@ -139,8 +139,8 @@
                     <div class="col-md-6">
                         <h6>Resultados Calculados</h6>
                         <hr class="mt-1">
-                        <p><strong class="text-muted">Biomasa:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 2) }} t</span></p>
-                        <p><strong class="text-muted">Carbono:</strong> <span class="fs-5 fw-bold text-primary">{{ number_format($estimacion->carbono ?? 0, 2) }} t</span></p>
+                        <p><strong class="text-muted">Biomasa:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 10) }} t</span></p>
+                        <p><strong class="text-muted">Carbono:</strong> <span class="fs-5 fw-bold text-primary">{{ number_format($estimacion->carbono ?? 0, 10) }} t</span></p>
                         <hr>
                         <p><strong class="text-muted">Especie:</strong> {{ $estimacion->arbol->especie->nom_comun ?? 'N/A' }}</p>
                         <p><strong class="text-muted">Parcela:</strong> {{ $estimacion->arbol->parcela->nom_parcela ?? 'N/A' }}</p>
@@ -253,12 +253,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return formulaByArbolUrlTemplate.replace('__ID__', arbolId);
     }
 
-    // Función para auto-seleccionar fórmula
     async function autoSelectFormula(arbolSelect, formulaSelect) {
-        const selectedOption = arbolSelect.options[arbolSelect.selectedIndex];
         const arbolId = arbolSelect.value;
 
         if (!arbolId) {
+            formulaSelect.value = '';
             return;
         }
 
@@ -277,32 +276,43 @@ document.addEventListener('DOMContentLoaded', function() {
                     formulaSelect.style.borderColor = '';
                     formulaSelect.style.boxShadow = '';
                 }, 1500);
+            } else {
+                formulaSelect.value = '';
             }
         } catch (error) {
             console.error('No se pudo auto-seleccionar la fórmula:', error);
+            formulaSelect.value = '';
+        }
+    }
+
+    function bindAutoFormulaSelect(arbolSelect, formulaSelect, modalElement) {
+        if (!arbolSelect || !formulaSelect) {
+            return;
+        }
+
+        const syncFormula = () => autoSelectFormula(arbolSelect, formulaSelect);
+
+        arbolSelect.addEventListener('change', syncFormula);
+
+        if (modalElement) {
+            modalElement.addEventListener('shown.bs.modal', syncFormula);
         }
     }
 
     // Auto-seleccionar fórmula en modal de CREAR
     const createArbolSelect = document.getElementById('createArbol');
     const createFormulaSelect = document.getElementById('createFormula');
+    const createModal = document.getElementById('createEstimacionModal');
 
-    if (createArbolSelect && createFormulaSelect) {
-        createArbolSelect.addEventListener('change', function() {
-            autoSelectFormula(this, createFormulaSelect);
-        });
-    }
+    bindAutoFormulaSelect(createArbolSelect, createFormulaSelect, createModal);
 
     // Auto-seleccionar fórmula en modales de EDITAR
     document.querySelectorAll('.edit-arbol-select').forEach(arbolSelect => {
         const formulaSelectId = arbolSelect.dataset.formulaSelect;
         const formulaSelect = document.getElementById(formulaSelectId);
+        const modalElement = arbolSelect.closest('.modal');
         
-        if (formulaSelect) {
-            arbolSelect.addEventListener('change', function() {
-                autoSelectFormula(this, formulaSelect);
-            });
-        }
+        bindAutoFormulaSelect(arbolSelect, formulaSelect, modalElement);
     });
 
     // Lógica de Eliminación

@@ -73,11 +73,7 @@ $formulas = Formula::where('id_tipo_e', 2)
             return response()->json(['error' => 'Árbol no encontrado'], 404);
         }
 
-        $formula = Formula::where('id_tipo_e', 2)
-            ->where('id_cat', 2)
-            ->where('estado_revision', 'aprobada')
-            ->whereJsonContains('especies_relacionadas', (int) $arbol->id_especie)
-            ->first();
+        $formula = $this->resolveFormulaForArbol($arbol->id_especie);
 
         $formulaId = $formula?->id_formula;
 
@@ -89,11 +85,36 @@ $formulas = Formula::where('id_tipo_e', 2)
         ]);
     }
 
+    private function resolveFormulaForArbol(int $idEspecie): ?Formula
+    {
+        $formulas = Formula::where('id_tipo_e', 2)
+            ->where('id_cat', 2)
+            ->where('estado_revision', 'aprobada')
+            ->orderBy('nom_formula')
+            ->get();
+
+        $formula = $formulas->first(function (Formula $formula) use ($idEspecie) {
+            $relacionadas = collect($formula->especies_relacionadas ?? [])->map(fn ($value) => (int) $value);
+
+            return $relacionadas->contains($idEspecie);
+        });
+
+        return $formula ?? $formulas->first();
+    }
+
     /**
      * Almacenar nueva estimación
      */
     public function store(Request $request)
     {
+        if (!$request->filled('id_formula') && $request->filled('id_arbol')) {
+            $formula = $this->resolveFormulaForArbol((int) $request->id_arbol);
+
+            if ($formula) {
+                $request->merge(['id_formula' => $formula->id_formula]);
+            }
+        }
+
         $validatedData = $request->validate([
             'id_tipo_e' => 'required|exists:tipo_estimaciones,id_tipo_e',
             'id_formula' => [
@@ -132,6 +153,14 @@ $formulas = Formula::where('id_tipo_e', 2)
     public function update(Request $request, $id)
     {
         $estimacion = Estimacion1::findOrFail($id);
+
+        if (!$request->filled('id_formula') && $request->filled('id_arbol')) {
+            $formula = $this->resolveFormulaForArbol((int) $request->id_arbol);
+
+            if ($formula) {
+                $request->merge(['id_formula' => $formula->id_formula]);
+            }
+        }
         
         $validatedData = $request->validate([
             'id_tipo_e' => 'required|exists:tipo_estimaciones,id_tipo_e',
