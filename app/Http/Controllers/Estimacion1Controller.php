@@ -46,8 +46,9 @@ $formulas = Formula::where('id_tipo_e', 2)
     ->get();
     
     $arboles = Arbol::with(['especie', 'parcela'])->get();
+    $formulaIdsBySpecies = $this->formulaIdsBySpecies();
     
-    return view('estimaciones1.index', compact('estimaciones', 'tiposEstimacion', 'formulas', 'arboles'));
+    return view('estimaciones1.index', compact('estimaciones', 'tiposEstimacion', 'formulas', 'arboles', 'formulaIdsBySpecies'));
 }
 
     /**
@@ -99,7 +100,27 @@ $formulas = Formula::where('id_tipo_e', 2)
             return $relacionadas->contains($idEspecie);
         });
 
+        if ($formula) {
+            return $formula;
+        }
+
+        $expectedFormulaId = $this->formulaIdsBySpecies()[$idEspecie] ?? null;
+
+        if ($expectedFormulaId) {
+            return $formulas->firstWhere('id_formula', $expectedFormulaId);
+        }
+
         return $formula ?? $formulas->first();
+    }
+
+    private function formulaIdsBySpecies(): array
+    {
+        return [
+            1 => 8, // Pinus pseudostrobus
+            2 => 7, // Quercus rugosa
+            3 => 5, // Pinus montezumae
+            4 => 6, // Quercus crassifolia
+        ];
     }
 
     /**
