@@ -198,12 +198,22 @@ BEGIN
         FROM arboles a
         WHERE a.id_arbol = NEW.id_arbol;
 
+        IF diametro_pecho_val IS NULL OR diametro_pecho_val <= 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El diámetro a la altura del pecho es requerido y debe ser mayor que cero';
+        END IF;
+
+        IF altura_total_val IS NULL OR altura_total_val <= 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'La altura total del árbol es requerida y debe ser mayor que cero';
+        END IF;
+
         SET d_cm = diametro_pecho_val * 100;
 
         IF NEW.id_formula IS NOT NULL THEN
             CASE NEW.id_formula
                 WHEN 5 THEN
-                    SET biomasa_kg = 0.006 * POW(d_cm, 3.038);
+                    SET biomasa_kg = 0.013 * POW(d_cm, 3.046);
                     SET densidad_basica = 575;
 
                 WHEN 6 THEN
@@ -211,11 +221,11 @@ BEGIN
                     SET densidad_basica = 720;
 
                 WHEN 7 THEN
-                    SET biomasa_kg = 0.0192 * POW(d_cm, 2.7569);
+                    SET biomasa_kg = 0.0402 * POW(d_cm, 2.757);
                     SET densidad_basica = 780;
 
                 WHEN 8 THEN
-                    SET biomasa_kg = 0.3553 * POW(d_cm, 2.2245);
+                    SET biomasa_kg = 0.35179 * POW(d_cm, 2);
                     SET densidad_basica = 570;
 
                 ELSE
