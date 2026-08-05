@@ -86,8 +86,8 @@
                                 <p class="mb-0 text-muted"><i class="fas fa-seedling me-2"></i>{{ $estimacion->arbol->especie->nom_comun ?? 'N/A' }} / <i class="fas fa-draw-polygon ms-1 me-2"></i>{{ $estimacion->arbol->parcela->nom_parcela ?? 'N/A' }}</p>
                             </td>
                             <td>
-                                <p class="mb-1"><span class="data-label">Biomasa:</span> <span class="data-value">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 2) }} kg</span></p>
-                                <p class="mb-0"><span class="data-label">Carbono:</span> <span class="data-value">{{ number_format($estimacion->carbono ?? 0, 2) }} kg</span></p>
+                                <p class="mb-1"><span class="data-label">Biomasa:</span> <span class="data-value">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 2) }} t</span></p>
+                                <p class="mb-0"><span class="data-label">Carbono:</span> <span class="data-value">{{ number_format($estimacion->carbono ?? 0, 2) }} t</span></p>
                             </td>
                             <td class="pe-4 text-center">
                                 <div class="btn-group" role="group">
@@ -139,8 +139,8 @@
                     <div class="col-md-6">
                         <h6>Resultados Calculados</h6>
                         <hr class="mt-1">
-                        <p><strong class="text-muted">Biomasa:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 2) }} kg</span></p>
-                        <p><strong class="text-muted">Carbono:</strong> <span class="fs-5 fw-bold text-primary">{{ number_format($estimacion->carbono ?? 0, 2) }} kg</span></p>
+                        <p><strong class="text-muted">Biomasa:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 2) }} t</span></p>
+                        <p><strong class="text-muted">Carbono:</strong> <span class="fs-5 fw-bold text-primary">{{ number_format($estimacion->carbono ?? 0, 2) }} t</span></p>
                         <hr>
                         <p><strong class="text-muted">Especie:</strong> {{ $estimacion->arbol->especie->nom_comun ?? 'N/A' }}</p>
                         <p><strong class="text-muted">Parcela:</strong> {{ $estimacion->arbol->parcela->nom_parcela ?? 'N/A' }}</p>

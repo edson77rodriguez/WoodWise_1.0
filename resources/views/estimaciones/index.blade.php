@@ -81,8 +81,8 @@
                             </td>
                             <td>
                                 <p class="mb-1"><span class="data-label">Cálculo:</span> <span class="data-value">{{ number_format($estimacion->calculo, 4) }} m³</span></p>
-                                <p class="mb-1"><span class="data-label">Biomasa:</span> <span class="data-value">{{ number_format($estimacion->biomasa, 2) }} kg</span></p>
-                                <p class="mb-0"><span class="data-label">Carbono:</span> <span class="data-value">{{ number_format($estimacion->carbono, 2) }} kg</span></p>
+                                <p class="mb-1"><span class="data-label">Biomasa:</span> <span class="data-value">{{ number_format($estimacion->biomasa, 2) }} t</span></p>
+                                <p class="mb-0"><span class="data-label">Carbono:</span> <span class="data-value">{{ number_format($estimacion->carbono, 2) }} t</span></p>
                             </td>
                             <td class="pe-4 text-center">
                                 <div class="btn-group" role="group">
@@ -135,8 +135,8 @@
                         <h6>Resultados Calculados</h6>
                         <hr class="mt-1">
                         <p><strong class="text-muted">Cálculo (Volumen):</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->calculo, 4) }} m³</span></p>
-                        <p><strong class="text-muted">Biomasa:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->biomasa, 2) }} kg</span></p>
-                        <p><strong class="text-muted">Carbono Almacenado:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->carbono, 2) }} kg</span></p>
+                        <p><strong class="text-muted">Biomasa:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->biomasa, 2) }} t</span></p>
+                        <p><strong class="text-muted">Carbono Almacenado:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->carbono, 2) }} t</span></p>
                     </div>
                 </div>
             </div>

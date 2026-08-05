@@ -257,12 +257,12 @@
             <td class="metric" style="border-left-color:#b45309;">
                 <div class="label">Biomasa total</div>
                 <div class="value">{{ number_format($impacto['totales']['biomasa_total'] ?? 0, 2) }}</div>
-                <div class="hint">kg estimados</div>
+                <div class="hint">t estimadas</div>
             </td>
             <td class="metric" style="border-left-color:#7c3aed;">
                 <div class="label">Carbono total</div>
                 <div class="value">{{ number_format($impacto['totales']['carbono_total'] ?? 0, 2) }}</div>
-                <div class="hint">kg retenidos</div>
+                <div class="hint">t retenidos</div>
             </td>
         </tr>
     </table>
