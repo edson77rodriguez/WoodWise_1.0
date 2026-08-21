@@ -115,7 +115,7 @@
                 <div class="p-3 border-top">{{ $estimaciones->appends(request()->query())->links('pagination::bootstrap-5') }}</div>
             @endif
         </div>
-    </div>
+    </div> 
 </div>
 
 @foreach ($estimaciones as $estimacion)
