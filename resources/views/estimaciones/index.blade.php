@@ -80,7 +80,7 @@
                                 <p class="mb-0 text-muted"><i class="fas fa-seedling me-2"></i>{{ $estimacion->troza->especie->nom_comun ?? 'N/A' }} / <i class="fas fa-draw-polygon ms-1 me-2"></i>{{ $estimacion->troza->parcela->nom_parcela ?? 'N/A' }}</p>
                             </td>
                             <td>
-                                <p class="mb-1"><span class="data-label">Cálculo:</span> <span class="data-value">{{ number_format($estimacion->calculo, 4) }} m³</span></p>
+                                <p class="mb-1"><span class="data-label">Volumen maderable:</span> <span class="data-value">{{ number_format($estimacion->calculo, 4) }} m³</span></p>
                                 <p class="mb-1"><span class="data-label">Biomasa:</span> <span class="data-value">{{ number_format($estimacion->biomasa, 2) }} t</span></p>
                                 <p class="mb-0"><span class="data-label">Carbono:</span> <span class="data-value">{{ number_format($estimacion->carbono, 2) }} t</span></p>
                             </td>
