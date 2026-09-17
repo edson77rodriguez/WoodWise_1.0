@@ -43,11 +43,11 @@
     <header class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ route('welcome') }}">
-                <img src="{{ asset('assets/images/SIGMAD.svg') }}" 
+                 <img src="{{ asset('assets/images/SIGMAD.svg') }}" 
                      alt="Logo SIGMAD"
-                     width="40"
-                     height="40"
-                     class="me-2 rounded-circle floating"
+                     width="56"
+                     height="56"
+                     class="me-2 rounded-circle"
                      loading="eager">
                 <span class="text-gradient">SIGMAD</span>
             </a>
