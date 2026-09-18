@@ -74,7 +74,7 @@ class WoodWiseMeasurementsSeeder extends Seeder
         ];
 
         foreach ($estimacionesTrozas as $est) {
-            // El trigger BEFORE INSERT (calcular_todo_estimacion) calcula calculo, biomasa, carbono
+            // El trigger BEFORE INSERT calcula calculo, biomasa, carbono automáticamente
             DB::table('estimaciones')->insert([
                 'id_tipo_e' => 1, // Volumen Maderable
                 'id_formula' => $est['id_formula'],
@@ -117,15 +117,9 @@ class WoodWiseMeasurementsSeeder extends Seeder
         }
 
         // =====================================================================
-        // ESTIMACIONES1 de árboles - Solo Volumen Maderable (id_tipo_e = 1)
-        // Fórmulas de biomasa según especie:
-        // - id_especie=1 (Pinus pseudostrobus) → id_formula=8: 0.3553 * D^2.2245
-        // - id_especie=2 (Quercus rugosa) → id_formula=7: 0.0192 * D^2.7569
-        // - id_especie=3 (Pinus montezumae) → id_formula=5: 0.006 * D^3.038
-        // - id_especie=4 (Quercus crassifolia) → id_formula=6: 0.283 * (D²*H)^0.807
-        // El calculo = biomasa, carbono = biomasa * 0.5
-        // =====================================================================
-        
+        // ESTIMACIONES1 de árboles - DESHABILITADAS
+        // Las estimaciones se crean desde la interfaz donde el TRIGGER calcula correctamente
+        /*
         // Mapeo especie → fórmula
         $especieToFormula = [
             1 => 8, // Pinus pseudostrobus
@@ -167,8 +161,9 @@ class WoodWiseMeasurementsSeeder extends Seeder
                 'updated_at' => $now,
             ]);
         }
+        */
 
-        $this->command?->info('Mediciones demo insertadas. Estimaciones de Volumen Maderable (biomasa) creadas para árboles.');
+        $this->command?->info('Mediciones demo insertadas. Trozas y árboles sin estimaciones.');
     }
 
     private function getParcelaIdByNombre(string $nombre): int

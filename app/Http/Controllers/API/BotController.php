@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\BotSesion;
 use App\Models\Persona;
 use App\Models\Parcela;
+use App\Models\PrecioMercado;
+use App\Models\Troza;
 use App\Models\Tecnico;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -19,17 +22,21 @@ class BotController extends Controller
     public const ESPERANDO_PARCELA_ESTIMACION = 'esperando_parcela_estimacion';
     public const ESPERANDO_ALCANCE_ESTIMACION = 'esperando_alcance_estimacion';
     public const ESPERANDO_FORMULA_ESTIMACION = 'esperando_formula_estimacion';
+    public const ESPERANDO_PARCELA_EXCEL = 'esperando_parcela_excel';
+    public const ESPERANDO_ARCHIVO_EXCEL = 'esperando_archivo_excel';
 
     public function asistenteGuiado(Request $request)
     {
+        $this->limpiarSesionesExcelExpiradas();
+
         $data = $request->validate([
             'telefono' => ['required', 'string', 'max:30'],
             'mensaje' => ['required', 'string'],
         ]);
 
-        $telefono = $data['telefono'];
+        $telefono = $this->normalizarTelefono($data['telefono']);
         $mensajeCrudo = trim($data['mensaje']);
-        $mensajeLimpio = mb_strtolower($mensajeCrudo);
+        $mensajeLimpio = $this->normalizarClaveMensajeBot($mensajeCrudo);
 
         $persona = $this->findPersonaByTelefono($telefono);
         if (!$persona) {
@@ -55,7 +62,7 @@ class BotController extends Controller
 
         $sesion = BotSesion::where('telefono', $telefono)->first();
 
-        if (in_array($mensajeLimpio, ['cancelar', 'salir', 'detener', 'abortar'], true)) {
+        if (in_array($mensajeLimpio, ['cancelar', 'salir', 'detener', 'abortar', 'cancel', 'salir del asistente'], true)) {
             if ($sesion) {
                 $sesion->delete();
             }
@@ -64,6 +71,61 @@ class BotController extends Controller
                 'ok' => true,
                 'mensaje' => "🛑 *Asistente cancelado.*\nTu progreso ha sido borrado. Puedes volver a iniciar desde el Menú Principal.",
             ], 200);
+        }
+
+        // Permite disparar importación de Excel desde cualquier estado.
+        $mensajeClaveGlobal = $this->normalizarClaveMensajeBot($mensajeCrudo);
+        if (in_array($mensajeClaveGlobal, ['menu_importar_excel', 'importar excel'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return $this->iniciarFlujoImportacionExcel($telefono, $parcelasIds);
+        }
+
+        if (in_array($mensajeClaveGlobal, ['menu_mis_estimaciones', 'mis estimaciones'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return $this->despacharBotonInteractivoDelMenu('menu_mis_estimaciones', $request, $persona, $rol, $parcelasIds);
+        }
+
+        if (in_array($mensajeClaveGlobal, ['menu_impacto_ambiental', 'impacto ambiental'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, null);
+        }
+
+        if (in_array($mensajeClaveGlobal, ['menu_cotizacion_mercado', 'cotizacion mercado', 'cotización mercado'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return $this->responderCotizacionMercado($persona, $rol, $parcelasIds);
+        }
+
+        if (in_array($mensajeClaveGlobal, ['cotizacion_no_pdf', 'cotizacion no pdf', 'ahora no', 'por ahora no', 'no pdf'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return $this->obtenerMenuPrincipal($request);
+        }
+
+        if (in_array($mensajeClaveGlobal, ['menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo'], true)) {
+            if ($sesion) {
+                $sesion->delete();
+            }
+
+            return $this->responderIngresoArchivo();
+        }
+
+        if ($sesion && in_array($sesion->estado, [self::ESPERANDO_PARCELA_EXCEL, self::ESPERANDO_ARCHIVO_EXCEL], true) && $this->esBotonInteractivoDelMenu($mensajeLimpio)) {
+            $sesion->delete();
+            return $this->despacharBotonInteractivoDelMenu($mensajeLimpio, $request, $persona, $rol, $parcelasIds);
         }
 
         // 3. LA MÁQUINA DE ESTADOS (El flujo conversacional)
@@ -77,8 +139,28 @@ class BotController extends Controller
             }
 
             // Disparador del flujo de generación de estimaciones pendientes.
-            if (in_array($mensajeClave, ['menu_generar_estimaciones', 'btn_estimaciones', 'generar estimaciones'], true)) {
+            if (in_array($mensajeClave, ['menu_generar_estimaciones', 'generar estimaciones'], true)) {
                 return $this->iniciarFlujoEstimaciones($telefono, $parcelasIds);
+            }
+
+            if (in_array($mensajeClave, ['menu_importar_excel', 'importar excel'], true)) {
+                return $this->iniciarFlujoImportacionExcel($telefono, $parcelasIds);
+            }
+
+            if (in_array($mensajeClave, ['menu_impacto_ambiental', 'impacto ambiental'], true)) {
+                return $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, null);
+            }
+
+            if (in_array($mensajeClave, ['menu_cotizacion_mercado', 'cotizacion mercado', 'cotización mercado'], true)) {
+                return $this->responderCotizacionMercado($persona, $rol, $parcelasIds);
+            }
+
+            if (in_array($mensajeClave, ['cotizacion_no_pdf', 'cotizacion no pdf', 'ahora no', 'por ahora no', 'no pdf'], true)) {
+                return $this->obtenerMenuPrincipal($request);
+            }
+
+            if (in_array($mensajeClave, ['menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo'], true)) {
+                return $this->responderIngresoArchivo();
             }
 
             // Si mandó cualquier texto random y no tiene plática activa, lo mandamos al menú.
@@ -113,10 +195,112 @@ class BotController extends Controller
             case self::ESPERANDO_FORMULA_ESTIMACION:
                 return $this->procesarFormulaEstimacion($sesion, $mensajeCrudo);
 
+            case self::ESPERANDO_PARCELA_EXCEL:
+                return $this->procesarParcelaExcel($sesion, $mensajeCrudo, $parcelasIds);
+
+            case self::ESPERANDO_ARCHIVO_EXCEL:
+                return $this->procesarArchivoExcel($sesion, $mensajeCrudo);
+
             default:
                 $sesion->delete();
                 return response()->json(['error' => 'Sesión corrupta. Por favor, inicia de nuevo.'], 500);
         }
+    }
+
+    public function recibirExcelWebhook(Request $request)
+    {
+        $this->limpiarSesionesExcelExpiradas();
+
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+            'excel_data' => ['required', 'array'],
+        ]);
+
+        $telefono = $this->normalizarTelefono($data['telefono']);
+        $persona = $this->findPersonaByTelefono($telefono);
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+        if ($rol !== 'Tecnico' && $rol !== 'Productor') {
+            return response()->json(['error' => 'Tu perfil no tiene acceso al Asistente.'], 403);
+        }
+
+        BotSesion::updateOrCreate(
+            ['telefono' => $telefono],
+            [
+                'estado' => self::ESPERANDO_PARCELA_EXCEL,
+                'payload' => [
+                    'excel_data' => $data['excel_data'],
+                ],
+            ]
+        );
+
+        $trozasCount = count($data['excel_data']['trozas'] ?? []);
+        $arbolesCount = count($data['excel_data']['arboles'] ?? []);
+        $totalCount = $trozasCount + $arbolesCount;
+
+        $parcelas = $parcelasIds->isEmpty()
+            ? collect()
+            : DB::table('parcelas')
+                ->whereIn('id_parcela', $parcelasIds)
+                ->select('id_parcela', 'nom_parcela')
+                ->orderBy('nom_parcela')
+                ->get();
+
+        $parcelasTexto = $parcelas->isEmpty()
+            ? 'No tienes parcelas asignadas.'
+            : $parcelas->map(fn ($p, $i) => ($i + 1) . '. ' . $p->nom_parcela)->implode("\n");
+
+        $interactivePayload = null;
+        if ($parcelas->isNotEmpty()) {
+            $rows = $parcelas->take(10)->map(function ($parcela) {
+                return [
+                    'id' => 'excel_parcela_' . $parcela->id_parcela,
+                    'title' => $parcela->nom_parcela,
+                    'description' => 'Seleccionar parcela',
+                ];
+            })->values()->all();
+
+            $interactivePayload = [
+                'type' => 'list',
+                'header' => [
+                    'type' => 'text',
+                    'text' => '📍 Selecciona la parcela',
+                ],
+                'body' => [
+                    'text' => "Se detectaron {$totalCount} registros.\nElige la parcela para continuar:",
+                ],
+                'footer' => [
+                    'text' => 'SIGMAD | Importacion Excel',
+                ],
+                'action' => [
+                    'button' => 'Ver parcelas',
+                    'sections' => [
+                        [
+                            'title' => 'Parcelas asignadas',
+                            'rows' => $rows,
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        return response()->json([
+            'ok' => true,
+            'estado' => self::ESPERANDO_PARCELA_EXCEL,
+            'resumen' => [
+                'trozas_recibidas' => $trozasCount,
+                'arboles_recibidos' => $arbolesCount,
+                'total_registros' => $totalCount,
+            ],
+            'parcelas' => $parcelas,
+            'interactive_payload' => $interactivePayload,
+            'mensaje' => "✅ Archivo recibido.\n\n"
+                . "📊 Registros detectados: {$totalCount} (🌲 {$arbolesCount} arboles, 🪵 {$trozasCount} trozas).\n\n"
+                . "¿A que parcela corresponden los datos? Responde con el nombre o numero:\n{$parcelasTexto}",
+        ], 200);
     }
 
     public function listarParcelas(Request $request)
@@ -254,6 +438,11 @@ class BotController extends Controller
                         'description' => 'Captura asistida paso a paso',
                     ],
                     [
+                        'id' => 'menu_importar_excel',
+                        'title' => '📥 Importar Excel',
+                        'description' => 'Carga inventario con plantilla oficial',
+                    ],
+                    [
                         'id' => 'menu_ingreso_archivo',
                         'title' => '📎 Subir Archivo',
                         'description' => 'Carga archivos Excel o PDF',
@@ -271,15 +460,25 @@ class BotController extends Controller
                         'title' => '🧮 Generar Estimaciones',
                         'description' => 'Procesa pendientes por parcela y alcance',
                     ],
+                        [
+                            'id' => 'menu_mis_estimaciones',
+                            'title' => '📑 Mis estimaciones',
+                            'description' => 'Ver resumen de estimaciones (Trozas / Árboles)',
+                        ],
                     [
                         'id' => 'btn_inventario',
                         'title' => '🪵 Ver Inventarios',
                         'description' => 'Consulta trozas y arboles registrados',
                     ],
                     [
-                        'id' => 'btn_estimaciones',
+                        'id' => 'menu_impacto_ambiental',
                         'title' => '🌍 Impacto Ambiental',
                         'description' => 'Biomasa, carbono y resultados clave',
+                    ],
+                    [
+                        'id' => 'menu_cotizacion_mercado',
+                        'title' => '💰 Cotizacion Mercado',
+                        'description' => 'Calcula valor estimado de trozas por especie',
                     ],
                 ],
             ];
@@ -391,6 +590,396 @@ class BotController extends Controller
             'total_trozas_inventario' => $totalGeneral,
             'desglose_por_especie' => $resumenTrozas,
         ], 200);
+    }
+
+    public function generarCotizacion(Request $request, int $id_parcela)
+    {
+        $data = $request->validate([
+            'telefono' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $cotizacion = $this->construirCotizacionMercado($id_parcela, $data['telefono'] ?? null);
+
+        if (!$cotizacion['ok']) {
+            return response()->json($cotizacion['response'], $cotizacion['status']);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $cotizacion['data'],
+            'mensaje_whatsapp' => $cotizacion['mensaje_whatsapp'],
+            'interactive_payload' => $cotizacion['interactive_payload'],
+            'pdf_endpoint_sugerido' => $cotizacion['pdf_endpoint_sugerido'],
+        ], 200);
+    }
+
+    public function descargarCotizacionMercadoPdf(Request $request, int $id_parcela)
+    {
+        $data = $request->validate([
+            'telefono' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $cotizacion = $this->construirCotizacionMercado($id_parcela, $data['telefono'] ?? null);
+
+        if (!$cotizacion['ok']) {
+            return response()->json($cotizacion['response'], $cotizacion['status']);
+        }
+
+        $logoBase64 = '';
+        $logoPath = public_path('assets/images/SIGMAD.svg');
+        if (file_exists($logoPath)) {
+            $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
+        }
+
+        $pdf = Pdf::loadView('pdf.cotizacion', [
+            'cotizacion' => $cotizacion['data'],
+            'logo' => $logoBase64,
+            'fecha' => Carbon::now()->format('d/m/Y H:i'),
+        ])->setPaper('A4', 'portrait');
+
+        $fileName = 'Cotizacion_' . Str::slug($cotizacion['data']['parcela']['nom_parcela'] ?? 'parcela') . '_' . now()->format('Y-m-d_His') . '.pdf';
+        $returnLink = (bool) $request->boolean('link') || $request->wantsJson();
+
+        if ($returnLink) {
+            $path = 'reportes/' . now()->format('Ymd') . '/cotizacion_' . now()->format('His') . '_' . Str::random(10) . '.pdf';
+            Storage::disk('public')->put($path, $pdf->output());
+
+            return response()->json([
+                'ok' => true,
+                'tipo' => 'pdf',
+                'file_name' => $fileName,
+                'path' => $path,
+                'url' => asset('storage/' . $path),
+                'mensaje' => 'PDF de cotizacion generado correctamente.',
+            ], 200);
+        }
+
+        return $pdf->stream($fileName);
+    }
+
+    private function construirCotizacionMercado(int $idParcela, ?string $telefono = null): array
+    {
+        $persona = null;
+        $rol = null;
+        $parcelasIds = collect();
+
+        if (!empty($telefono)) {
+            $persona = $this->findPersonaByTelefono($telefono);
+
+            if (!$persona) {
+                return [
+                    'ok' => false,
+                    'status' => 404,
+                    'response' => ['error' => 'Usuario no encontrado'],
+                ];
+            }
+
+            [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+            if ($rol === null) {
+                return [
+                    'ok' => false,
+                    'status' => 409,
+                    'response' => [
+                        'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                        'rol' => null,
+                        'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
+                    ],
+                ];
+            }
+
+            if (!$parcelasIds->contains($idParcela)) {
+                return [
+                    'ok' => false,
+                    'status' => 403,
+                    'response' => ['error' => 'No tienes acceso a esa parcela'],
+                ];
+            }
+        }
+
+        $parcela = Parcela::query()
+            ->select('id_parcela', 'nom_parcela', 'CP')
+            ->where('id_parcela', $idParcela)
+            ->first();
+
+        if (!$parcela) {
+            return [
+                'ok' => false,
+                'status' => 404,
+                'response' => ['error' => 'La parcela no existe.'],
+            ];
+        }
+
+        if (empty($parcela->CP)) {
+            return [
+                'ok' => false,
+                'status' => 422,
+                'response' => [
+                    'error' => 'La parcela no tiene CP registrado. No es posible determinar el estado de mercado.',
+                    'parcela' => [
+                        'id_parcela' => $parcela->id_parcela,
+                        'nom_parcela' => $parcela->nom_parcela,
+                    ],
+                ],
+            ];
+        }
+
+        $estadoMercado = $this->resolverEstadoMercadoDesdeCP((int) $parcela->CP);
+
+        if (!$estadoMercado) {
+            return [
+                'ok' => false,
+                'status' => 422,
+                'response' => [
+                    'error' => 'No fue posible determinar el estado de mercado a partir del CP de la parcela.',
+                    'parcela' => [
+                        'id_parcela' => $parcela->id_parcela,
+                        'nom_parcela' => $parcela->nom_parcela,
+                        'CP' => (int) $parcela->CP,
+                    ],
+                ],
+            ];
+        }
+
+        $estadoMercado = $this->normalizarEstadoMercado($estadoMercado);
+
+        $trozas = Troza::with('especie')
+            ->where('id_parcela', $idParcela)
+            ->get();
+
+        if ($trozas->isEmpty()) {
+            return [
+                'ok' => false,
+                'status' => 422,
+                'response' => [
+                    'error' => 'La parcela no tiene trozas registradas para cotizar.',
+                    'parcela' => [
+                        'id_parcela' => $parcela->id_parcela,
+                        'nom_parcela' => $parcela->nom_parcela,
+                        'CP' => (int) $parcela->CP,
+                        'estado_mercado' => $estadoMercado,
+                    ],
+                ],
+            ];
+        }
+
+        $resumenEspecies = [];
+        $volumenTotalGeneral = 0.0;
+        $valorTotalGeneral = 0.0;
+
+        foreach ($trozas as $troza) {
+            $nombreEspecie = $troza->especie?->nom_comun ?? 'Sin especie';
+            $claveEspecie = $this->normalizarClaveMercadoEspecie($nombreEspecie);
+
+            if (!isset($resumenEspecies[$claveEspecie])) {
+                $precioDB = PrecioMercado::query()
+                    ->where('especie', $claveEspecie)
+                    ->where('estado', $estadoMercado)
+                    ->first()
+                    ?? PrecioMercado::query()
+                        ->whereIn('especie', $this->variantesClaveMercadoEspecie($claveEspecie))
+                        ->where('estado', $estadoMercado)
+                        ->first()
+                    ?? PrecioMercado::query()
+                        ->where('especie', $claveEspecie)
+                        ->first();
+
+                if (!$precioDB) {
+                    return [
+                        'ok' => false,
+                        'status' => 422,
+                        'response' => [
+                            'error' => 'No existe un precio de mercado configurado para esta especie en el estado de la parcela.',
+                            'especie' => $this->etiquetaEspecieMercado($claveEspecie, $nombreEspecie),
+                            'estado_mercado' => $estadoMercado,
+                            'parcela' => [
+                                'id_parcela' => $parcela->id_parcela,
+                                'nom_parcela' => $parcela->nom_parcela,
+                                'CP' => (int) $parcela->CP,
+                            ],
+                        ],
+                    ];
+                }
+
+                $resumenEspecies[$claveEspecie] = [
+                    'especie' => $this->etiquetaEspecieMercado($claveEspecie, $nombreEspecie),
+                    'cantidad' => 0,
+                    'volumen_m3' => 0.0,
+                    'precio_unitario' => (float) ($precioDB->precio_por_m3 ?? 0),
+                    'moneda' => $precioDB->moneda ?? 'MXN',
+                    'fuente_precio' => $precioDB->fuente,
+                    'estado' => $precioDB->estado ?? $estadoMercado,
+                    'subtotal' => 0.0,
+                ];
+            }
+
+            $diametroMayor = (float) ($troza->diametro ?? 0);
+            $diametroMenor = (float) ($troza->diametro_otro_extremo ?? 0);
+            $diametroMedio = (float) ($troza->diametro_medio ?? 0);
+            $longitud = (float) ($troza->longitud ?? 0);
+
+            if ($diametroMayor > 0 && $diametroMenor > 0) {
+                $radio1 = $diametroMayor / 2;
+                $radio2 = $diametroMenor / 2;
+                $area1 = pi() * pow($radio1, 2);
+                $area2 = pi() * pow($radio2, 2);
+                $volumenTroza = (($area1 + $area2) / 2) * $longitud;
+            } elseif ($diametroMedio > 0) {
+                $radio = $diametroMedio / 2;
+                $volumenTroza = pi() * pow($radio, 2) * $longitud;
+            } else {
+                $volumenTroza = pi() * pow($diametroMayor / 2, 2) * $longitud;
+            }
+
+            $resumenEspecies[$claveEspecie]['cantidad'] += 1;
+            $resumenEspecies[$claveEspecie]['volumen_m3'] += $volumenTroza;
+            $volumenTotalGeneral += $volumenTroza;
+        }
+
+        foreach ($resumenEspecies as $claveEspecie => $datos) {
+            $subtotal = $datos['volumen_m3'] * $datos['precio_unitario'];
+            $resumenEspecies[$claveEspecie]['volumen_m3'] = round($datos['volumen_m3'], 4);
+            $resumenEspecies[$claveEspecie]['subtotal'] = round($subtotal, 2);
+            $valorTotalGeneral += $subtotal;
+        }
+
+        $data = [
+            'parcela_id' => $parcela->id_parcela,
+            'parcela' => [
+                'nom_parcela' => $parcela->nom_parcela,
+                'CP' => (int) $parcela->CP,
+            ],
+            'estado_mercado' => $estadoMercado,
+            'detalles_por_especie' => array_values($resumenEspecies),
+            'gran_total_trozas' => $trozas->count(),
+            'gran_total_volumen_m3' => round($volumenTotalGeneral, 4),
+            'gran_total_estimado_mxn' => round($valorTotalGeneral, 2),
+        ];
+
+        $mensajeWhatsapp = "📊 *Resumen de Cotizacion Estimada*\n\n📍 Parcela: *{$parcela->nom_parcela}*\n🏷️ Estado aplicado: *{$estadoMercado}*\n🪵 Total trozas: *" . $trozas->count() . "*\n📦 Volumen total: *" . round($volumenTotalGeneral, 4) . " m³*\n\n💰 *Valor Estimado Comercial:* $" . number_format(round($valorTotalGeneral, 2), 2, '.', ',') . " MXN\n\n_Puedo generarte el PDF formal o regresar al menu principal._";
+
+        return [
+            'ok' => true,
+            'data' => $data,
+            'mensaje_whatsapp' => $mensajeWhatsapp,
+            'interactive_payload' => [
+                'type' => 'button',
+                'body' => [
+                    'text' => '¿Qué deseas hacer ahora?',
+                ],
+                'footer' => [
+                    'text' => 'SIGMAD | Cotizacion comercial',
+                ],
+                'action' => [
+                    'buttons' => [
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => 'cotizacion_generar_pdf|' . $parcela->id_parcela,
+                                'title' => '📄 Generar PDF',
+                            ],
+                        ],
+                        [
+                            'type' => 'reply',
+                            'reply' => [
+                                'id' => 'cotizacion_no_pdf|' . $parcela->id_parcela,
+                                'title' => 'Ahora no',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'pdf_endpoint_sugerido' => '/api/v1/bot/cotizacion/parcela/' . $parcela->id_parcela . '/pdf?telefono=' . ($telefono ?? ''),
+        ];
+    }
+
+    private function resolverEstadoMercadoDesdeCP(int $cp): ?string
+    {
+        if ($cp <= 0) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(8)
+                ->acceptJson()
+                ->get("https://api.zippopotam.us/MX/{$cp}");
+
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $estado = data_get($response->json(), 'places.0.state');
+
+            if (!is_string($estado) || trim($estado) === '') {
+                return null;
+            }
+
+            return $this->normalizarEstadoMercado($estado);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function normalizarEstadoMercado(string $estado): string
+    {
+        $texto = Str::of($estado)
+            ->lower()
+            ->ascii()
+            ->trim()
+            ->toString();
+
+        if ($texto === '') {
+            return 'Estado de Mexico';
+        }
+
+        if (str_contains($texto, 'estado de mexico') || str_contains($texto, 'edomex') || str_contains($texto, 'mexico')) {
+            return 'Estado de Mexico';
+        }
+
+        return ucwords($texto);
+    }
+
+    private function normalizarClaveMercadoEspecie(string $nombreEspecie): string
+    {
+        $texto = Str::of($nombreEspecie)
+            ->lower()
+            ->ascii()
+            ->trim()
+            ->toString();
+
+        if (str_contains($texto, 'pino') || str_contains($texto, 'pinus')) {
+            return 'pino';
+        }
+
+        if (str_contains($texto, 'encino') || str_contains($texto, 'quercus')) {
+            return 'encino';
+        }
+
+        if (str_contains($texto, 'oyamel') || str_contains($texto, 'abies')) {
+            return 'oyamel';
+        }
+
+        return $texto;
+    }
+
+    private function variantesClaveMercadoEspecie(string $claveEspecie): array
+    {
+        return match ($claveEspecie) {
+            'pino' => ['pino', 'pino lacio', 'pino moctezuma', 'pinus pseudostrobus', 'pinus montezumae'],
+            'encino' => ['encino', 'encino blanco', 'encino avellano', 'quercus rugosa', 'quercus crassifolia'],
+            'oyamel' => ['oyamel', 'abies', 'oyamel blanco'],
+            default => [$claveEspecie],
+        };
+    }
+
+    private function etiquetaEspecieMercado(string $claveEspecie, string $nombreEspecie): string
+    {
+        return match ($claveEspecie) {
+            'pino' => 'Pino',
+            'encino' => 'Encino',
+            'oyamel' => 'Oyamel',
+            default => $nombreEspecie,
+        };
     }
 
     public function obtenerResumenEstimacionesTrozas(Request $request)
@@ -550,6 +1139,50 @@ class BotController extends Controller
         ], 200);
     }
 
+    public function obtenerImpactoAmbiental(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+            'id_parcela' => ['nullable'],
+        ]);
+
+        $telefono = $this->normalizarTelefono($data['telefono']);
+        $persona = $this->findPersonaByTelefono($telefono);
+
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+        if ($rol === null) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => null,
+                'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
+            ], 409);
+        }
+
+        if ($parcelasIds->isEmpty()) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => $rol,
+                'mensaje' => 'No tienes parcelas asignadas actualmente.',
+            ], 200);
+        }
+
+        [$idParcela, $selectorError] = $this->parseParcelaSelector($request->input('id_parcela'));
+        if ($selectorError) {
+            return response()->json(['error' => $selectorError], 422);
+        }
+
+        if ($idParcela !== null && !$parcelasIds->contains($idParcela)) {
+            return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+        }
+
+        return $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, $idParcela);
+    }
+
     public function obtenerResumenEstimacionesArboles(Request $request)
     {
         $data = $request->validate([
@@ -685,6 +1318,620 @@ class BotController extends Controller
         ], 200);
     }
 
+    private function responderImpactoAmbiental($persona, string $rol, $parcelasIds, ?int $idParcela)
+    {
+        if ($rol !== 'Tecnico' && $rol !== 'Productor') {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'Tu perfil no tiene acceso al Impacto Ambiental.',
+            ], 403);
+        }
+
+        if ($parcelasIds->isEmpty()) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'No tienes parcelas asignadas actualmente.',
+            ], 200);
+        }
+
+        $impacto = $this->construirImpactoAmbiental($persona, $rol, $parcelasIds, $idParcela);
+
+        $interactivePayload = [
+            'type' => 'button',
+            'body' => [
+                'text' => "✨ ¿Quieres llevar este diagnóstico a un PDF formal?\n\nPuedo generar un informe listo para compartir o archivar.",
+            ],
+            'footer' => [
+                'text' => 'SIGMAD | Reporte ambiental',
+            ],
+            'action' => [
+                'buttons' => [
+                    [
+                        'type' => 'reply',
+                        'reply' => [
+                            'id' => 'impacto_generar_pdf',
+                            'title' => '📄 Generar PDF',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        return response()->json([
+            'ok' => true,
+            'tipo' => 'impacto_ambiental',
+            'mensaje' => $impacto['resumen_whatsapp'],
+            'interactive_payload' => $interactivePayload,
+            'reporte' => $impacto,
+        ], 200);
+    }
+
+    private function responderCotizacionMercado($persona, string $rol, $parcelasIds)
+    {
+        if ($rol !== 'Tecnico' && $rol !== 'Productor') {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'Tu perfil no tiene acceso a la Cotizacion de Mercado.',
+            ], 403);
+        }
+
+        if ($parcelasIds->isEmpty()) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'No tienes parcelas asignadas actualmente.',
+            ], 200);
+        }
+
+        $nombreUsuario = trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? ''));
+
+        $parcelas = DB::table('parcelas')
+            ->whereIn('id_parcela', $parcelasIds)
+            ->select('id_parcela', 'nom_parcela')
+            ->orderBy('nom_parcela')
+            ->get();
+
+        $rows = $parcelas->take(10)->map(function ($parcela) {
+            return [
+                'id' => 'cotizacion_parcela_' . $parcela->id_parcela,
+                'title' => $parcela->nom_parcela,
+                'description' => 'Generar cotizacion de mercado',
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'ok' => true,
+            'tipo' => 'cotizacion_mercado',
+            'usuario' => $nombreUsuario,
+            'rol' => $rol,
+            'total_parcelas' => $parcelas->count(),
+            'parcelas' => $parcelas,
+            'mensaje' => "💰 *Cotizacion de Mercado SIGMAD*\n\nSelecciona la parcela para calcular el valor estimado de tus trozas.",
+            'interactive_payload' => [
+                'type' => 'list',
+                'header' => [
+                    'type' => 'text',
+                    'text' => '💰 Cotizacion de Mercado',
+                ],
+                'body' => [
+                    'text' => 'Elige la parcela para generar la cotizacion comercial. Cuando te entregue el resultado podras pedir el PDF formal o regresar al menu.',
+                ],
+                'footer' => [
+                    'text' => 'SIGMAD | Cotizacion comercial',
+                ],
+                'action' => [
+                    'button' => 'Ver parcelas',
+                    'sections' => [
+                        [
+                            'title' => 'Parcelas disponibles',
+                            'rows' => $rows,
+                        ],
+                    ],
+                ],
+            ],
+            'endpoint_sugerido' => 'GET /api/v1/bot/cotizacion/parcela/{id_parcela}?telefono=' . $persona->telefono,
+        ], 200);
+    }
+
+    private function construirImpactoAmbiental($persona, string $rol, $parcelasIds, ?int $idParcela): array
+    {
+        $parcelasFiltro = $idParcela !== null ? collect([$idParcela]) : $parcelasIds;
+        $nombreUsuario = trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? ''));
+        $modo = $idParcela !== null ? 'una' : 'todas';
+
+        $totalesArboles = DB::table('arboles')
+            ->whereIn('id_parcela', $parcelasFiltro)
+            ->selectRaw('count(*) as total_arboles, avg(altura_total) as altura_promedio, avg(diametro_pecho) as dap_promedio')
+            ->first();
+
+        $totalesTrozas = DB::table('trozas')
+            ->whereIn('id_parcela', $parcelasFiltro)
+            ->selectRaw('count(*) as total_trozas, avg(diametro) as diametro_promedio, avg(longitud) as longitud_promedio')
+            ->first();
+
+        $estimacionesArboles = DB::table('estimaciones1 as e1')
+            ->join('arboles as a', 'e1.id_arbol', '=', 'a.id_arbol')
+            ->whereIn('a.id_parcela', $parcelasFiltro)
+            ->selectRaw('count(*) as total_estimaciones, sum(e1.calculo) as sum_calculo, sum(e1.biomasa) as sum_biomasa, sum(e1.carbono) as sum_carbono')
+            ->first();
+
+        $estimacionesTrozas = DB::table('estimaciones as e')
+            ->join('trozas as t', 'e.id_troza', '=', 't.id_troza')
+            ->whereIn('t.id_parcela', $parcelasFiltro)
+            ->selectRaw('count(*) as total_estimaciones, sum(e.calculo) as sum_calculo, sum(e.biomasa) as sum_biomasa, sum(e.carbono) as sum_carbono')
+            ->first();
+
+        $especiesArboles = DB::table('arboles')
+            ->join('especies', 'arboles.id_especie', '=', 'especies.id_especie')
+            ->whereIn('arboles.id_parcela', $parcelasFiltro)
+            ->select('especies.nom_comun as especie', DB::raw('count(*) as total'))
+            ->groupBy('especies.nom_comun')
+            ->orderByDesc('total')
+            ->get();
+
+        $especiesTrozas = DB::table('trozas')
+            ->join('especies', 'trozas.id_especie', '=', 'especies.id_especie')
+            ->whereIn('trozas.id_parcela', $parcelasFiltro)
+            ->select('especies.nom_comun as especie', DB::raw('count(*) as total'))
+            ->groupBy('especies.nom_comun')
+            ->orderByDesc('total')
+            ->get();
+
+        $totalArboles = (int) ($totalesArboles->total_arboles ?? 0);
+        $totalTrozas = (int) ($totalesTrozas->total_trozas ?? 0);
+        $totalEstimacionesArboles = (int) ($estimacionesArboles->total_estimaciones ?? 0);
+        $totalEstimacionesTrozas = (int) ($estimacionesTrozas->total_estimaciones ?? 0);
+
+        $biomasaTotal = (float) (($estimacionesArboles->sum_biomasa ?? 0) + ($estimacionesTrozas->sum_biomasa ?? 0));
+        $carbonoTotal = (float) (($estimacionesArboles->sum_carbono ?? 0) + ($estimacionesTrozas->sum_carbono ?? 0));
+        $calculoTotal = (float) (($estimacionesArboles->sum_calculo ?? 0) + ($estimacionesTrozas->sum_calculo ?? 0));
+
+        $coberturaArboles = $totalArboles > 0 ? round(($totalEstimacionesArboles / $totalArboles) * 100, 1) : 0.0;
+        $coberturaTrozas = $totalTrozas > 0 ? round(($totalEstimacionesTrozas / $totalTrozas) * 100, 1) : 0.0;
+
+        $especieDominanteArboles = $especiesArboles->first();
+        $especieDominanteTrozas = $especiesTrozas->first();
+
+        $diversidadArboles = $especiesArboles->count();
+        $diversidadTrozas = $especiesTrozas->count();
+
+        $alertas = [];
+        $recomendaciones = [];
+
+        if ($totalArboles === 0 && $totalTrozas === 0) {
+            $alertas[] = 'No hay inventario suficiente para emitir un diagnóstico ambiental confiable.';
+            $recomendaciones[] = 'Registra primero árboles o trozas en la parcela para obtener métricas útiles.';
+        }
+
+        if ($totalArboles > 0 && $coberturaArboles < 80) {
+            $alertas[] = "Cobertura de estimación en árboles todavía incompleta ({$coberturaArboles}%).";
+            $recomendaciones[] = 'Completa las estimaciones de árboles pendientes para mejorar el diagnóstico.';
+        }
+
+        if ($totalTrozas > 0 && $coberturaTrozas < 80) {
+            $alertas[] = "Cobertura de estimación en trozas todavía incompleta ({$coberturaTrozas}%).";
+            $recomendaciones[] = 'Completa las estimaciones de trozas pendientes para afinar biomasa y carbono.';
+        }
+
+        if ($especieDominanteArboles && $totalArboles > 0) {
+            $dominancia = round(((int) $especieDominanteArboles->total / $totalArboles) * 100, 1);
+            if ($dominancia >= 70) {
+                $alertas[] = "Alta dominancia de una sola especie en árboles ({$dominancia}%).";
+            }
+        }
+
+        if ($especieDominanteTrozas && $totalTrozas > 0) {
+            $dominancia = round(((int) $especieDominanteTrozas->total / $totalTrozas) * 100, 1);
+            if ($dominancia >= 70) {
+                $alertas[] = "Alta dominancia de una sola especie en trozas ({$dominancia}%).";
+            }
+        }
+
+        $recomendacionesDetalladas = $this->construirRecomendacionesImpactoAmbiental([
+            'total_arboles' => $totalArboles,
+            'total_trozas' => $totalTrozas,
+            'total_estimaciones_arboles' => $totalEstimacionesArboles,
+            'total_estimaciones_trozas' => $totalEstimacionesTrozas,
+            'cobertura_arboles' => $coberturaArboles,
+            'cobertura_trozas' => $coberturaTrozas,
+            'biomasa_total' => $biomasaTotal,
+            'carbono_total' => $carbonoTotal,
+            'diversidad_arboles' => $diversidadArboles,
+            'diversidad_trozas' => $diversidadTrozas,
+            'especie_dominante_arboles' => $especieDominanteArboles?->especie,
+            'especie_dominante_trozas' => $especieDominanteTrozas?->especie,
+            'dominancia_arboles' => isset($especieDominanteArboles) && $totalArboles > 0
+                ? round(((int) $especieDominanteArboles->total / $totalArboles) * 100, 1)
+                : null,
+            'dominancia_trozas' => isset($especieDominanteTrozas) && $totalTrozas > 0
+                ? round(((int) $especieDominanteTrozas->total / $totalTrozas) * 100, 1)
+                : null,
+        ]);
+
+        $recomendaciones = array_map(
+            fn (array $recomendacion) => (string) $recomendacion['recommendation'],
+            $recomendacionesDetalladas
+        );
+
+        if (empty($recomendaciones)) {
+            $recomendaciones = ['La información disponible luce consistente. Puedes generar un reporte formal para seguimiento.'];
+            $recomendacionesDetalladas = [[
+                'title' => 'Generar seguimiento básico',
+                'priority' => 'media',
+                'metric_impacted' => 'datos insuficientes',
+                'recommendation' => $recomendaciones[0],
+                'actions' => [
+                    'Repetir el diagnóstico en la siguiente actualización de BD.',
+                    'Comparar resultados contra inventarios anteriores.',
+                    'Usar el reporte PDF para documentar el avance.',
+                ],
+            ]];
+        }
+
+        $nivel = 'verde';
+        if ($totalArboles === 0 && $totalTrozas === 0) {
+            $nivel = 'rojo';
+        } elseif (($totalArboles > 0 && $coberturaArboles < 80) || ($totalTrozas > 0 && $coberturaTrozas < 80) || count($alertas) >= 2) {
+            $nivel = 'amarillo';
+        }
+
+        $alcanceTexto = $modo === 'una' ? 'una parcela' : 'todas tus parcelas';
+
+        $analisisIA = $this->generarAnalisisImpactoAmbientalConIA([
+            'usuario' => $nombreUsuario,
+            'rol' => $rol,
+            'filtro' => [
+                'id_parcela' => $idParcela,
+                'modo' => $modo,
+            ],
+            'totales' => [
+                'arboles' => $totalArboles,
+                'trozas' => $totalTrozas,
+                'estimaciones_arboles' => $totalEstimacionesArboles,
+                'estimaciones_trozas' => $totalEstimacionesTrozas,
+                'biomasa_total' => $biomasaTotal,
+                'carbono_total' => $carbonoTotal,
+                'calculo_total' => $calculoTotal,
+            ],
+            'cobertura' => [
+                'arboles' => $coberturaArboles,
+                'trozas' => $coberturaTrozas,
+            ],
+            'especies_dominantes' => [
+                'arboles' => $especiesArboles->take(5)->values(),
+                'trozas' => $especiesTrozas->take(5)->values(),
+            ],
+            'alertas' => $alertas,
+            'recomendaciones' => $recomendaciones,
+            'recomendaciones_detalladas' => $recomendacionesDetalladas,
+            'nivel' => $nivel,
+        ]);
+
+        $resumenWhatsapp = "🌿 *Diagnóstico de Impacto Ambiental*\n"
+            . "Usuario: *{$nombreUsuario}*\n"
+            . "Alcance: *{$alcanceTexto}*\n\n"
+            . "📊 *Métricas principales*\n"
+            . "• Árboles registrados: *{$totalArboles}*\n"
+            . "• Trozas registradas: *{$totalTrozas}*\n"
+            . "• Estimaciones en árboles: *{$totalEstimacionesArboles}* ({$coberturaArboles}% cobertura)\n"
+            . "• Estimaciones en trozas: *{$totalEstimacionesTrozas}* ({$coberturaTrozas}% cobertura)\n"
+            . "• Biomasa total estimada: *" . number_format($biomasaTotal, 2, '.', ',') . "*\n"
+            . "• Carbono total estimado: *" . number_format($carbonoTotal, 2, '.', ',') . "*\n"
+            . "• Cálculo total: *" . number_format($calculoTotal, 2, '.', ',') . "*\n\n"
+            . "🔎 *Lectura rápida*\n"
+            . "• Árbol dominante: *" . ($especieDominanteArboles?->especie ?? 'Sin datos') . "*\n"
+            . "• Troza dominante: *" . ($especieDominanteTrozas?->especie ?? 'Sin datos') . "*\n"
+            . "• Diversidad observada: *{$diversidadArboles}* especies en árboles y *{$diversidadTrozas}* en trozas\n\n"
+            . "🧭 *Estado general:* *" . strtoupper($nivel) . "*\n";
+
+        if (!empty($alertas)) {
+            $resumenWhatsapp .= "\n⚠️ *Alertas*\n• " . implode("\n• ", $alertas) . "\n";
+        }
+
+        if (!empty($analisisIA['resumen'])) {
+            $resumenWhatsapp .= "\n🧠 *Lectura inteligente*\n{$analisisIA['resumen']}\n";
+        }
+
+        $resumenWhatsapp .= $this->formatearRecomendacionesParaWhatsapp($recomendacionesDetalladas);
+
+        $resumenWhatsapp .= "\n✅ *Qué puedes hacer ahora*\n• Completa los registros faltantes\n• Revisa si conviene diversificar especies\n• Genera un reporte PDF para seguimiento técnico\n• Si quieres, puedo convertir esto en un texto más ejecutivo o más técnico\n";
+
+        return [
+            'ok' => true,
+            'usuario' => $nombreUsuario,
+            'rol' => $rol,
+            'filtro' => [
+                'id_parcela' => $idParcela,
+                'modo' => $modo,
+            ],
+            'totales' => [
+                'arboles' => $totalArboles,
+                'trozas' => $totalTrozas,
+                'estimaciones_arboles' => $totalEstimacionesArboles,
+                'estimaciones_trozas' => $totalEstimacionesTrozas,
+                'biomasa_total' => $biomasaTotal,
+                'carbono_total' => $carbonoTotal,
+                'calculo_total' => $calculoTotal,
+            ],
+            'cobertura' => [
+                'arboles' => $coberturaArboles,
+                'trozas' => $coberturaTrozas,
+            ],
+            'especies_dominantes' => [
+                'arboles' => $especiesArboles->take(5)->values(),
+                'trozas' => $especiesTrozas->take(5)->values(),
+            ],
+            'alertas' => $alertas,
+            'recomendaciones' => $recomendaciones,
+            'recomendaciones_detalladas' => $recomendacionesDetalladas,
+            'nivel' => $nivel,
+            'analisis_ia' => $analisisIA,
+            'resumen_whatsapp' => $resumenWhatsapp,
+        ];
+    }
+
+    private function construirRecomendacionesImpactoAmbiental(array $contexto): array
+    {
+        $recomendaciones = [];
+
+        $totalArboles = (int) ($contexto['total_arboles'] ?? 0);
+        $totalTrozas = (int) ($contexto['total_trozas'] ?? 0);
+        $coberturaArboles = (float) ($contexto['cobertura_arboles'] ?? 0);
+        $coberturaTrozas = (float) ($contexto['cobertura_trozas'] ?? 0);
+        $biomasaTotal = (float) ($contexto['biomasa_total'] ?? 0);
+        $carbonoTotal = (float) ($contexto['carbono_total'] ?? 0);
+        $diversidadArboles = (int) ($contexto['diversidad_arboles'] ?? 0);
+        $diversidadTrozas = (int) ($contexto['diversidad_trozas'] ?? 0);
+        $especieDominanteArboles = (string) ($contexto['especie_dominante_arboles'] ?? 'Sin datos');
+        $especieDominanteTrozas = (string) ($contexto['especie_dominante_trozas'] ?? 'Sin datos');
+        $dominanciaArboles = $contexto['dominancia_arboles'] ?? null;
+        $dominanciaTrozas = $contexto['dominancia_trozas'] ?? null;
+
+        $agregar = function (string $title, string $priority, string $metric, string $recommendation, array $actions) use (&$recomendaciones): void {
+            $recomendaciones[] = [
+                'title' => $title,
+                'priority' => $priority,
+                'metric_impacted' => $metric,
+                'recommendation' => $recommendation,
+                'actions' => $actions,
+            ];
+        };
+
+        if ($totalArboles === 0 && $totalTrozas === 0) {
+            $agregar(
+                'Iniciar inventario base',
+                'alta',
+                'inventario total',
+                'No hay inventario suficiente para emitir un diagnóstico ambiental confiable. Primero registra árboles o trozas para obtener métricas útiles y comparables.',
+                [
+                    'Capturar registros de árboles y trozas en la parcela.',
+                    'Verificar que las especies estén bien clasificadas en BD.',
+                    'Volver a ejecutar el diagnóstico después de cargar datos.',
+                ]
+            );
+        }
+
+        if ($totalArboles > 0 && $coberturaArboles < 80) {
+            $agregar(
+                'Completar estimaciones de árboles',
+                'alta',
+                "cobertura de árboles ({$coberturaArboles}%)",
+                'La cobertura de estimación en árboles sigue incompleta. Conviene terminar los registros pendientes para mejorar la lectura del rodal.',
+                [
+                    'Revisar los árboles que faltan por estimar.',
+                    'Completar biomasa y carbono en la base de datos.',
+                    'Validar que no existan registros duplicados o inconclusos.',
+                ]
+            );
+        }
+
+        if ($totalTrozas > 0 && $coberturaTrozas < 80) {
+            $agregar(
+                'Completar estimaciones de trozas',
+                'alta',
+                "cobertura de trozas ({$coberturaTrozas}%)",
+                'La cobertura de estimación en trozas todavía es baja. Completarla ayuda a estabilizar biomasa, carbono y el diagnóstico general.',
+                [
+                    'Revisar las trozas pendientes en la parcela.',
+                    'Cerrar los cálculos faltantes en la tabla estimaciones.',
+                    'Confirmar que la especie y la fórmula usadas sean correctas.',
+                ]
+            );
+        }
+
+        if ($dominanciaArboles !== null && $dominanciaArboles >= 70) {
+            $agregar(
+                'Diversificar el arbolado',
+                'media',
+                "dominancia de árboles ({$dominanciaArboles}%)",
+                "La especie dominante en árboles es {$especieDominanteArboles}. La composición está muy concentrada y conviene diversificar para reducir vulnerabilidad.",
+                [
+                    'Revisar si conviene enriquecer con otras especies nativas.',
+                    'Proteger individuos semilleros de especies distintas.',
+                    'Evitar que el manejo simplifique demasiado la composición.',
+                ]
+            );
+        }
+
+        if ($dominanciaTrozas !== null && $dominanciaTrozas >= 70) {
+            $agregar(
+                'Balancear el aprovechamiento',
+                'media',
+                "dominancia de trozas ({$dominanciaTrozas}%)",
+                "La especie dominante en trozas es {$especieDominanteTrozas}. El aprovechamiento está muy concentrado y conviene revisar la distribución por especie.",
+                [
+                    'Analizar si la extracción está concentrada en una sola especie.',
+                    'Distribuir mejor el aprovechamiento entre especies disponibles.',
+                    'Mantener un seguimiento más frecuente del inventario.',
+                ]
+            );
+        }
+
+        if ($biomasaTotal > 0 && $carbonoTotal > 0) {
+            $agregar(
+                'Mantener monitoreo periódico',
+                'media',
+                'biomasa y carbono',
+                'La biomasa y el carbono ya permiten seguir la evolución del rodal. Mantener mediciones periódicas ayuda a detectar cambios a tiempo.',
+                [
+                    'Programar nuevos inventarios con periodicidad fija.',
+                    'Comparar biomasa y carbono entre consultas.',
+                    'Usar el historial para evaluar tendencias de manejo.',
+                ]
+            );
+        }
+
+        if ($diversidadArboles >= 2 || $diversidadTrozas >= 2) {
+            $agregar(
+                'Conservar la diversidad detectada',
+                'media',
+                'diversidad de especies',
+                'La base de datos muestra más de una especie en el inventario. Eso es bueno para resiliencia y conviene conservarlo con manejo selectivo.',
+                [
+                    'Evitar uniformar la parcela con una sola especie.',
+                    'Mantener árboles semilleros y ejemplares sanos.',
+                    'Monitorear la regeneración natural de las especies presentes.',
+                ]
+            );
+        }
+
+        if ($totalArboles > 0 && $totalTrozas > 0 && $totalTrozas > $totalArboles) {
+            $agregar(
+                'Equilibrar trozas y arbolado vivo',
+                'alta',
+                'relación trozas/arboles',
+                'Hay más trozas registradas que árboles en pie. Conviene revisar que el aprovechamiento no vaya por delante de la regeneración.',
+                [
+                    'Revisar la intensidad de corte por zona.',
+                    'Asegurar reposición natural o plantación de apoyo.',
+                    'Conservar arbolado vivo suficiente para sostener la estructura del bosque.',
+                ]
+            );
+        }
+
+        if (empty($recomendaciones)) {
+            $agregar(
+                'Generar seguimiento básico',
+                'media',
+                'datos suficientes',
+                'La información disponible luce consistente. Puedes generar un reporte formal para seguimiento técnico.',
+                [
+                    'Repetir el diagnóstico en la siguiente actualización de BD.',
+                    'Comparar resultados contra inventarios anteriores.',
+                    'Usar el reporte PDF para documentar el avance.',
+                ]
+            );
+        }
+
+        return $recomendaciones;
+    }
+
+    private function formatearRecomendacionesParaWhatsapp(array $recomendaciones, int $limite = 4): string
+    {
+        if (empty($recomendaciones)) {
+            return '';
+        }
+
+        $salida = "\n🧩 *Recomendaciones*\n";
+
+        foreach (array_slice($recomendaciones, 0, $limite) as $recomendacion) {
+            $titulo = (string) ($recomendacion['title'] ?? 'Recomendación');
+            $prioridad = (string) ($recomendacion['priority'] ?? 'media');
+            $texto = (string) ($recomendacion['recommendation'] ?? '');
+
+            $salida .= "• *{$titulo}* ({$prioridad}): {$texto}\n";
+        }
+
+        if (count($recomendaciones) > $limite) {
+            $salida .= "• Hay más recomendaciones en el reporte PDF.\n";
+        }
+
+        return $salida;
+    }
+
+    private function generarAnalisisImpactoAmbientalConIA(array $reporte): array
+    {
+        $apiKey = (string) config('services.openai.key', '');
+        $model = (string) config('services.openai.model', 'gpt-5.4-mini');
+        $baseUrl = rtrim((string) config('services.openai.base_url', 'https://api.openai.com/v1'), '/');
+
+        if (trim($apiKey) === '') {
+            return [
+                'provider' => null,
+                'model' => null,
+                'resumen' => '',
+                'recomendacion' => '',
+                'raw' => null,
+            ];
+        }
+
+        $prompt = [
+            'system' => 'Eres un analista forestal experto. Debes interpretar únicamente los datos entregados, sin inventar cifras. Responde en español claro, profesional y breve. Devuelve SOLO JSON válido con claves: resumen, que_pasa, que_hacer, riesgo, nota.',
+            'user' => json_encode($reporte, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        ];
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->acceptJson()
+                ->timeout(25)
+                ->post($baseUrl . '/chat/completions', [
+                    'model' => $model,
+                    'temperature' => 0.2,
+                    'messages' => [
+                        ['role' => 'system', 'content' => $prompt['system']],
+                        ['role' => 'user', 'content' => $prompt['user']],
+                    ],
+                ]);
+
+            if (!$response->successful()) {
+                return [
+                    'provider' => 'openai',
+                    'model' => $model,
+                    'resumen' => '',
+                    'recomendacion' => '',
+                    'raw' => [
+                        'error' => 'http_error',
+                        'status' => $response->status(),
+                    ],
+                ];
+            }
+
+            $content = (string) data_get($response->json(), 'choices.0.message.content', '');
+            $decoded = json_decode($content, true);
+
+            if (!is_array($decoded)) {
+                return [
+                    'provider' => 'openai',
+                    'model' => $model,
+                    'resumen' => trim($content),
+                    'recomendacion' => '',
+                    'raw' => $response->json(),
+                ];
+            }
+
+            return [
+                'provider' => 'openai',
+                'model' => $model,
+                'resumen' => trim((string) ($decoded['resumen'] ?? '')),
+                'que_pasa' => trim((string) ($decoded['que_pasa'] ?? '')),
+                'que_hacer' => trim((string) ($decoded['que_hacer'] ?? '')),
+                'riesgo' => trim((string) ($decoded['riesgo'] ?? '')),
+                'nota' => trim((string) ($decoded['nota'] ?? '')),
+                'recomendacion' => trim((string) ($decoded['que_hacer'] ?? '')),
+                'raw' => $response->json(),
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'provider' => 'openai',
+                'model' => $model,
+                'resumen' => '',
+                'recomendacion' => '',
+                'raw' => [
+                    'error' => 'exception',
+                ],
+            ];
+        }
+    }
+
     private function iniciarAsistente(string $telefono, $parcelasIds)
     {
         BotSesion::where('telefono', $telefono)->delete();
@@ -737,6 +1984,291 @@ class BotController extends Controller
             'ok' => true,
             'estado' => self::ESPERANDO_PARCELA_ESTIMACION,
             'mensaje' => "🧮 *Generar Estimaciones*\n\nSelecciona la parcela para procesar pendientes.\n\n📍 *Tus Parcelas:*\n{$parcelasTexto}\n\n👉 Escribe el nombre de la parcela.",
+        ], 200);
+    }
+
+    private function iniciarFlujoImportacionExcel(string $telefono, $parcelasIds)
+    {
+        $sesion = BotSesion::where('telefono', $telefono)->first();
+        $payload = $sesion?->payload ?? [];
+        $especiesTexto = $this->obtenerEspeciesDisponiblesTexto();
+
+        BotSesion::updateOrCreate(
+            ['telefono' => $telefono],
+            [
+                'estado' => self::ESPERANDO_PARCELA_EXCEL,
+                'payload' => $payload,
+            ]
+        );
+
+        return response()->json([
+            'tipo' => 'envio_documento',
+            'url' => 'https://woodwise.me/storage/plantillas/plantilla_inventario_sigmad.xlsx',
+            'mensaje' => "📄 *Plantilla Oficial de Inventario SIGMAD*\n\n"
+                . "📚 *Especies disponibles (actualizado):*\n{$especiesTexto}\n\n"
+                . "¿A que parcela pertenecen los datos que vas a subir?",
+        ], 200);
+    }
+
+    private function responderIngresoArchivo()
+    {
+        return response()->json([
+            'ok' => true,
+            'mensaje' => "📎 *Ingreso por archivo listo*\n\n"
+                . "Solo envía tu archivo directamente en este chat y yo lo detectaré automáticamente para registrarlo.\n\n"
+                . "✨ Puedes mandar imágenes, PDF o documentos compatibles sin llenar formularios.\n"
+                . "En cuanto llegue el archivo, el sistema lo tomará y comenzará el registro de forma inteligente y segura.",
+        ], 200);
+    }
+
+    private function procesarParcelaExcel(BotSesion $sesion, string $mensajeCrudo, $parcelasIds)
+    {
+        $selector = trim($mensajeCrudo);
+        if (str_starts_with($selector, 'excel_parcela_')) {
+            $selector = substr($selector, strlen('excel_parcela_'));
+        }
+        $busquedaNormalizada = $this->normalizarTextoBusqueda($selector);
+
+        $parcela = DB::table('parcelas')
+            ->whereIn('id_parcela', $parcelasIds)
+            ->select('id_parcela', 'nom_parcela')
+            ->get()
+            ->first(function ($row) use ($selector, $busquedaNormalizada) {
+                if (is_numeric($selector) && (int) $selector > 0 && (int) $row->id_parcela === (int) $selector) {
+                    return true;
+                }
+
+                if ($busquedaNormalizada === '') {
+                    return false;
+                }
+
+                $nombreNormalizado = $this->normalizarTextoBusqueda((string) $row->nom_parcela);
+
+                return $nombreNormalizado === $busquedaNormalizada
+                    || str_contains($nombreNormalizado, $busquedaNormalizada)
+                    || str_contains($busquedaNormalizada, $nombreNormalizado);
+            });
+
+        if (!$parcela) {
+            return response()->json([
+                'ok' => false,
+                'estado' => self::ESPERANDO_PARCELA_EXCEL,
+                'mensaje' => "❌ No tienes asignada una parcela con ese nombre. Por favor, verifica e intenta de nuevo:",
+            ], 200);
+        }
+
+        $payload = $sesion->payload ?? [];
+        if (isset($payload['excel_data'])) {
+            return $this->finalizarCargaExcel($sesion, $parcela, $payload['excel_data']);
+        }
+        $payload['id_parcela'] = (int) $parcela->id_parcela;
+        $payload['nom_parcela'] = (string) $parcela->nom_parcela;
+
+        $sesion->update([
+            'estado' => self::ESPERANDO_ARCHIVO_EXCEL,
+            'payload' => $payload,
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'estado' => self::ESPERANDO_ARCHIVO_EXCEL,
+            'mensaje' => "✅ Parcela *{$parcela->nom_parcela}* seleccionada con exito.\n\n"
+                . "Por favor, adjunta tu archivo de Excel (.xlsx) o CSV completado en este chat para iniciar la carga masiva.",
+        ], 200);
+    }
+
+    private function procesarArchivoExcel(BotSesion $sesion, string $mensajeCrudo)
+    {
+        return response()->json([
+            'ok' => false,
+            'estado' => self::ESPERANDO_ARCHIVO_EXCEL,
+            'mensaje' => "⚠️ Por favor, sube el archivo de Excel (.xlsx o .csv). Si deseas cancelar el proceso, escribe *Menu*.",
+        ], 200);
+    }
+
+    private function finalizarCargaExcel(BotSesion $sesion, object $parcela, array $excelData)
+    {
+        $trozas = collect($excelData['trozas'] ?? [])->map(function ($row) {
+            if (!isset($row['especie_texto']) && isset($row['especie'])) {
+                $row['especie_texto'] = $row['especie'];
+            }
+
+            if (!isset($row['diametro']) && isset($row['diametro_1'])) {
+                $row['diametro'] = $row['diametro_1'];
+            }
+
+            if (!isset($row['diametro_otro_extremo']) && isset($row['diametro_2'])) {
+                $row['diametro_otro_extremo'] = $row['diametro_2'];
+            }
+
+            return $row;
+        });
+
+        $arboles = collect($excelData['arboles'] ?? [])->map(function ($row) {
+            if (!isset($row['especie_texto']) && isset($row['especie'])) {
+                $row['especie_texto'] = $row['especie'];
+            }
+
+            return $row;
+        });
+
+        if ($trozas->isEmpty() && $arboles->isEmpty()) {
+            return response()->json([
+                'ok' => false,
+                'estado' => self::ESPERANDO_PARCELA_EXCEL,
+                'mensaje' => '⚠️ No se detectaron filas validas en el archivo. Por favor, revisa la plantilla e intenta de nuevo.',
+            ], 200);
+        }
+
+        $idParcela = (int) $parcela->id_parcela;
+        $nomParcela = (string) $parcela->nom_parcela;
+
+        $resultado = DB::transaction(function () use ($trozas, $arboles, $idParcela) {
+            $receiptTrozas = [];
+            $receiptArboles = [];
+
+            foreach ($trozas->values() as $idx => $row) {
+                try {
+                    [$idEspecie, $especieNombre, $especieError] = $this->resolveEspecieForRow($row['id_especie'] ?? null, $row['especie_texto'] ?? null);
+                    if ($especieError) {
+                        $receiptTrozas[] = [
+                            'ok' => false,
+                            'fila' => $idx + 1,
+                            'error' => $especieError,
+                        ];
+                        continue;
+                    }
+
+                    $densidad = $row['densidad'] ?? null;
+                    if ($densidad === null || (float) $densidad <= 0) {
+                        $receiptTrozas[] = [
+                            'ok' => false,
+                            'fila' => $idx + 1,
+                            'error' => 'Densidad invalida o faltante.',
+                        ];
+                        continue;
+                    }
+
+                    $payload = [
+                        'id_especie' => (int) $idEspecie,
+                        'id_parcela' => $idParcela,
+                        'diametro' => (float) ($row['diametro'] ?? 0),
+                        'longitud' => (float) ($row['longitud'] ?? 0),
+                        'densidad' => (float) $densidad,
+                        'diametro_otro_extremo' => isset($row['diametro_otro_extremo']) ? (float) $row['diametro_otro_extremo'] : null,
+                        'diametro_medio' => isset($row['diametro_medio']) ? (float) $row['diametro_medio'] : null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    if ($payload['diametro'] <= 0 || $payload['longitud'] <= 0) {
+                        $receiptTrozas[] = [
+                            'ok' => false,
+                            'fila' => $idx + 1,
+                            'error' => 'Diametro o longitud invalidos.',
+                        ];
+                        continue;
+                    }
+
+                    $idTroza = (int) DB::table('trozas')->insertGetId($payload);
+
+                    $receiptTrozas[] = [
+                        'ok' => true,
+                        'fila' => $idx + 1,
+                        'id_troza' => $idTroza,
+                        'especie' => $especieNombre,
+                    ];
+                } catch (\Throwable $e) {
+                    $receiptTrozas[] = [
+                        'ok' => false,
+                        'fila' => $idx + 1,
+                        'error' => 'Error inesperado al insertar la troza.',
+                    ];
+                }
+            }
+
+            foreach ($arboles->values() as $idx => $row) {
+                try {
+                    [$idEspecie, $especieNombre, $especieError] = $this->resolveEspecieForRow($row['id_especie'] ?? null, $row['especie_texto'] ?? null);
+                    if ($especieError) {
+                        $receiptArboles[] = [
+                            'ok' => false,
+                            'fila' => $idx + 1,
+                            'error' => $especieError,
+                        ];
+                        continue;
+                    }
+
+                    $payload = [
+                        'id_especie' => (int) $idEspecie,
+                        'id_parcela' => $idParcela,
+                        'altura_total' => (float) ($row['altura_total'] ?? 0),
+                        'diametro_pecho' => (float) ($row['diametro_pecho'] ?? 0),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    if ($payload['altura_total'] <= 0 || $payload['diametro_pecho'] <= 0) {
+                        $receiptArboles[] = [
+                            'ok' => false,
+                            'fila' => $idx + 1,
+                            'error' => 'Altura o DAP invalidos.',
+                        ];
+                        continue;
+                    }
+
+                    $idArbol = (int) DB::table('arboles')->insertGetId($payload);
+
+                    $receiptArboles[] = [
+                        'ok' => true,
+                        'fila' => $idx + 1,
+                        'id_arbol' => $idArbol,
+                        'especie' => $especieNombre,
+                    ];
+                } catch (\Throwable $e) {
+                    $receiptArboles[] = [
+                        'ok' => false,
+                        'fila' => $idx + 1,
+                        'error' => 'Error inesperado al insertar el arbol.',
+                    ];
+                }
+            }
+
+            return [
+                'trozas' => $receiptTrozas,
+                'arboles' => $receiptArboles,
+            ];
+        });
+
+        $sesion->delete();
+
+        $trozasOk = collect($resultado['trozas'])->where('ok', true)->count();
+        $trozasErr = collect($resultado['trozas'])->where('ok', false)->count();
+        $arbolesOk = collect($resultado['arboles'])->where('ok', true)->count();
+        $arbolesErr = collect($resultado['arboles'])->where('ok', false)->count();
+
+        $errores = collect($resultado['trozas'])
+            ->concat($resultado['arboles'])
+            ->where('ok', false)
+            ->values();
+
+        $detalleErrores = '';
+        if ($errores->isNotEmpty()) {
+            $detalleErrores = "\n\n⚠️ Errores detectados (resumen):";
+            $resumen = $errores->groupBy('error')->map->count();
+            foreach ($resumen as $motivo => $total) {
+                $detalleErrores .= "\n• {$motivo}: {$total} fila(s)";
+            }
+        }
+
+        return response()->json([
+            'ok' => true,
+            'estado' => 'FINALIZADO',
+            'mensaje' => "✅ Carga finalizada para *{$nomParcela}*.\n\n"
+                . "🌲 Arboles guardados: *{$arbolesOk}* (errores: {$arbolesErr})\n"
+                . "🪵 Trozas guardadas: *{$trozasOk}* (errores: {$trozasErr})"
+                . $detalleErrores,
+            'detalle' => $resultado,
         ], 200);
     }
 
@@ -1085,6 +2617,102 @@ class BotController extends Controller
             ->toString();
 
         return $limpio;
+    }
+
+    private function normalizarClaveMensajeBot(string $mensaje): string
+    {
+        return Str::of($mensaje)
+            ->lower()
+            ->ascii()
+            ->trim(" \t\n\r\0\x0B\"'`*_-.,;:!¡¿?()")
+            ->toString();
+    }
+
+    private function esBotonInteractivoDelMenu(string $mensaje): bool
+    {
+        return Str::startsWith($mensaje, ['menu_', 'btn_']);
+    }
+
+    private function despacharBotonInteractivoDelMenu(string $mensaje, Request $request, Persona $persona, string $rol, $parcelasIds)
+    {
+        return match ($mensaje) {
+            'menu_ingreso_guiado', 'ingreso_guiado', 'asistente_guiado' => $this->iniciarAsistente($request->input('telefono'), $parcelasIds),
+            'menu_generar_estimaciones', 'generar estimaciones' => $this->iniciarFlujoEstimaciones($request->input('telefono'), $parcelasIds),
+            'menu_importar_excel', 'importar excel' => $this->iniciarFlujoImportacionExcel($request->input('telefono'), $parcelasIds),
+            'menu_kit_campo' => $this->obtenerKitCampo($request),
+            'menu_mis_estimaciones' => response()->json([
+                'ok' => true,
+                'tipo' => 'mis_estimaciones_submenu',
+                'mensaje' => 'Selecciona el tipo de estimaciones que deseas consultar:',
+                'interactive_payload' => [
+                    'type' => 'list',
+                    'header' => [
+                        'type' => 'text',
+                        'text' => '📑 Mis estimaciones',
+                    ],
+                    'body' => [
+                        'text' => 'Elige si quieres ver estimaciones de Trozas o de Árboles.',
+                    ],
+                    'footer' => [
+                        'text' => 'SIGMAD | Estimaciones',
+                    ],
+                    'action' => [
+                        'button' => 'Ver estimaciones',
+                        'sections' => [
+                            [
+                                'title' => 'Opciones',
+                                'rows' => [
+                                    [
+                                        'id' => 'menu_mis_estimaciones_trozas',
+                                        'title' => '🪵 Trozas',
+                                        'description' => 'Resumen por especie y totales',
+                                    ],
+                                    [
+                                        'id' => 'menu_mis_estimaciones_arboles',
+                                        'title' => '🌳 Árboles',
+                                        'description' => 'Resumen por especie y totales',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+            'menu_mis_estimaciones_trozas' => $this->obtenerResumenEstimacionesTrozas($request),
+            'menu_mis_estimaciones_arboles' => $this->obtenerResumenEstimacionesArboles($request),
+            'menu_impacto_ambiental', 'impacto ambiental' => $this->responderImpactoAmbiental($persona, $rol, $parcelasIds, null),
+            'menu_cotizacion_mercado', 'cotizacion mercado', 'cotización mercado' => $this->responderCotizacionMercado($persona, $rol, $parcelasIds),
+            'cotizacion_no_pdf', 'cotizacion no pdf', 'ahora no', 'por ahora no', 'no pdf' => $this->obtenerMenuPrincipal($request),
+            'menu_ingreso_archivo', 'subir archivo', 'carga archivo', 'cargar archivo' => $this->responderIngresoArchivo(),
+            'btn_reporte' => $this->descargarInformeBotPdf($request),
+            'btn_inventario' => $this->obtenerMenuPrincipal($request),
+            default => $this->obtenerMenuPrincipal($request),
+        };
+    }
+
+    private function limpiarSesionesExcelExpiradas(): void
+    {
+        $limite = now()->subHours(24);
+
+        BotSesion::whereIn('estado', [self::ESPERANDO_PARCELA_EXCEL, self::ESPERANDO_ARCHIVO_EXCEL])
+            ->where('updated_at', '<', $limite)
+            ->delete();
+    }
+
+    private function normalizarTelefono(string $telefono): string
+    {
+        $raw = trim($telefono);
+        $digits = preg_replace('/\D+/', '', $raw);
+
+        if ($digits === '') {
+            return $raw;
+        }
+
+        if (str_starts_with($digits, '521')) {
+            return '52' . substr($digits, 3);
+        }
+
+        return $digits;
     }
 
     private function obtenerEspeciesDisponiblesTexto(int $max = 20): string
@@ -1803,6 +3431,131 @@ class BotController extends Controller
         return response()->json([
             'error' => 'Rol no soportado para este endpoint',
         ], 422);
+    }
+
+    public function descargarInformeBotPdf(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+        ]);
+
+        $returnLink = (bool) $request->boolean('link') || $request->wantsJson();
+
+        $persona = $this->findPersonaByTelefono($data['telefono']);
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        $rol = $persona->rol?->nom_rol;
+        if (!$rol) {
+            return response()->json(['error' => 'Rol no asignado'], 409);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+        $parcelas = $parcelasIds->isEmpty()
+            ? collect()
+            : DB::table('parcelas')
+                ->whereIn('id_parcela', $parcelasIds)
+                ->select('id_parcela', 'nom_parcela', 'ubicacion')
+                ->orderBy('nom_parcela')
+                ->get();
+
+        $especies = DB::table('especies')
+            ->select('nom_comun', 'nom_cientifico')
+            ->orderBy('nom_comun')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.bot-informe', [
+            'persona' => $persona,
+            'rol' => $rol,
+            'parcelas' => $parcelas,
+            'especies' => $especies,
+            'fecha' => Carbon::now()->format('d/m/Y H:i'),
+        ])->setPaper('letter', 'portrait');
+
+        $fileName = 'Informe_SIGMAD_' . now()->format('Y-m-d_His') . '.pdf';
+
+        if ($returnLink) {
+            $path = 'reportes/' . now()->format('Ymd') . '/informe_' . now()->format('His') . '_' . Str::random(10) . '.pdf';
+            Storage::disk('public')->put($path, $pdf->output());
+
+            return response()->json([
+                'ok' => true,
+                'tipo' => 'pdf',
+                'file_name' => $fileName,
+                'path' => $path,
+                'url' => asset('storage/' . $path),
+                'expires_suggestion' => 'Recomendacion: borrar reportes antiguos (ej. >24h) con un cron.',
+            ], 200);
+        }
+
+        return $pdf->stream($fileName);
+    }
+
+    public function descargarImpactoAmbientalPdf(Request $request)
+    {
+        $data = $request->validate([
+            'telefono' => ['required', 'string', 'max:30'],
+            'id_parcela' => ['nullable'],
+        ]);
+
+        $returnLink = (bool) $request->boolean('link') || $request->wantsJson();
+
+        $telefono = $this->normalizarTelefono($data['telefono']);
+        $persona = $this->findPersonaByTelefono($telefono);
+
+        if (!$persona) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        [$rol, $parcelasIds] = $this->resolveParcelasIdsForPersona($persona);
+
+        if ($rol === null) {
+            return response()->json([
+                'usuario' => trim(($persona->nom ?? '') . ' ' . ($persona->ap ?? '') . ' ' . ($persona->am ?? '')),
+                'rol' => null,
+                'mensaje' => 'Tu cuenta no tiene rol o perfil válido.',
+            ], 409);
+        }
+
+        [$idParcela, $selectorError] = $this->parseParcelaSelector($data['id_parcela'] ?? null);
+        if ($selectorError) {
+            return response()->json(['error' => $selectorError], 422);
+        }
+
+        if ($idParcela !== null && !$parcelasIds->contains($idParcela)) {
+            return response()->json(['error' => 'No tienes acceso a esa parcela'], 403);
+        }
+
+        $impacto = $this->construirImpactoAmbiental($persona, $rol, $parcelasIds, $idParcela);
+
+        $viewData = [
+            'impacto' => $impacto,
+            'persona' => $persona,
+            'fecha' => Carbon::now()->format('d/m/Y H:i'),
+        ];
+
+        $pdf = Pdf::loadView('pdf.impacto', $viewData)->setPaper('A4', 'portrait');
+
+        $fileName = 'Impacto_Ambiental_' . ($idParcela ? 'parcela_' . $idParcela . '_' : '') . now()->format('Y-m-d_His') . '.pdf';
+
+        if ($returnLink) {
+            $safeName = $idParcela ? ('impacto_parcela_' . $idParcela) : 'impacto_general';
+            $path = 'reportes/' . now()->format('Ymd') . '/' . $safeName . '_' . now()->format('His') . '_' . Str::random(8) . '.pdf';
+            Storage::disk('public')->put($path, $pdf->output());
+
+            return response()->json([
+                'ok' => true,
+                'tipo' => 'pdf',
+                'file_name' => $fileName,
+                'path' => $path,
+                'url' => asset('storage/' . $path),
+                'expires_suggestion' => 'Recomendación: borrar reportes antiguos (ej. >24h) con un cron.',
+            ], 200);
+        }
+
+        return $pdf->stream($fileName);
     }
 
     private function findPersonaByTelefono(string $telefono): ?Persona

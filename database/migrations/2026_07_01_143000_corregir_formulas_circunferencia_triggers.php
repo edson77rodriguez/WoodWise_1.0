@@ -10,6 +10,12 @@ return new class extends Migration
         // =====================================================================
         // TRIGGER: calcular_todo_estimacion (BEFORE INSERT en estimaciones)
         // Calcula volumen, biomasa y carbono para TROZAS
+        //
+        // NOTA IMPORTANTE: c0, c1, cm son CIRCUNFERENCIAS (no diámetros),
+        // igual que en el libro de referencia (sección 4.4/4.5). Por eso
+        // las fórmulas dividen entre 4π, 12π y 24π en vez de multiplicar
+        // por π/4, π/12, π/24 (que serían las fórmulas equivalentes si
+        // se usara diámetro).
         // =====================================================================
         DB::unprepared('DROP TRIGGER IF EXISTS calcular_todo_estimacion');
         DB::unprepared("
@@ -46,38 +52,38 @@ return new class extends Migration
 
                 CASE NEW.id_formula
                     WHEN 1 THEN 
-                        -- HUBER: V = (π/4) × dm² × L
+                        -- HUBER: V = L/(4π) × c0.5²
                         IF cm IS NULL OR cm <= 0 OR cm > 5 THEN 
                             SIGNAL SQLSTATE '45000' 
-                            SET MESSAGE_TEXT = 'Diámetro medio inválido: debe ser 0 < d <= 5 para Huber';
+                            SET MESSAGE_TEXT = 'Circunferencia media inválida: debe ser 0 < c <= 5 para Huber';
                         END IF;
-                        SET v = TRUNCATE((pi_val / 4) * POW(cm, 2) * l, 30);
+                        SET v = TRUNCATE((l / (4 * pi_val)) * POW(cm, 2), 30);
 
                     WHEN 2 THEN 
-                        -- SMALIAN: V = (π/4) × ((d₀² + d₁²)/2) × L
+                        -- SMALIAN: V = L/(4π) × ((c0² + c1²)/2)
                         IF c0 IS NULL OR c1 IS NULL OR c0 <= 0 OR c1 <= 0 OR c0 > 5 OR c1 > 5 THEN
                             SIGNAL SQLSTATE '45000' 
-                            SET MESSAGE_TEXT = 'Diámetros extremos inválidos: deben ser 0 < d <= 5 para Smalian';
+                            SET MESSAGE_TEXT = 'Circunferencias extremas inválidas: deben ser 0 < c <= 5 para Smalian';
                         END IF;
-                        SET v = TRUNCATE((pi_val / 4) * ((POW(c0, 2) + POW(c1, 2)) / 2) * l, 30);
+                        SET v = TRUNCATE((l / (4 * pi_val)) * ((POW(c0, 2) + POW(c1, 2)) / 2), 30);
 
                     WHEN 3 THEN 
-                        -- TRONCO CONO: V = (π/12) × L × (d₀² + d₁² + d₀×d₁)
+                        -- TRONCO CONO: V = L/(12π) × (c0² + c1² + c0×c1)
                         IF c0 IS NULL OR c1 IS NULL OR c0 <= 0 OR c1 <= 0 OR c0 > 5 OR c1 > 5 THEN
                             SIGNAL SQLSTATE '45000' 
-                            SET MESSAGE_TEXT = 'Diámetros extremos inválidos: deben ser 0 < d <= 5 para Tronco de Cono';
+                            SET MESSAGE_TEXT = 'Circunferencias extremas inválidas: deben ser 0 < c <= 5 para Tronco de Cono';
                         END IF;
-                        SET v = TRUNCATE((pi_val / 12) * l * (POW(c0, 2) + POW(c1, 2) + (c0 * c1)), 30);
+                        SET v = TRUNCATE((l / (12 * pi_val)) * (POW(c0, 2) + POW(c1, 2) + (c0 * c1)), 30);
 
                     WHEN 4 THEN 
-                        -- NEWTON: V = (π/24) × L × (d₀² + 4×dm² + d₁²)
+                        -- NEWTON: V = L/(24π) × (c0² + 4×cm² + c1²)
                         IF c0 IS NULL OR c1 IS NULL OR cm IS NULL OR 
                            c0 <= 0 OR c1 <= 0 OR cm <= 0 OR
                            c0 > 5 OR c1 > 5 OR cm > 5 THEN
                             SIGNAL SQLSTATE '45000' 
-                            SET MESSAGE_TEXT = 'Diámetros inválidos: deben ser 0 < d <= 5 para Newton';
+                            SET MESSAGE_TEXT = 'Circunferencias inválidas: deben ser 0 < c <= 5 para Newton';
                         END IF;
-                        SET v = TRUNCATE((pi_val / 24) * l * (POW(c0, 2) + 4 * POW(cm, 2) + POW(c1, 2)), 30);
+                        SET v = TRUNCATE((l / (24 * pi_val)) * (POW(c0, 2) + 4 * POW(cm, 2) + POW(c1, 2)), 30);
 
                     ELSE
                         SIGNAL SQLSTATE '45000' 
@@ -103,6 +109,7 @@ return new class extends Migration
         // =====================================================================
         // TRIGGER: actualizar_todo_estimacion (BEFORE UPDATE en estimaciones)
         // Recalcula cuando cambia la fórmula o troza
+        // Mismas fórmulas (circunferencia) que el trigger de INSERT.
         // =====================================================================
         DB::unprepared('DROP TRIGGER IF EXISTS actualizar_todo_estimacion');
         DB::unprepared("
@@ -129,32 +136,32 @@ return new class extends Migration
 
                     CASE NEW.id_formula
                         WHEN 1 THEN 
-                            -- HUBER: V = (π/4) × dm² × L
+                            -- HUBER: V = L/(4π) × c0.5²
                             IF cm IS NULL THEN
-                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Diámetro medio requerido para Huber';
+                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Circunferencia media requerida para Huber';
                             END IF;
-                            SET v = (PI() / 4) * POW(cm, 2) * l;
+                            SET v = (l / (4 * PI())) * POW(cm, 2);
 
                         WHEN 2 THEN 
-                            -- SMALIAN: V = (π/4) × ((d₀² + d₁²)/2) × L
+                            -- SMALIAN: V = L/(4π) × ((c0² + c1²)/2)
                             IF c0 IS NULL OR c1 IS NULL THEN
-                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ambos diámetros extremos requeridos para Smalian';
+                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ambas circunferencias extremas requeridas para Smalian';
                             END IF;
-                            SET v = (PI() / 4) * ((POW(c0, 2) + POW(c1, 2)) / 2) * l;
+                            SET v = (l / (4 * PI())) * ((POW(c0, 2) + POW(c1, 2)) / 2);
 
                         WHEN 3 THEN 
-                            -- TRONCO CONO: V = (π/12) × L × (d₀² + d₁² + d₀×d₁)
+                            -- TRONCO CONO: V = L/(12π) × (c0² + c1² + c0×c1)
                             IF c0 IS NULL OR c1 IS NULL THEN
-                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ambos diámetros extremos requeridos para Tronco de Cono';
+                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ambas circunferencias extremas requeridas para Tronco de Cono';
                             END IF;
-                            SET v = (PI() / 12) * l * (POW(c0, 2) + POW(c1, 2) + (c0 * c1));
+                            SET v = (l / (12 * PI())) * (POW(c0, 2) + POW(c1, 2) + (c0 * c1));
 
                         WHEN 4 THEN 
-                            -- NEWTON: V = (π/24) × L × (d₀² + 4×dm² + d₁²)
+                            -- NEWTON: V = L/(24π) × (c0² + 4×cm² + c1²)
                             IF c0 IS NULL OR c1 IS NULL OR cm IS NULL THEN
-                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Diámetros extremos y medio requeridos para Newton';
+                                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Circunferencias extremas y media requeridas para Newton';
                             END IF;
-                            SET v = (PI() / 24) * l * (POW(c0, 2) + 4 * POW(cm, 2) + POW(c1, 2));
+                            SET v = (l / (24 * PI())) * (POW(c0, 2) + 4 * POW(cm, 2) + POW(c1, 2));
 
                         ELSE
                             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fórmula no reconocida';
@@ -169,7 +176,7 @@ return new class extends Migration
 
         // =====================================================================
         // TRIGGER: validar_arbol (BEFORE INSERT en arboles)
-        // Valida datos del árbol antes de insertar
+        // Sin cambios: no depende de las fórmulas de volumen de trozas.
         // =====================================================================
         DB::unprepared('DROP TRIGGER IF EXISTS validar_arbol');
         DB::unprepared("
@@ -213,7 +220,9 @@ return new class extends Migration
         // TRIGGER: before_insert_estimaciones1 (BEFORE INSERT en estimaciones1)
         // Calcula valores cuando se inserta manualmente una estimación de árbol
         // SOLO calcula si calculo es NULL o 0
-        // Maneja tanto Volumen Maderable (id_formula NULL) como Biomasa (id_formula 5-8)
+        // Biomasa en TONELADAS, Volumen Maderable Aproximado en m³
+        // Estas son fórmulas alométricas independientes (no de trozas), no
+        // requieren corrección de circunferencia/diámetro.
         // =====================================================================
         DB::unprepared('DROP TRIGGER IF EXISTS before_insert_estimaciones1');
         DB::unprepared("
@@ -224,8 +233,9 @@ return new class extends Migration
                 DECLARE altura_total_val DECIMAL(10,5);
                 DECLARE factor_carbono DOUBLE DEFAULT 0.5;
                 DECLARE d_cm DOUBLE;
-                DECLARE area_basal DOUBLE;
-                DECLARE id_tipo_volumen BIGINT;
+                DECLARE biomasa_kg DOUBLE;
+                DECLARE densidad_basica DOUBLE;
+                DECLARE volumen_maderable DOUBLE;
 
                 -- Solo calcular si no se proporcionó un valor
                 IF NEW.calculo IS NULL OR NEW.calculo = 0 THEN
@@ -235,57 +245,48 @@ return new class extends Migration
                     FROM arboles a
                     WHERE a.id_arbol = NEW.id_arbol;
 
-                    -- Convertir diámetro a centímetros (asumiendo que viene en metros)
+                    -- Convertir diámetro a centímetros
                     SET d_cm = diametro_pecho_val * 100;
-                    
-                    -- Calcular área basal (diámetro en metros)
-                    SET area_basal = PI() * POW(diametro_pecho_val / 2, 2);
-                    SET NEW.area_basal = area_basal;
-
-                    -- Obtener ID de tipo Volumen Maderable
-                    SELECT id_tipo_e INTO id_tipo_volumen FROM tipo_estimaciones WHERE desc_estimacion = 'Volumen Maderable' LIMIT 1;
 
                     -- Calcular según tipo de estimación y fórmula
                     IF NEW.id_formula IS NOT NULL THEN
                         CASE NEW.id_formula
-                            WHEN 5 THEN -- Biomasa Pinus montezumae: 0.006 * D^3.038
-                                SET NEW.calculo = 0.006 * POW(d_cm, 3.038);
-                                SET NEW.biomasa = NEW.calculo;
-                                SET NEW.carbono = NEW.biomasa * factor_carbono;
+                            WHEN 5 THEN -- Biomasa Pinus montezumae: 0.006 * D^3.038 (en kg)
+                                SET biomasa_kg = 0.006 * POW(d_cm, 3.038);
+                                SET densidad_basica = 575; -- kg/m³
 
-                            WHEN 6 THEN -- Biomasa Quercus crassifolia: 0.283 * (D²*H)^0.807
-                                SET NEW.calculo = 0.283 * POW(POW(d_cm, 2) * altura_total_val, 0.807);
-                                SET NEW.biomasa = NEW.calculo;
-                                SET NEW.carbono = NEW.biomasa * factor_carbono;
+                            WHEN 6 THEN -- Biomasa Quercus crassifolia: 0.283 * (D²*H)^0.807 (en kg)
+                                SET biomasa_kg = 0.283 * POW(POW(d_cm, 2) * altura_total_val, 0.807);
+                                SET densidad_basica = 720; -- kg/m³
 
-                            WHEN 7 THEN -- Biomasa Quercus rugosa: 0.0192 * D^2.7569
-                                SET NEW.calculo = 0.0192 * POW(d_cm, 2.7569);
-                                SET NEW.biomasa = NEW.calculo;
-                                SET NEW.carbono = NEW.biomasa * factor_carbono;
+                            WHEN 7 THEN -- Biomasa Quercus rugosa: 0.0192 * D^2.7569 (en kg)
+                                SET biomasa_kg = 0.0192 * POW(d_cm, 2.7569);
+                                SET densidad_basica = 780; -- kg/m³
 
-                            WHEN 8 THEN -- Biomasa Pinus pseudostrobus: 0.3553 * D^2.2245
-                                SET NEW.calculo = 0.3553 * POW(d_cm, 2.2245);
-                                SET NEW.biomasa = NEW.calculo;
-                                SET NEW.carbono = NEW.biomasa * factor_carbono;
+                            WHEN 8 THEN -- Biomasa Pinus pseudostrobus: 0.3553 * D^2.2245 (en kg)
+                                SET biomasa_kg = 0.3553 * POW(d_cm, 2.2245);
+                                SET densidad_basica = 570; -- kg/m³
 
                             ELSE
                                 -- Fórmulas 1-4 son para trozas, no aplicar aquí
-                                SET NEW.calculo = IFNULL(NEW.calculo, 0);
-                                SET NEW.biomasa = IFNULL(NEW.biomasa, 0);
-                                SET NEW.carbono = IFNULL(NEW.carbono, 0);
+                                SET biomasa_kg = 0;
+                                SET densidad_basica = 0;
                         END CASE;
+
+                        -- Convertir biomasa de kg a toneladas
+                        SET NEW.biomasa = ROUND(biomasa_kg / 1000, 10);
+                        
+                        -- Calcular Volumen Maderable Aproximado = Biomasa (kg) / Densidad Básica
+                        SET volumen_maderable = biomasa_kg / densidad_basica;
+                        SET NEW.calculo = ROUND(volumen_maderable, 10);
+                        
+                        -- Carbono: 50% de la biomasa (en toneladas)
+                        SET NEW.carbono = ROUND(NEW.biomasa * factor_carbono, 10);
                     ELSE
-                        -- Sin fórmula: Calcular Volumen Maderable
-                        -- V = área_basal * altura * factor_forma (0.5)
-                        IF NEW.id_tipo_e = id_tipo_volumen OR NEW.id_tipo_e = 1 THEN
-                            SET NEW.calculo = area_basal * altura_total_val * 0.5;
-                            SET NEW.biomasa = 0;
-                            SET NEW.carbono = 0;
-                        ELSE
-                            SET NEW.calculo = IFNULL(NEW.calculo, 0);
-                            SET NEW.biomasa = IFNULL(NEW.biomasa, 0);
-                            SET NEW.carbono = IFNULL(NEW.carbono, 0);
-                        END IF;
+                        -- Sin fórmula: valores por defecto
+                        SET NEW.calculo = 0;
+                        SET NEW.biomasa = 0;
+                        SET NEW.carbono = 0;
                     END IF;
                 END IF;
 

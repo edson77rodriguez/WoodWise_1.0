@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Especie;
 use Illuminate\Support\Facades\Auth;
+use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Storage;
 
 class EspecieController extends Controller
 {
@@ -13,12 +17,14 @@ class EspecieController extends Controller
     {
         $this->middleware('auth');
         $this->middleware(function ($request, $next) {
-            if (Auth::user()->persona->rol->nom_rol !== 'Administrador') {
-                // Redirige a la vista 'denegado' con un código HTTP 403 (Forbidden)
-                return response()->view('denegado', [], 403);
+            $routeName = $request->route()?->getName();
 
-                // Opcional: Si prefieres usar abort (mostrará la vista 403 personalizada)
-                // abort(403, 'No tienes permisos de administrador');
+            if ($routeName === 'especies.catalogo') {
+                return $next($request);
+            }
+
+            if (Auth::user()->persona->rol->nom_rol !== 'Administrador') {
+                return response()->view('denegado', [], 403);
             }
             return $next($request);
         });

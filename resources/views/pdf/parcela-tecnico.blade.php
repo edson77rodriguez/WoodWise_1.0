@@ -711,10 +711,10 @@
                     <tr>
                         <th class="center" style="width: 8%;">Árbol</th>
                         <th style="width: 20%;">Tipo Est.</th>
-                        <th style="width: 25%;">Fórmula</th>
-                        <th class="center" style="width: 14%;">Cálculo</th>
-                        <th class="center" style="width: 14%;">Biomasa</th>
-                        <th class="center" style="width: 14%;">Carbono</th>
+                        <th style="width: 16%;">Fórmula</th>
+                        <th class="center" style="width: 12%;">Vol. Mad. Aprox. (m³)</th>
+                        <th class="center" style="width: 12%;">Biomasa (ton)</th>
+                        <th class="center" style="width: 12%;">Carbono (ton)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -732,7 +732,7 @@
                     @endforeach
                     <tr class="total-row">
                         <td colspan="3"><strong>SUBTOTAL ÁRBOLES</strong></td>
-                        <td class="number">{{ number_format($estadisticas['volumen_arboles'], 4) }}</td>
+                        <td class="number">{{ number_format($estadisticas['volumen_arboles'], 4) }} m³</td>
                         <td class="number">{{ number_format($estadisticas['biomasa_arboles'], 4) }}</td>
                         <td class="number">{{ number_format($estadisticas['carbono_arboles'], 4) }}</td>
                     </tr>

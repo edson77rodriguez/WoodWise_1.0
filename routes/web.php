@@ -46,6 +46,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/perfil', [PerfilController::class, 'index'])->name('perfil.index');
     Route::put('/perfil', [PerfilController::class, 'update'])->name('perfil.update');
     Route::put('/perfil/password', [PerfilController::class, 'updatePassword'])->name('perfil.updatePassword');
+
+    // Catálogo de especies accesible para usuarios autenticados (técnicos incluidos)
+    Route::get('/catalogo-especies', [EspecieController::class, 'catalogo'])->name('especies.catalogo');
 });
 
 Route::middleware(['auth'])->group(function() {
@@ -61,7 +64,11 @@ Route::middleware(['auth'])->group(function() {
 // =====================================================================
 Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::resource('formulas', FormulaController::class);
-    Route::resource('especies', EspecieController::class);
+    Route::post('/formulas/{id}/aprobar', [FormulaController::class, 'aprobar'])->name('formulas.aprobar');
+    Route::post('/formulas/{id}/rechazar', [FormulaController::class, 'rechazar'])->name('formulas.rechazar');
+    Route::post('/formulas/validar-expresion', [FormulaController::class, 'validarExpresion'])->name('formulas.validarExpresion');
+        Route::resource('especies', EspecieController::class);
+
     Route::resource('usuarios', PersonaController::class);
     Route::resource('tipo_estimaciones', TipoEstimacionController::class);
     Route::resource('productores', ProductorController::class);
@@ -75,7 +82,7 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::resource('asigna_parcelas', AsignaParcelaController::class);
     Route::resource('estimaciones', EstimacionController::class);
     Route::get('/estimaciones/formulas-por-tipo/{tipoId}', [EstimacionController::class, 'getFormulasByTipo']);
-    Route::get('/catalogo-especies', [EspecieController::class, 'catalogo'])->name('especies.catalogo');
+    // Catalogo de especies permanece aquí para administración CRUD.
 });
 
 // =====================================================================

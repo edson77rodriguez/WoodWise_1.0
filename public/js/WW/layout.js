@@ -1,94 +1,199 @@
 /*
- * WoodWise Layout Logic (Refactorizado)
- *
- * 1. Eliminada toda la manipulación de estilos inline (navbar.style.transform/boxShadow).
- * La lógica ahora solo alterna clases CSS (.is-at-top, .is-hidden) para un rendimiento declarativo.
- * 2. Eliminada la reimplementación manual del colapso de Bootstrap. El bundle de BS5 ya maneja esto.
- * 3. Mantenida la UX de "cerrar menú al hacer clic" pero refactorizada para disparar el toggler nativo de BS.
+ * SIGMAD — Layout Logic
+ * - Navbar scroll hide/show con rAF
+ * - Menú móvil: toggler.click() corregido
+ * - User dropdown: modal overlay profesional, sin bugs de posición
+ * - Fade-in con IntersectionObserver
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    const navbar = document.querySelector('.navbar');
-    const toggler = document.querySelector('.navbar-toggler');
-    if (!navbar) return; // Salir si el navbar no existe
+    const navbar   = document.querySelector('.navbar');
+    const toggler  = document.querySelector('.navbar-toggler');
+    const collapse = document.querySelector('.navbar-collapse');
+
+    if (!navbar) return;
 
     let lastScroll = 0;
+    let ticking    = false;
 
-    /**
-     * Alterna clases en el Navbar basado en la posición y dirección del scroll.
-     * El CSS maneja toda la animación y estilos.
-     */
-    function handleScrollClassToggle() {
-        const currentScroll = window.scrollY;
+    /* ════════════════════════════════════════════════════════════
+       1. SCROLL — Navbar hide/show
+    ════════════════════════════════════════════════════════════ */
+    function handleScroll() {
+        const cur = window.scrollY;
 
-        // 1. En la parte superior (is-at-top)
-        // Añade/quita esta clase para que el CSS pueda eliminar el box-shadow.
-        if (currentScroll <= 50) {
+        if (cur <= 50) {
             navbar.classList.add('is-at-top');
+            navbar.classList.remove('is-hidden');
         } else {
             navbar.classList.remove('is-at-top');
+            const menuOpen = collapse && collapse.classList.contains('show');
+            if (cur > lastScroll && cur > 120 && !menuOpen) {
+                navbar.classList.add('is-hidden');
+            } else if (cur < lastScroll) {
+                navbar.classList.remove('is-hidden');
+            }
         }
 
-        // 2. Ocultar al bajar (is-hidden)
-        // Solo oculta si estamos lejos de la parte superior (más de 100px) y bajando.
-        if (currentScroll > lastScroll && currentScroll > 100) {
-            navbar.classList.add('is-hidden'); // CSS: transform: translateY(-100%)
-        } else if (currentScroll < lastScroll) {
-            navbar.classList.remove('is-hidden'); // CSS: transform: translateY(0)
-        }
-
-        lastScroll = currentScroll <= 0 ? 0 : currentScroll; // Maneja el rebote en iOS
+        lastScroll = Math.max(cur, 0);
+        ticking    = false;
     }
 
-    /**
-     * Mejora de UX Móvil: Cierra el menú de Bootstrap nativo al hacer clic en un enlace.
-     */
-    function setupMobileMenuCloseOnClick() {
-        const collapseElement = document.querySelector('.navbar-collapse');
-        if (!collapseElement || !toggler) return;
+    window.addEventListener('scroll', function () {
+        if (!ticking) { requestAnimationFrame(handleScroll); ticking = true; }
+    }, { passive: true });
 
-        const navLinks = collapseElement.querySelectorAll('.nav-link');
-        
-        navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                // Solo cerramos si el menú está abierto (visible en modo móvil)
-                // Usamos getComputedStyle porque el toggler puede estar d-none en desktop.
+    handleScroll(); // estado inicial
+
+    /* ════════════════════════════════════════════════════════════
+       2. MENÚ MÓVIL — cerrar al tocar un enlace
+    ════════════════════════════════════════════════════════════ */
+    if (collapse && toggler) {
+        collapse.querySelectorAll('.nav-link').forEach(function (link) {
+            if (link.closest('.user-menu-wrapper')) return; // no cerrar al abrir dropdown
+            link.addEventListener('click', function () {
                 if (window.getComputedStyle(toggler).display !== 'none') {
-                    // Disparamos un clic en el toggler para cerrar el menú.
-                    // Esto permite que el gestor de colapso nativo de Bootstrap maneje la animación y el estado ARIA.
-                    toggler.click();
+                    toggler.click(); // ✅ JS correcto
                 }
             });
         });
     }
 
-
-    /**
-     * Lógica de inicialización y Resize.
-     * Añade/quita el listener de scroll para optimizar el rendimiento.
-     */
-    let isMobileView = window.innerWidth < 992;
-
-    if (isMobileView) {
-        window.addEventListener('scroll', handleScrollClassToggle);
+    /* ════════════════════════════════════════════════════════════
+       3. FADE-IN — IntersectionObserver
+    ════════════════════════════════════════════════════════════ */
+    const fadeEls = document.querySelectorAll('.fade-in');
+    if (fadeEls.length) {
+        const io = new IntersectionObserver(function (entries, obs) {
+            entries.forEach(function (e) {
+                if (!e.isIntersecting) return;
+                e.target.classList.add('visible');
+                obs.unobserve(e.target);
+            });
+        }, { threshold: 0.1 });
+        fadeEls.forEach(function (el) { io.observe(el); });
     }
-    setupMobileMenuCloseOnClick();
 
-    // Listener de Resize para gestionar el estado
-    window.addEventListener('resize', () => {
-        const isNowMobile = window.innerWidth < 992;
-        
-        if (!isNowMobile && isMobileView) {
-            // Transición de Móvil a Desktop
-            window.removeEventListener('scroll', handleScrollClassToggle);
-            // Limpiamos las clases de estado móvil del navbar
-            navbar.classList.remove('is-hidden', 'is-at-top');
-        } else if (isNowMobile && !isMobileView) {
-            // Transición de Desktop a Móvil
-            window.addEventListener('scroll', handleScrollClassToggle);
+    /* ════════════════════════════════════════════════════════════
+       4. USER DROPDOWN — Modal overlay profesional
+       - Se abre como modal centrado sobre un backdrop
+       - NO usa position:fixed con top calculado (eso era el bug)
+       - NO modifica el layout del navbar en ningún momento
+       - Cierra con Escape, click en backdrop, botón X
+    ════════════════════════════════════════════════════════════ */
+    (function setupUserDropdown() {
+        const trigger  = document.getElementById('userMenuBtn');
+        const dropdown = document.getElementById('userDropdown');
+        if (!trigger || !dropdown) return;
+
+        /* ── Crear backdrop ──────────────────────────────────── */
+        const backdrop = document.createElement('div');
+        backdrop.id = 'userMenuBackdrop';
+        backdrop.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(backdrop);
+
+        /* ── Mover el dropdown al body para evitar clipping ─── */
+        document.body.appendChild(dropdown);
+
+        /* ── Estado ─────────────────────────────────────────── */
+        let isOpen = false;
+
+        function openMenu() {
+            if (isOpen) return;
+            isOpen = true;
+
+            // Prevenir scroll del body sin quitar el espacio (evita layout shift)
+            const scrollW = window.innerWidth - document.documentElement.clientWidth;
+            document.body.style.overflow   = 'hidden';
+            document.body.style.paddingRight = scrollW + 'px';
+
+            backdrop.classList.add('show');
+            dropdown.classList.add('show');
+            trigger.setAttribute('aria-expanded', 'true');
+            trigger.classList.add('active');
+
+            // Foco al primer elemento interactivo
+            setTimeout(function () {
+                const first = dropdown.querySelector('a, button:not(.user-dropdown-close)');
+                if (first) first.focus();
+            }, 180);
         }
-        
-        isMobileView = isNowMobile;
-    });
+
+        function closeMenu(returnFocus) {
+            if (!isOpen) return;
+            isOpen = false;
+
+            backdrop.classList.remove('show');
+            dropdown.classList.remove('show');
+            trigger.setAttribute('aria-expanded', 'false');
+            trigger.classList.remove('active');
+
+            document.body.style.overflow    = '';
+            document.body.style.paddingRight = '';
+
+            if (returnFocus !== false) trigger.focus();
+        }
+
+        /* ── Trigger click ───────────────────────────────────── */
+        trigger.addEventListener('click', function (e) {
+            e.stopPropagation();
+            isOpen ? closeMenu() : openMenu();
+        });
+        trigger.setAttribute('aria-haspopup', 'dialog');
+        trigger.setAttribute('aria-expanded', 'false');
+
+        /* ── Backdrop click → cerrar ─────────────────────────── */
+        backdrop.addEventListener('click', function () { closeMenu(); });
+
+        /* ── Botón X dentro del modal ────────────────────────── */
+        const closeBtn = dropdown.querySelector('.user-dropdown-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeMenu();
+            });
+        }
+
+        /* ── Escape ──────────────────────────────────────────── */
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && isOpen) closeMenu();
+        });
+
+        /* ── Click en items → cerrar ─────────────────────────── */
+        dropdown.querySelectorAll('a.dropdown-item, button.dropdown-item').forEach(function (item) {
+            // No cerrar en items "próximamente" (no tienen acción real)
+            if (item.hasAttribute('data-bs-toggle')) return;
+            item.addEventListener('click', function () {
+                // Para el logout dejamos que el form se envíe naturalmente
+                if (!item.closest('.dropdown-form')) closeMenu(false);
+            });
+        });
+
+        /* ── Trap focus dentro del modal (accesibilidad) ─────── */
+        dropdown.addEventListener('keydown', function (e) {
+            if (e.key !== 'Tab') return;
+            const focusable = Array.from(
+                dropdown.querySelectorAll('a, button:not([disabled]), [tabindex]:not([tabindex="-1"])')
+            ).filter(function (el) { return !el.closest('[hidden]'); });
+            if (!focusable.length) { e.preventDefault(); return; }
+
+            const first = focusable[0];
+            const last  = focusable[focusable.length - 1];
+
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault(); last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault(); first.focus();
+            }
+        });
+
+        /* ── Si el menú móvil se cierra, también cerrar dropdown */
+        if (collapse) {
+            collapse.addEventListener('hidden.bs.collapse', function () {
+                closeMenu(false);
+            });
+        }
+    })();
+
 });

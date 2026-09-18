@@ -13,7 +13,7 @@ class WoodWiseAuthSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        $password = 'Password123!';
+        $password = 'tecnico123';
         $hashedPassword = Hash::make($password);
 
         $personas = [
@@ -29,9 +29,15 @@ class WoodWiseAuthSeeder extends Seeder
             ],
             [
                 'nom' => 'Ana',
+<<<<<<< HEAD
                 'ap' => 'Ramirez',
                 'am' => 'Lopez',
                 'telefono' => '5550000002',
+=======
+                'ap' => 'Ramírez',
+                'am' => 'López',
+                'telefono' => '527226367194',
+>>>>>>> e6006fea605a711182da1715118f1048a5615af3
                 'correo' => 'tecnico1@woodwise.test',
                 'contrasena' => $hashedPassword,
                 'id_rol' => 2,

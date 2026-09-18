@@ -11,13 +11,12 @@ use App\Models\Productor;
 use App\Models\Especie;
 use App\Models\Formula;
 use App\Models\Tipo_Estimacion;
-use App\Models\TurnoCorta;
 use App\Models\Asigna_Parcela;
 use App\Models\Tecnico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use PDF;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TecnicoDashboardController extends Controller
 {
@@ -83,9 +82,9 @@ class TecnicoDashboardController extends Controller
 
         // Biomasa y Carbono totales
         $totalBiomasa = Estimacion::whereIn('id_troza', $trozaIds)->sum('biomasa')
-                      + Estimacion1::whereIn('id_arbol', $arbolIds)->sum('biomasa');
+                  + Estimacion1::whereIn('id_arbol', $arbolIds)->sum('biomasa');
         $totalCarbono = Estimacion::whereIn('id_troza', $trozaIds)->sum('carbono')
-                      + Estimacion1::whereIn('id_arbol', $arbolIds)->sum('carbono');
+                  + Estimacion1::whereIn('id_arbol', $arbolIds)->sum('carbono');
 
         // --- 4. Consulta PAGINADA (para la tabla) ---
         $parcelas = Parcela::with(['productor.persona', 'trozas.especie', 'arboles.especie'])
@@ -132,7 +131,7 @@ class TecnicoDashboardController extends Controller
             'productores' => Productor::with('persona')->get(),
             'especies' => Especie::all(),
             'tiposEstimacion' => Tipo_Estimacion::all(),
-            'formulas' => Formula::all(),
+            'formulas' => Formula::where('estado_revision', 'aprobada')->orderBy('nom_formula')->get(),
         ];
 
         return view('T.index', $data);
@@ -177,7 +176,7 @@ class TecnicoDashboardController extends Controller
             'tecnico' => $this->tecnico,
             'especies' => Especie::all(),
             'tiposEstimacion' => Tipo_Estimacion::all(),
-            'formulas' => Formula::all(),
+            'formulas' => Formula::where('estado_revision', 'aprobada')->orderBy('nom_formula')->get(),
         ];
 
         return view('T.parcela-detalle', $data);
@@ -307,6 +306,17 @@ class TecnicoDashboardController extends Controller
             ->where('id_parcela', $validated['id_parcela'])
             ->firstOrFail();
 
+        $formula = Formula::findOrFail($validated['id_formula']);
+
+        if ($formula->modo_ejecucion === 'app') {
+            try {
+                $outputs = app(\App\Services\FormulaEngineService::class)->calculateForModel($formula, $troza);
+                $validated = array_merge($validated, $outputs);
+            } catch (\InvalidArgumentException $exception) {
+                return back()->withInput()->with('error', $exception->getMessage());
+            }
+        }
+
         try {
             Estimacion::create($validated);
             return back()->with('success', 'Estimación para troza creada exitosamente.');
@@ -339,6 +349,17 @@ class TecnicoDashboardController extends Controller
         $arbol = Arbol::where('id_arbol', $validated['id_arbol'])
             ->where('id_parcela', $validated['id_parcela'])
             ->firstOrFail();
+
+        $formula = Formula::findOrFail($validated['id_formula']);
+
+        if ($formula->modo_ejecucion === 'app') {
+            try {
+                $outputs = app(\App\Services\FormulaEngineService::class)->calculateForModel($formula, $arbol);
+                $validated = array_merge($validated, $outputs);
+            } catch (\InvalidArgumentException $exception) {
+                return back()->withInput()->with('error', $exception->getMessage());
+            }
+        }
 
         try {
             Estimacion1::create($validated);
@@ -432,7 +453,7 @@ class TecnicoDashboardController extends Controller
             'dap_promedio' => $parcela->arboles->avg('diametro_pecho') ?? 0,
         ];
 
-        $pdf = PDF::loadView('pdf.parcela-tecnico', [
+        $pdf = Pdf::loadView('pdf.parcela-tecnico', [
             'parcela' => $parcela,
             'totales' => $totales,
             'estadisticas' => $estadisticas,

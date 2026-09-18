@@ -86,8 +86,8 @@
                                 <p class="mb-0 text-muted"><i class="fas fa-seedling me-2"></i>{{ $estimacion->arbol->especie->nom_comun ?? 'N/A' }} / <i class="fas fa-draw-polygon ms-1 me-2"></i>{{ $estimacion->arbol->parcela->nom_parcela ?? 'N/A' }}</p>
                             </td>
                             <td>
-                                <p class="mb-1"><span class="data-label">Biomasa:</span> <span class="data-value">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 2) }} kg</span></p>
-                                <p class="mb-0"><span class="data-label">Carbono:</span> <span class="data-value">{{ number_format($estimacion->carbono ?? 0, 2) }} kg</span></p>
+                                <p class="mb-1"><span class="data-label">Biomasa:</span> <span class="data-value">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 10) }} t</span></p>
+                                <p class="mb-0"><span class="data-label">Carbono:</span> <span class="data-value">{{ number_format($estimacion->carbono ?? 0, 10) }} t</span></p>
                             </td>
                             <td class="pe-4 text-center">
                                 <div class="btn-group" role="group">
@@ -115,7 +115,7 @@
                 <div class="p-3 border-top">{{ $estimaciones->appends(request()->query())->links('pagination::bootstrap-5') }}</div>
             @endif
         </div>
-    </div>
+    </div> 
 </div>
 
 @foreach ($estimaciones as $estimacion)
@@ -139,8 +139,8 @@
                     <div class="col-md-6">
                         <h6>Resultados Calculados</h6>
                         <hr class="mt-1">
-                        <p><strong class="text-muted">Biomasa:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 2) }} kg</span></p>
-                        <p><strong class="text-muted">Carbono:</strong> <span class="fs-5 fw-bold text-primary">{{ number_format($estimacion->carbono ?? 0, 2) }} kg</span></p>
+                        <p><strong class="text-muted">Biomasa:</strong> <span class="fs-5 fw-bold text-success">{{ number_format($estimacion->biomasa ?? $estimacion->calculo, 10) }} t</span></p>
+                        <p><strong class="text-muted">Carbono:</strong> <span class="fs-5 fw-bold text-primary">{{ number_format($estimacion->carbono ?? 0, 10) }} t</span></p>
                         <hr>
                         <p><strong class="text-muted">Especie:</strong> {{ $estimacion->arbol->especie->nom_comun ?? 'N/A' }}</p>
                         <p><strong class="text-muted">Parcela:</strong> {{ $estimacion->arbol->parcela->nom_parcela ?? 'N/A' }}</p>
@@ -176,7 +176,12 @@
                     </div>
                     <div class="form-floating mb-3">
                         <select name="id_formula" id="editFormula{{ $estimacion->id_estimacion1 }}" class="form-select" required>
-                            @foreach ($formulas as $formula)<option value="{{ $formula->id_formula }}" {{ $formula->id_formula == $estimacion->id_formula ? 'selected' : '' }}>{{ $formula->nom_formula }}</option>@endforeach
+                            @foreach ($formulas as $formula)
+                                @php
+                                    $formulaSpecies = collect($formula->especies_relacionadas ?? [])->map(fn ($value) => (int) $value)->values()->all();
+                                @endphp
+                                <option value="{{ $formula->id_formula }}" data-species='@json($formulaSpecies)' {{ $formula->id_formula == $estimacion->id_formula ? 'selected' : '' }}>{{ $formula->nom_formula }}</option>
+                            @endforeach
                         </select>
                         <label>Fórmula* (auto-seleccionada)</label>
                     </div>
@@ -222,7 +227,10 @@
                         <select name="id_formula" id="createFormula" class="form-select" required>
                             <option value="" disabled selected>Selecciona un árbol primero...</option>
                             @foreach ($formulas as $formula)
-                                <option value="{{ $formula->id_formula }}">{{ $formula->nom_formula }}</option>
+                                @php
+                                    $formulaSpecies = collect($formula->especies_relacionadas ?? [])->map(fn ($value) => (int) $value)->values()->all();
+                                @endphp
+                                <option value="{{ $formula->id_formula }}" data-species='@json($formulaSpecies)'>{{ $formula->nom_formula }}</option>
                             @endforeach
                         </select>
                         <label>Fórmula* (auto-seleccionada)</label>
@@ -247,54 +255,99 @@ document.addEventListener('DOMContentLoaded', function() {
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
     tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 
-    // Mapeo especie → fórmula (debe coincidir con el backend)
-    const especieToFormula = {
-        1: 8, // Pinus pseudostrobus
-        2: 7, // Quercus rugosa
-        3: 5, // Pinus montezumae
-        4: 6  // Quercus crassifolia
-    };
+    const formulaByArbolUrlTemplate = @json(route('estimaciones1.formulaPorArbol', ['arbolId' => '__ID__']));
 
-    // Función para auto-seleccionar fórmula
-    function autoSelectFormula(arbolSelect, formulaSelect) {
-        const selectedOption = arbolSelect.options[arbolSelect.selectedIndex];
-        const especieId = parseInt(selectedOption.dataset.especie);
-        const formulaId = especieToFormula[especieId];
+    function formulaUrlForArbol(arbolId) {
+        return formulaByArbolUrlTemplate.replace('__ID__', arbolId);
+    }
 
-        if (formulaId) {
-            formulaSelect.value = formulaId;
-            
-            // Destacar visualmente que se auto-seleccionó
-            formulaSelect.style.borderColor = 'var(--succulent-medium)';
-            formulaSelect.style.boxShadow = '0 0 0 0.2rem rgba(124, 144, 112, 0.25)';
-            
-            setTimeout(() => {
-                formulaSelect.style.borderColor = '';
-                formulaSelect.style.boxShadow = '';
-            }, 1500);
+    function getAllowedFormulaId(speciesId) {
+        const formulaMap = @json($formulaIdsBySpecies ?? []);
+        return formulaMap[String(speciesId)] ?? null;
+    }
+
+    function setFormulaOptionsState(formulaSelect, allowedFormulaId) {
+        Array.from(formulaSelect.options).forEach(option => {
+            if (!option.value) {
+                option.disabled = false;
+                return;
+            }
+
+            option.disabled = allowedFormulaId ? option.value !== String(allowedFormulaId) : true;
+        });
+
+        if (allowedFormulaId) {
+            formulaSelect.value = String(allowedFormulaId);
+        } else {
+            formulaSelect.value = '';
+        }
+    }
+
+    async function autoSelectFormula(arbolSelect, formulaSelect) {
+        const arbolId = arbolSelect.value;
+
+        if (!arbolId) {
+            setFormulaOptionsState(formulaSelect, null);
+            return;
+        }
+
+        try {
+            const response = await fetch(formulaUrlForArbol(arbolId));
+            const data = await response.json();
+
+            const speciesId = data?.especie?.id_especie ?? arbolSelect.selectedOptions[0]?.dataset?.especie;
+            const allowedFormulaId = getAllowedFormulaId(speciesId);
+
+            setFormulaOptionsState(formulaSelect, allowedFormulaId);
+
+            if (data.formula_id && String(data.formula_id) === String(allowedFormulaId)) {
+                formulaSelect.value = data.formula_id;
+
+                // Destacar visualmente que se auto-seleccionó
+                formulaSelect.style.borderColor = 'var(--succulent-medium)';
+                formulaSelect.style.boxShadow = '0 0 0 0.2rem rgba(124, 144, 112, 0.25)';
+
+                setTimeout(() => {
+                    formulaSelect.style.borderColor = '';
+                    formulaSelect.style.boxShadow = '';
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('No se pudo auto-seleccionar la fórmula:', error);
+            setFormulaOptionsState(formulaSelect, null);
+        }
+    }
+
+    function bindAutoFormulaSelect(arbolSelect, formulaSelect, modalElement) {
+        if (!arbolSelect || !formulaSelect) {
+            return;
+        }
+
+        const syncFormula = () => autoSelectFormula(arbolSelect, formulaSelect);
+
+        arbolSelect.addEventListener('change', syncFormula);
+
+        setFormulaOptionsState(formulaSelect, null);
+
+        if (modalElement) {
+            modalElement.addEventListener('shown.bs.modal', syncFormula);
         }
     }
 
     // Auto-seleccionar fórmula en modal de CREAR
     const createArbolSelect = document.getElementById('createArbol');
     const createFormulaSelect = document.getElementById('createFormula');
+    const createModal = document.getElementById('createEstimacionModal');
 
-    if (createArbolSelect && createFormulaSelect) {
-        createArbolSelect.addEventListener('change', function() {
-            autoSelectFormula(this, createFormulaSelect);
-        });
-    }
+    bindAutoFormulaSelect(createArbolSelect, createFormulaSelect, createModal);
 
     // Auto-seleccionar fórmula en modales de EDITAR
     document.querySelectorAll('.edit-arbol-select').forEach(arbolSelect => {
         const formulaSelectId = arbolSelect.dataset.formulaSelect;
         const formulaSelect = document.getElementById(formulaSelectId);
+        const modalElement = arbolSelect.closest('.modal');
         
-        if (formulaSelect) {
-            arbolSelect.addEventListener('change', function() {
-                autoSelectFormula(this, formulaSelect);
-            });
-        }
+        bindAutoFormulaSelect(arbolSelect, formulaSelect, modalElement);
     });
 
     // Lógica de Eliminación

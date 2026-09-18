@@ -19,6 +19,7 @@
                         <form method="POST" action="{{ route('tecnico.estimacion.store') }}">
                             @csrf
                             <input type="hidden" name="id_parcela" value="{{ $parcela->id_parcela }}">
+                            <input type="hidden" name="calculo" value="0">
                             <div class="mb-3">
                                 <label class="wood-form-label">Seleccionar Troza</label>
                                 <select class="wood-form-select" name="id_troza" required>

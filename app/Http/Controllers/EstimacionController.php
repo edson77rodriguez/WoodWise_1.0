@@ -8,6 +8,7 @@ use App\Models\Formula;
 use App\Models\Troza;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\FormulaEngineService;
 
 class EstimacionController extends Controller
 {
@@ -27,8 +28,8 @@ class EstimacionController extends Controller
     
     return view('estimaciones.edit', [
         'estimacion' => $estimacion,
-        'tiposEstimacion' => TipoEstimacion::all(),
-        'formulas' => Formula::all(),
+        'tiposEstimacion' => Tipo_Estimacion::all(),
+        'formulas' => Formula::where('estado_revision', 'aprobada')->get(),
         'trozas' => Troza::all(),
     ]);
 }
@@ -38,33 +39,45 @@ $estimaciones = Estimacion::with(['tipoEstimacion', 'formula', 'troza.especie', 
     ->paginate(10); // 10 por página
         $tiposEstimacion = Tipo_Estimacion::all()->WhereIn('desc_estimacion',['Volumen Maderable']);
         $trozas = Troza::with(['especie', 'parcela'])->get();
-$formulas = Formula::all()  // Obtiene TODOS los registros
-    ->whereIn('nom_formula', [
-        'Formula de Smalian',
-        'Formula de Huber',
-        'Formula Newton',
-        'Formula Tronco Cono'
-    ]);      
+$formulas = Formula::where('estado_revision', 'aprobada')
+    ->where('id_tipo_e', 1)
+    ->where('id_cat', 1)
+    ->orderBy('nom_formula')
+    ->get();      
  return view('estimaciones.index', compact('estimaciones', 'tiposEstimacion', 'formulas', 'trozas'));
     }
 
     public function getFormulasByTipo($tipoId)
     {
         $tipo = Tipo_Estimacion::findOrFail($tipoId);
-        $formulas = Formula::where('id_tipo_e', $tipoId)->get();
+        $formulas = Formula::where('id_tipo_e', $tipoId)
+            ->where('estado_revision', 'aprobada')
+            ->get();
         
         return response()->json($formulas);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'id_tipo_e' => 'required|exists:tipo_estimaciones,id_tipo_e',
             'id_formula' => 'required|exists:formulas,id_formula',
             'id_troza' => 'required|exists:trozas,id_troza',
         ]);
 
-        Estimacion::create($request->all());
+        $formula = Formula::findOrFail($validated['id_formula']);
+        $troza = Troza::findOrFail($validated['id_troza']);
+
+        if ($formula->modo_ejecucion === 'app') {
+            try {
+                $outputs = app(FormulaEngineService::class)->calculateForModel($formula, $troza);
+                $validated = array_merge($validated, $outputs);
+            } catch (\InvalidArgumentException $exception) {
+                return back()->withInput()->with('error', $exception->getMessage());
+            }
+        }
+
+        Estimacion::create($validated);
 
         return redirect()->route('estimaciones.index')
                ->with('success', 'Estimación creada correctamente');
@@ -72,14 +85,26 @@ $formulas = Formula::all()  // Obtiene TODOS los registros
 
     public function update(Request $request, $id)
     {
-        $request->validate([
+        $validated = $request->validate([
             'id_tipo_e' => 'required|exists:tipo_estimaciones,id_tipo_e',
             'id_formula' => 'required|exists:formulas,id_formula',
             'id_troza' => 'required|exists:trozas,id_troza',
         ]);
 
         $estimacion = Estimacion::findOrFail($id);
-        $estimacion->update($request->all());
+        $formula = Formula::findOrFail($validated['id_formula']);
+        $troza = Troza::findOrFail($validated['id_troza']);
+
+        if ($formula->modo_ejecucion === 'app') {
+            try {
+                $outputs = app(FormulaEngineService::class)->calculateForModel($formula, $troza);
+                $validated = array_merge($validated, $outputs);
+            } catch (\InvalidArgumentException $exception) {
+                return back()->withInput()->with('error', $exception->getMessage());
+            }
+        }
+
+        $estimacion->update($validated);
 
         return redirect()->route('estimaciones.index')
                ->with('success', 'Estimación actualizada correctamente');

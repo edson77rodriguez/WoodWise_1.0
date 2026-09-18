@@ -46,7 +46,7 @@ class ParcelaController extends Controller
             'parcela' => $parcela,
             'especies' => Especie::all(),
             'tiposEstimacion' => Tipo_Estimacion::all(),
-            'formulas' => Formula::all(),
+            'formulas' => Formula::where('estado_revision', 'aprobada')->orderBy('nom_formula')->get(),
             'productores' => Productor::all()
         ]);
     }
@@ -109,12 +109,26 @@ class ParcelaController extends Controller
             'calculo' => 'required|numeric|min:0',
         ]);
 
+        $formula = Formula::findOrFail($validatedData['id_formula']);
+        $arbol = Arbol::findOrFail($validatedData['id_arbol']);
+
+        if ($formula->modo_ejecucion === 'app') {
+            try {
+                $outputs = app(\App\Services\FormulaEngineService::class)->calculateForModel($formula, $arbol);
+                $validatedData = array_merge($validatedData, $outputs);
+            } catch (\InvalidArgumentException $exception) {
+                return back()->withInput()->with('error', $exception->getMessage());
+            }
+        }
+
         // Crear la estimación1 asociada al árbol (usando el modelo correcto para árboles)
         $estimacion = Estimacion1::create([
             'id_arbol' => $validatedData['id_arbol'],
             'id_tipo_e' => $validatedData['id_tipo_e'],
             'id_formula' => $validatedData['id_formula'],
             'calculo' => $validatedData['calculo'],
+            'biomasa' => $validatedData['biomasa'] ?? null,
+            'carbono' => $validatedData['carbono'] ?? null,
         ]);
 
         return redirect()->route('parcelas.show', $request->id_parcela)
@@ -167,6 +181,18 @@ class ParcelaController extends Controller
             'id_troza' => 'required|exists:trozas,id_troza',
             'calculo' => 'required|numeric|min:0',
         ]);
+
+        $formula = Formula::findOrFail($validatedData['id_formula']);
+        $troza = Troza::findOrFail($validatedData['id_troza']);
+
+        if ($formula->modo_ejecucion === 'app') {
+            try {
+                $outputs = app(\App\Services\FormulaEngineService::class)->calculateForModel($formula, $troza);
+                $validatedData = array_merge($validatedData, $outputs);
+            } catch (\InvalidArgumentException $exception) {
+                return back()->withInput()->with('error', $exception->getMessage());
+            }
+        }
 
         $estimacion->update($validatedData);
 

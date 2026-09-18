@@ -245,8 +245,8 @@
         <thead>
         <tr>
             <th>Concepto</th>
-            <th class="text-right">Valor por Troza (kg)</th>
-            <th class="text-right">Total Parcela (kg)</th>
+            <th class="text-right">Valor por Troza (t)</th>
+            <th class="text-right">Total Parcela (t)</th>
         </tr>
         </thead>
         <tbody>
@@ -255,14 +255,14 @@
                 <td>TRZ-{{ $troza->id_troza }} - {{ $troza->especie->nom_cientifico ?? 'N/A' }}</td>
                 <td class="text-right">
                     @if($troza->estimacion)
-                        {{ number_format($troza->estimacion->calculo * $troza->densidad * 1000, 2) }}
+                        {{ number_format($troza->estimacion->calculo * $troza->densidad, 2) }}
                     @else
                         N/A
                     @endif
                 </td>
                 <td class="text-right">
                     @if($troza->estimacion)
-                        {{ number_format($troza->estimacion->calculo * $troza->densidad * 1000, 2) }}
+                        {{ number_format($troza->estimacion->calculo * $troza->densidad, 2) }}
                     @else
                         N/A
                     @endif
@@ -276,18 +276,18 @@
                     $totalBiomasa = 0;
                     foreach($parcela->trozas as $troza) {
                         if($troza->estimacion) {
-                            $totalBiomasa += $troza->estimacion->calculo * $troza->densidad * 1000;
+                            $totalBiomasa += $troza->estimacion->calculo * $troza->densidad;
                         }
                     }
                 @endphp
-                {{ number_format($totalBiomasa, 2) }} kg
+                {{ number_format($totalBiomasa, 2) }} t
             </td>
-            <td class="text-right text-bold">{{ number_format($totalBiomasa, 2) }} kg</td>
+            <td class="text-right text-bold">{{ number_format($totalBiomasa, 2) }} t</td>
         </tr>
         <tr class="total-row">
             <td class="text-bold">Carbono Almacenado (50% biomasa)</td>
-            <td class="text-right text-bold">{{ number_format($totalBiomasa * 0.5, 2) }} kg</td>
-            <td class="text-right text-bold">{{ number_format($totalBiomasa * 0.5, 2) }} kg</td>
+            <td class="text-right text-bold">{{ number_format($totalBiomasa * 0.5, 2) }} t</td>
+            <td class="text-right text-bold">{{ number_format($totalBiomasa * 0.5, 2) }} t</td>
         </tr>
         </tbody>
     </table>
@@ -326,16 +326,16 @@
                     $totalBiomasa = 0;
                     foreach($parcela->trozas as $troza) {
                         if($troza->estimacion) {
-                            $totalBiomasa += $troza->estimacion->calculo * $troza->densidad * 1000;
+                            $totalBiomasa += $troza->estimacion->calculo * $troza->densidad;
                         }
                     }
                 @endphp
-                {{ number_format($totalBiomasa, 2) }} kg
+                {{ number_format($totalBiomasa, 2) }} t
             </td>
         </tr>
         <tr class="total-row">
             <td class="text-bold">Carbono Total Almacenado</td>
-            <td class="text-right text-bold">{{ number_format($totalBiomasa * 0.5, 2) }} kg</td>
+            <td class="text-right text-bold">{{ number_format($totalBiomasa * 0.5, 2) }} t</td>
         </tr>
         </tbody>
     </table>

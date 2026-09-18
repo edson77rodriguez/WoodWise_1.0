@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'botkey' => \App\Http\Middleware\VerifyBotKey::class,
+            'verify.hmac' => \App\Http\Middleware\VerifyHmacSignature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
