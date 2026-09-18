@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'botkey' => \App\Http\Middleware\VerifyBotKey::class,
             'verify.hmac' => \App\Http\Middleware\VerifyHmacSignature::class,
+            'api.role' => \App\Http\Middleware\CheckApiRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
