@@ -113,7 +113,7 @@
                 </table>
             </div>
              @if($trozas->hasPages())
-                <div class="p-3 border-top">{{ $trozas->appends(request()->query())->links() }}</div>
+                <div class="p-3 border-top">{{ $trozas->appends(request()->query())->links('pagination::bootstrap-5') }}</div>
             @endif
         </div>
     </div>

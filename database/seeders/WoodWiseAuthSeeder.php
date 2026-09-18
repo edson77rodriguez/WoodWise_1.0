@@ -29,9 +29,15 @@ class WoodWiseAuthSeeder extends Seeder
             ],
             [
                 'nom' => 'Ana',
+<<<<<<< HEAD
+                'ap' => 'Ramirez',
+                'am' => 'Lopez',
+                'telefono' => '5550000002',
+=======
                 'ap' => 'Ramírez',
                 'am' => 'López',
                 'telefono' => '527226367194',
+>>>>>>> e6006fea605a711182da1715118f1048a5615af3
                 'correo' => 'tecnico1@woodwise.test',
                 'contrasena' => $hashedPassword,
                 'id_rol' => 2,
@@ -77,7 +83,7 @@ class WoodWiseAuthSeeder extends Seeder
 
         $users = [
             ['name' => 'Administrador', 'email' => 'admin@woodwise.test', 'password' => $hashedPassword, 'id_persona' => $personaIdsByEmail['admin@woodwise.test']],
-            ['name' => 'Técnico 1', 'email' => 'tecnico1@woodwise.test', 'password' => $hashedPassword, 'id_persona' => $personaIdsByEmail['tecnico1@woodwise.test']],
+            ['name' => 'Ana Ramirez', 'email' => 'tecnico1@woodwise.test', 'password' => $hashedPassword, 'id_persona' => $personaIdsByEmail['tecnico1@woodwise.test']],
             ['name' => 'Técnico 2', 'email' => 'tecnico2@woodwise.test', 'password' => $hashedPassword, 'id_persona' => $personaIdsByEmail['tecnico2@woodwise.test']],
             ['name' => 'Productor 1', 'email' => 'productor1@woodwise.test', 'password' => $hashedPassword, 'id_persona' => $personaIdsByEmail['productor1@woodwise.test']],
             ['name' => 'Productor 2', 'email' => 'productor2@woodwise.test', 'password' => $hashedPassword, 'id_persona' => $personaIdsByEmail['productor2@woodwise.test']],

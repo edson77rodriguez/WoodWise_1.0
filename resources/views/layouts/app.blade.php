@@ -30,9 +30,23 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
 
+<<<<<<< HEAD
+    <header class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ route('welcome') }}">
+                 <img src="{{ asset('assets/images/SIGMAD.svg') }}" 
+                     alt="Logo SIGMAD"
+                     width="56"
+                     height="56"
+                     class="me-2 rounded-circle"
+                     loading="eager">
+                <span class="text-gradient">SIGMAD</span>
+            </a>
+=======
 {{-- ════════════════════ NAVBAR ════════════════════ --}}
 <header class="navbar navbar-expand-lg navbar-dark" id="mainNavbar">
     <div class="container">
+>>>>>>> e6006fea605a711182da1715118f1048a5615af3
 
         {{-- Marca --}}
         <a class="navbar-brand" href="{{ route('welcome') }}" aria-label="SIGMAD inicio">

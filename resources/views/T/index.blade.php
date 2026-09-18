@@ -518,16 +518,6 @@
             document.querySelectorAll('.action-menu-trigger[aria-expanded="true"]').forEach(btn => btn.setAttribute('aria-expanded', 'false'));
         });
 
-        // Efectos hover modernos
-        document.querySelectorAll('.modern-stat-card').forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-5px)';
-            });
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
-        });
-
         // =============== BÚSQUEDA EN TIEMPO REAL ===============
         const searchInput = document.querySelector('.search-input');
         const parcelCards = document.querySelectorAll('.parcela-float-card');
