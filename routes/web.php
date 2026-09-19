@@ -150,3 +150,34 @@ Route::prefix('P')->middleware(['auth', 'role:Productor'])->group(function () {
     Route::get('/reporte-general', [ProductorDashboardController::class, 'exportarGeneral'])
         ->name('productor.reporte.general');
 });
+
+
+
+
+
+
+
+///////////////////////////////////////////UAV
+use App\Http\Controllers\AiAnalysisController;
+
+
+Route::get(
+    '/analisis-uav',
+    [
+        AiAnalysisController::class,
+        'index'
+    ]
+)->name(
+    'analysis.index'
+);
+
+
+Route::post(
+    '/analisis-uav',
+    [
+        AiAnalysisController::class,
+        'analyze'
+    ]
+)->name(
+    'analysis.analyze'
+);

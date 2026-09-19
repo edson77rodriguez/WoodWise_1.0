@@ -1,0 +1,171 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
+use RuntimeException;
+
+class AiService
+{
+    private string $baseUrl;
+
+
+    public function __construct()
+    {
+        $url = config('services.ai.url');
+
+        if (!$url) {
+            throw new RuntimeException(
+                'AI_API_URL no está configurada.'
+            );
+        }
+
+        $this->baseUrl = rtrim($url, '/');
+    }
+
+
+    /**
+     * Verificar disponibilidad de FastAPI.
+     */
+    public function health(): array
+    {
+        $response = Http::timeout(10)
+            ->acceptJson()
+            ->get(
+                $this->baseUrl . '/health'
+            );
+
+        $response->throw();
+
+        $data = $response->json();
+
+        if (!is_array($data)) {
+            throw new RuntimeException(
+                'Respuesta inválida del servicio de IA.'
+            );
+        }
+
+        return $data;
+    }
+
+
+    /**
+     * Inferencia YOLO-Seg.
+     */
+    public function predictYolo(
+        UploadedFile $image,
+        float $threshold = 0.25
+    ): array {
+
+        return $this->sendImage(
+            '/predict-yolo',
+            $image,
+            [
+                'threshold' => $threshold,
+            ]
+        );
+    }
+
+
+    /**
+     * Inferencia Mask R-CNN.
+     */
+    public function predictMaskRcnn(
+        UploadedFile $image,
+        float $threshold = 0.40
+    ): array {
+
+        return $this->sendImage(
+            '/predict-maskrcnn',
+            $image,
+            [
+                'threshold' => $threshold,
+            ]
+        );
+    }
+
+
+    /**
+     * Comparación YOLO-Seg vs Mask R-CNN.
+     */
+    public function compareModels(
+        UploadedFile $image,
+        float $yoloThreshold = 0.25,
+        float $maskrcnnThreshold = 0.40,
+        float $matchingIou = 0.50
+    ): array {
+
+        return $this->sendImage(
+            '/compare-models',
+            $image,
+            [
+                'yolo_threshold' =>
+                    $yoloThreshold,
+
+                'maskrcnn_threshold' =>
+                    $maskrcnnThreshold,
+
+                'matching_iou' =>
+                    $matchingIou,
+            ]
+        );
+    }
+
+
+    /**
+     * Método común para enviar imágenes
+     * mediante multipart/form-data.
+     */
+    private function sendImage(
+        string $endpoint,
+        UploadedFile $image,
+        array $parameters = []
+    ): array {
+
+        $stream = fopen(
+            $image->getRealPath(),
+            'r'
+        );
+
+        if ($stream === false) {
+            throw new RuntimeException(
+                'No fue posible abrir la imagen.'
+            );
+        }
+
+        try {
+
+            $response = Http::timeout(240)
+                ->connectTimeout(20)
+                ->acceptJson()
+                ->attach(
+                    'image',
+                    $stream,
+                    $image->getClientOriginalName()
+                )
+                ->post(
+                    $this->baseUrl . $endpoint,
+                    $parameters
+                );
+
+            $response->throw();
+
+            $data = $response->json();
+
+            if (!is_array($data)) {
+                throw new RuntimeException(
+                    'El servicio de IA devolvió una respuesta inválida.'
+                );
+            }
+
+            return $data;
+
+        } finally {
+
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+    }
+}
