@@ -2,7 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-
+use App\Http\Controllers\AiAnalysisController;
+use App\Http\Controllers\MosaicController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\EspecieController;
 use App\Http\Controllers\ParcelaController;
@@ -83,6 +84,44 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::resource('estimaciones', EstimacionController::class);
     Route::get('/estimaciones/formulas-por-tipo/{tipoId}', [EstimacionController::class, 'getFormulasByTipo']);
     // Catalogo de especies permanece aquí para administración CRUD.
+
+    Route::get(
+    '/analisis-uav',
+    [
+        AiAnalysisController::class,
+        'index'
+    ]
+)->name(
+    'analysis.index'
+);
+
+
+Route::post(
+    '/analisis-uav',
+    [
+        AiAnalysisController::class,
+        'analyze'
+    ]
+)->name(
+    'analysis.analyze'
+);
+
+Route::get(
+    '/ortomosaicos',
+    [MosaicController::class, 'index']
+)->name('mosaics.index');
+
+
+Route::post(
+    '/ortomosaicos/presign',
+    [MosaicController::class, 'presign']
+)->name('mosaics.presign');
+
+
+Route::post(
+    '/ortomosaicos/complete',
+    [MosaicController::class, 'complete']
+)->name('mosaics.complete');
 });
 
 // =====================================================================
@@ -158,26 +197,5 @@ Route::prefix('P')->middleware(['auth', 'role:Productor'])->group(function () {
 
 
 ///////////////////////////////////////////UAV
-use App\Http\Controllers\AiAnalysisController;
 
 
-Route::get(
-    '/analisis-uav',
-    [
-        AiAnalysisController::class,
-        'index'
-    ]
-)->name(
-    'analysis.index'
-);
-
-
-Route::post(
-    '/analisis-uav',
-    [
-        AiAnalysisController::class,
-        'analyze'
-    ]
-)->name(
-    'analysis.analyze'
-);
