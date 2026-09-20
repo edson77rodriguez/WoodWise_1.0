@@ -168,4 +168,27 @@ class AiService
             }
         }
     }
+
+
+
+    public function inspectMosaic(
+    string $mosaicUuid,
+    string $objectKey
+): array
+{
+    $response = Http::timeout(300)
+        ->connectTimeout(20)
+        ->acceptJson()
+        ->post(
+            $this->baseUrl . '/mosaic/inspect',
+            [
+                'mosaic_uuid' => $mosaicUuid,
+                'object_key' => $objectKey,
+            ]
+        );
+
+    $response->throw();
+
+    return $response->json();
+}
 }

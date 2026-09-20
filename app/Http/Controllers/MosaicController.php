@@ -7,6 +7,9 @@ use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\AiService;
+use Illuminate\Support\Facades\Log;
+
 
 class MosaicController extends Controller
 {
@@ -290,4 +293,109 @@ class MosaicController extends Controller
                 'Ortomosaico almacenado correctamente.'
         ]);
     }
+public function inspect(
+    Mosaic $mosaic,
+    AiService $ai
+)
+{
+    $mosaic->update([
+        'status' => 'inspecting',
+    ]);
+
+    try {
+
+        $result = $ai->inspectMosaic(
+            $mosaic->uuid,
+            $mosaic->object_key
+        );
+
+        $mosaic->update([
+
+            'width' =>
+                $result['width'] ?? null,
+
+            'height' =>
+                $result['height'] ?? null,
+
+            'bands' =>
+                $result['bands'] ?? null,
+
+            'dtype' =>
+                $result['dtype'] ?? null,
+
+            'crs' =>
+                $result['crs'] ?? null,
+
+            'pixel_size_x' =>
+                $result['pixel_size_x'] ?? null,
+
+            'pixel_size_y' =>
+                $result['pixel_size_y'] ?? null,
+
+            'gsd_cm' =>
+                $result['gsd_cm'] ?? null,
+
+            'bounds' =>
+                $result['bounds'] ?? null,
+
+            'transform' =>
+                $result['transform'] ?? null,
+
+            'nodata' =>
+                $result['nodata'] ?? null,
+
+            'checksum_sha256' =>
+                $result['checksum_sha256'] ?? null,
+
+            'metadata' => array_merge(
+                $result['metadata'] ?? [],
+                [
+                    'inspection' => [
+
+                        'processing_seconds' =>
+                            $result['processing_seconds'] ?? null,
+
+                        'size_bytes' =>
+                            $result['size_bytes'] ?? null,
+                    ]
+                ]
+            ),
+
+            'status' =>
+                'ready',
+
+            'inspected_at' =>
+                now(),
+        ]);
+
+        return redirect()
+            ->route('mosaics.index')
+            ->with(
+                'success',
+                'Ortomosaico inspeccionado correctamente.'
+            );
+
+    } catch (\Throwable $e) {
+
+        Log::error(
+            'Error inspeccionando ortomosaico',
+            [
+                'mosaic_uuid' => $mosaic->uuid,
+                'error' => $e->getMessage(),
+            ]
+        );
+
+        $mosaic->update([
+            'status' => 'failed',
+        ]);
+
+        return redirect()
+            ->route('mosaics.index')
+            ->with(
+                'error',
+                'No se pudo inspeccionar: '
+                . $e->getMessage()
+            );
+    }
+}
 }

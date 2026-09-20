@@ -122,6 +122,15 @@ Route::post(
     '/ortomosaicos/complete',
     [MosaicController::class, 'complete']
 )->name('mosaics.complete');
+
+Route::post(
+    '/ortomosaicos/{mosaic:uuid}/inspect',
+    [MosaicController::class, 'inspect']
+)->name('mosaics.inspect');
+
+
+
+
 });
 
 // =====================================================================
