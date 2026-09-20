@@ -227,47 +227,7 @@ public function generateMosaicPreview(
     return $response->json();
 }
 
-public function generateMosaicTilingPreview(
-    string $mosaicUuid,
-    string $objectKey
-): array
-{
-    $response = Http::timeout(300)
-        ->connectTimeout(20)
-        ->acceptJson()
-        ->post(
-            $this->baseUrl
-            . '/mosaic/tiling/preview',
-            [
-                'mosaic_uuid' =>
-                    $mosaicUuid,
 
-                'object_key' =>
-                    $objectKey,
-
-                'tile_size' =>
-                    1024,
-
-                'overlap' =>
-                    256,
-
-                'max_width' =>
-                    1400,
-
-                'max_height' =>
-                    1000,
-
-                'jpeg_quality' =>
-                    90,
-            ]
-        );
-
-
-    $response->throw();
-
-
-    return $response->json();
-}
 
 public function generateMosaicTilingPreview(
     string $mosaicUuid,
