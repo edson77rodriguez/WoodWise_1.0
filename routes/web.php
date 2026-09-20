@@ -139,6 +139,19 @@ Route::get(
     [MosaicController::class, 'preview']
 )->name('mosaics.preview');
 
+Route::post(
+    '/ortomosaicos/{mosaic:uuid}/tiling-preview',
+    [MosaicController::class, 'generateTilingPreview']
+)->name('mosaics.tiling.generate');
+
+
+Route::get(
+    '/ortomosaicos/{mosaic:uuid}/tiling-preview',
+    [MosaicController::class, 'tilingPreview']
+)->name('mosaics.tiling.preview');
+
+
+
 
 });
 

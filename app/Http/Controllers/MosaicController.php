@@ -550,4 +550,171 @@ public function preview(
         $url
     );
 }
+
+public function generateTilingPreview(
+    Mosaic $mosaic,
+    AiService $ai
+)
+{
+    if ($mosaic->status !== 'ready') {
+
+        return redirect()
+            ->route('mosaics.index')
+            ->with(
+                'error',
+                'El ortomosaico debe estar inspeccionado.'
+            );
+    }
+
+
+    try {
+
+        $result =
+            $ai->generateMosaicTilingPreview(
+                $mosaic->uuid,
+                $mosaic->object_key
+            );
+
+
+        $metadata =
+            $mosaic->metadata
+            ?? [];
+
+
+        $metadata['tiling_preview'] = [
+
+            'object_key' =>
+                $result[
+                    'tiling_preview_object_key'
+                ],
+
+            'width' =>
+                $result[
+                    'preview_width'
+                ] ?? null,
+
+            'height' =>
+                $result[
+                    'preview_height'
+                ] ?? null,
+
+            'size_bytes' =>
+                $result[
+                    'size_bytes'
+                ] ?? null,
+
+            'processing_seconds' =>
+                $result[
+                    'processing_seconds'
+                ] ?? null,
+
+            'configuration' =>
+                $result[
+                    'configuration'
+                ] ?? [],
+
+            'grid' =>
+                $result[
+                    'grid'
+                ] ?? [],
+
+            'actual_overlap' =>
+                $result[
+                    'actual_overlap'
+                ] ?? [],
+
+            'summary' =>
+                $result[
+                    'summary'
+                ] ?? [],
+
+            'generated_at' =>
+                now()
+                    ->toIso8601String(),
+        ];
+
+
+        $mosaic->update([
+            'metadata' => $metadata
+        ]);
+
+
+        return redirect()
+            ->route('mosaics.index')
+            ->with(
+                'success',
+                'Cuadrícula de tiling generada correctamente.'
+            );
+
+
+    } catch (\Throwable $e) {
+
+
+        Log::error(
+            'Error generando preview de tiling',
+            [
+                'mosaic_uuid' =>
+                    $mosaic->uuid,
+
+                'error' =>
+                    $e->getMessage(),
+            ]
+        );
+
+
+        return redirect()
+            ->route('mosaics.index')
+            ->with(
+                'error',
+                'No se pudo generar la cuadrícula: '
+                . $e->getMessage()
+            );
+    }
+}
+public function tilingPreview(
+    Mosaic $mosaic
+)
+{
+    $objectKey =
+        data_get(
+            $mosaic->metadata,
+            'tiling_preview.object_key'
+        );
+
+
+    if (!$objectKey) {
+
+        abort(
+            404,
+            'No existe una cuadrícula de tiling.'
+        );
+    }
+
+
+    if (
+        !Storage::disk('r2')
+            ->exists(
+                $objectKey
+            )
+    ) {
+
+        abort(
+            404,
+            'La cuadrícula no existe en R2.'
+        );
+    }
+
+
+    $url =
+        Storage::disk('r2')
+            ->temporaryUrl(
+                $objectKey,
+                now()->addMinutes(10)
+            );
+
+
+    return redirect()->away(
+        $url
+    );
+}
 }

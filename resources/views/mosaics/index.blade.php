@@ -283,7 +283,7 @@
             display: grid;
 
             grid-template-columns:
-                repeat(4, minmax(0, 1fr));
+                repeat(5, minmax(0, 1fr));
 
             gap: 16px;
 
@@ -800,6 +800,16 @@
            RESPONSIVE
         ========================================================= */
 
+        @media (max-width: 1100px) {
+
+            .stats-grid {
+                grid-template-columns:
+                    repeat(3, minmax(0, 1fr));
+            }
+
+        }
+
+
         @media (max-width: 900px) {
 
             .stats-grid {
@@ -892,6 +902,20 @@
                     !empty(
                         $mosaic
                             ->preview_object_key
+                    )
+            )
+            ->count();
+
+
+    $tilingPreviewMosaics =
+        $mosaics
+            ->filter(
+                fn ($mosaic) =>
+                    !empty(
+                        data_get(
+                            $mosaic->metadata,
+                            'tiling_preview.object_key'
+                        )
                     )
             )
             ->count();
@@ -1039,6 +1063,19 @@
 
             <div class="stat-value">
                 {{ $previewMosaics }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Con cuadrícula
+            </div>
+
+            <div class="stat-value">
+                {{ $tilingPreviewMosaics }}
             </div>
 
         </div>
@@ -1399,6 +1436,27 @@
                                     $mosaic->metadata,
                                     'preview',
                                     []
+                                );
+
+
+                            $tilingPreviewMetadata =
+                                data_get(
+                                    $mosaic->metadata,
+                                    'tiling_preview',
+                                    []
+                                );
+
+
+                            $tilingPreviewObjectKey =
+                                data_get(
+                                    $mosaic->metadata,
+                                    'tiling_preview.object_key'
+                                );
+
+
+                            $hasTilingPreview =
+                                !empty(
+                                    $tilingPreviewObjectKey
                                 );
 
                         @endphp
@@ -1961,6 +2019,136 @@
 
 
 
+                                            @if($hasTilingPreview)
+
+                                                <div>
+
+                                                    <strong>
+                                                        Cuadrícula:
+                                                    </strong>
+
+                                                    Disponible
+
+                                                </div>
+
+
+                                                <div>
+
+                                                    <strong>
+                                                        Grid:
+                                                    </strong>
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'grid.columns'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    ×
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'grid.rows'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                </div>
+
+
+                                                <div>
+
+                                                    <strong>
+                                                        Total tiles:
+                                                    </strong>
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'summary.total_tiles'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                </div>
+
+
+                                                <div>
+
+                                                    <strong>
+                                                        Tile:
+                                                    </strong>
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'configuration.tile_size'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    px
+
+                                                </div>
+
+
+                                                <div>
+
+                                                    <strong>
+                                                        Overlap solicitado:
+                                                    </strong>
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'configuration.requested_overlap'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    px
+
+                                                </div>
+
+
+                                                <div>
+
+                                                    <strong>
+                                                        Validez media:
+                                                    </strong>
+
+                                                    @php
+                                                        $meanValidFraction =
+                                                            data_get(
+                                                                $tilingPreviewMetadata,
+                                                                'summary.valid_fraction.mean'
+                                                            );
+                                                    @endphp
+
+                                                    @if($meanValidFraction !== null)
+
+                                                        {{
+                                                            number_format(
+                                                                $meanValidFraction * 100,
+                                                                1
+                                                            )
+                                                        }} %
+
+                                                    @else
+
+                                                        —
+
+                                                    @endif
+
+                                                </div>
+
+                                            @endif
+
+
+
                                             @if(
                                                 $mosaic
                                                     ->checksum_sha256
@@ -2164,6 +2352,72 @@
                                         @endif
 
 
+                                        {{-- Cuadrícula de tiling --}}
+                                        @if(
+                                            !$hasTilingPreview
+                                            &&
+                                            \Illuminate\Support\Facades\Route::has(
+                                                'mosaics.tiling.generate'
+                                            )
+                                        )
+
+                                            <form
+                                                method="POST"
+                                                action="{{
+                                                    route(
+                                                        'mosaics.tiling.generate',
+                                                        $mosaic->uuid
+                                                    )
+                                                }}"
+                                            >
+
+                                                @csrf
+
+                                                <button
+                                                    type="submit"
+                                                    class="
+                                                        btn
+                                                        btn-secondary
+                                                        btn-small
+                                                    "
+                                                >
+
+                                                    Generar cuadrícula
+
+                                                </button>
+
+                                            </form>
+
+                                        @elseif(
+                                            $hasTilingPreview
+                                            &&
+                                            \Illuminate\Support\Facades\Route::has(
+                                                'mosaics.tiling.preview'
+                                            )
+                                        )
+
+                                            <a
+                                                href="{{
+                                                    route(
+                                                        'mosaics.tiling.preview',
+                                                        $mosaic->uuid
+                                                    )
+                                                }}"
+                                                target="_blank"
+                                                class="
+                                                    btn
+                                                    btn-outline
+                                                    btn-small
+                                                "
+                                            >
+
+                                                Ver cuadrícula
+
+                                            </a>
+
+                                        @endif
+
+
 
                                     {{-- Procesando --}}
                                     @elseif(
@@ -2236,13 +2490,17 @@
                 El GeoTIFF original permanece almacenado
                 sin modificaciones en Cloudflare R2.
 
-                La vista JPG se utiliza exclusivamente para
-                visualización y no interviene en cálculos
-                dasométricos, segmentación ni mediciones.
+                La vista JPG y la cuadrícula de tiling se utilizan
+                exclusivamente para visualización y control QA/QC;
+                no sustituyen al GeoTIFF ni intervienen directamente
+                en cálculos dasométricos o mediciones.
 
                 Los análisis científicos continúan utilizando
                 el raster original junto con su CRS, GSD,
-                transformación espacial y SHA-256.
+                transformación espacial y SHA-256. La cuadrícula
+                permite verificar visualmente la cobertura de las
+                ventanas de 1024 px y su solapamiento antes de ejecutar
+                YOLO-Seg y Mask R-CNN.
 
             </p>
 
