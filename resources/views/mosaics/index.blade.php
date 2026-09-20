@@ -1108,27 +1108,17 @@
 
                         <select id="project">
 
-                            @foreach(
-                                $projects
-                                as
-                                $project
-                            )
+    @foreach($projects as $project)
 
-                                <option
-                                    value="{{
-                                        $project->id
-                                    }}"
-                                >
+        <option value="{{ $project->id }}">
 
-                                    {{
-                                        $project->name
-                                    }}
+            {{ $project->name }}
 
-                                </option>
+        </option>
 
-                            @endforeach
+    @endforeach
 
-                        </select>
+</select>
 
                     </div>
 
@@ -1338,11 +1328,7 @@
                     <tbody>
 
 
-                    @foreach(
-                        $mosaics
-                        as
-                        $mosaic
-                    )
+                    @foreach($mosaics as $mosaic)
 
 
                         @php
