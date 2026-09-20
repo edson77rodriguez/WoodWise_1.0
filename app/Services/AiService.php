@@ -191,4 +191,39 @@ class AiService
 
     return $response->json();
 }
+
+
+public function generateMosaicPreview(
+    string $mosaicUuid,
+    string $objectKey
+): array
+{
+    $response = Http::timeout(300)
+        ->connectTimeout(20)
+        ->acceptJson()
+        ->post(
+            $this->baseUrl
+            . '/mosaic/preview',
+            [
+                'mosaic_uuid' =>
+                    $mosaicUuid,
+
+                'object_key' =>
+                    $objectKey,
+
+                'max_width' =>
+                    1400,
+
+                'max_height' =>
+                    1000,
+
+                'jpeg_quality' =>
+                    88,
+            ]
+        );
+
+    $response->throw();
+
+    return $response->json();
+}
 }

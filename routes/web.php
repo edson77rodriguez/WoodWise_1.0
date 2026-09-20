@@ -128,7 +128,16 @@ Route::post(
     [MosaicController::class, 'inspect']
 )->name('mosaics.inspect');
 
+Route::post(
+    '/ortomosaicos/{mosaic:uuid}/preview',
+    [MosaicController::class, 'generatePreview']
+)->name('mosaics.preview.generate');
 
+
+Route::get(
+    '/ortomosaicos/{mosaic:uuid}/preview',
+    [MosaicController::class, 'preview']
+)->name('mosaics.preview');
 
 
 });

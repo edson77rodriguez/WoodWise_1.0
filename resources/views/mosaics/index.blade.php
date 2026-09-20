@@ -58,6 +58,7 @@
 
         body {
             margin: 0;
+
             font-family:
                 Inter,
                 system-ui,
@@ -72,7 +73,7 @@
 
 
         .page {
-            max-width: 1400px;
+            max-width: 1500px;
             margin: auto;
             padding: 32px 24px 60px;
         }
@@ -87,21 +88,26 @@
             justify-content: space-between;
             align-items: flex-start;
             gap: 24px;
+
             margin-bottom: 28px;
         }
 
 
         .page-title {
             margin: 0;
+
             font-size: 30px;
             line-height: 1.2;
+
             color: #16382b;
         }
 
 
         .page-subtitle {
             margin: 8px 0 0;
-            max-width: 760px;
+
+            max-width: 780px;
+
             color: var(--text-soft);
             line-height: 1.55;
         }
@@ -120,8 +126,10 @@
 
         .btn {
             appearance: none;
+
             border: 0;
             border-radius: 9px;
+
             padding: 10px 16px;
 
             display: inline-flex;
@@ -131,6 +139,7 @@
 
             font-size: 14px;
             font-weight: 650;
+
             text-decoration: none;
 
             cursor: pointer;
@@ -171,10 +180,22 @@
         }
 
 
+        .btn-secondary:hover {
+            background: #dceee5;
+        }
+
+
         .btn-outline {
             color: var(--text);
+
             background: white;
+
             border: 1px solid var(--border);
+        }
+
+
+        .btn-outline:hover {
+            background: var(--surface-soft);
         }
 
 
@@ -190,8 +211,10 @@
 
         .alert {
             border-radius: 10px;
+
             padding: 14px 16px;
             margin-bottom: 20px;
+
             font-size: 14px;
             line-height: 1.45;
         }
@@ -200,6 +223,7 @@
         .alert-success {
             background: var(--success-bg);
             color: var(--success);
+
             border: 1px solid #cbe9d8;
         }
 
@@ -207,6 +231,7 @@
         .alert-error {
             background: var(--danger-bg);
             color: var(--danger);
+
             border: 1px solid #f3d0cc;
         }
 
@@ -217,15 +242,19 @@
 
         .card {
             background: var(--surface);
+
             border: 1px solid var(--border);
             border-radius: 14px;
+
             box-shadow: var(--shadow);
+
             margin-bottom: 24px;
         }
 
 
         .card-header {
             padding: 20px 22px;
+
             border-bottom: 1px solid var(--border);
 
             display: flex;
@@ -252,24 +281,31 @@
 
         .stats-grid {
             display: grid;
+
             grid-template-columns:
                 repeat(4, minmax(0, 1fr));
+
             gap: 16px;
+
             margin-bottom: 24px;
         }
 
 
         .stat-card {
             background: white;
+
             border: 1px solid var(--border);
             border-radius: 12px;
+
             padding: 18px;
         }
 
 
         .stat-label {
             color: var(--text-soft);
+
             font-size: 13px;
+
             margin-bottom: 6px;
         }
 
@@ -277,29 +313,34 @@
         .stat-value {
             font-size: 26px;
             font-weight: 750;
+
             color: #193b2e;
         }
 
 
         /* =========================================================
-           FORMULARIO DE CARGA
+           CARGA
         ========================================================= */
 
         .upload-grid {
             display: grid;
+
             grid-template-columns:
                 minmax(230px, .7fr)
                 minmax(320px, 1.3fr);
+
             gap: 20px;
         }
 
 
         .field label {
             display: block;
+
             margin-bottom: 7px;
 
             font-size: 13px;
             font-weight: 700;
+
             color: #35483f;
         }
 
@@ -307,14 +348,12 @@
         select,
         input[type="file"] {
             width: 100%;
+
             padding: 11px 12px;
 
             background: white;
 
-            border:
-                1px solid
-                #cad6cf;
-
+            border: 1px solid #cad6cf;
             border-radius: 9px;
 
             font: inherit;
@@ -325,6 +364,7 @@
         select:focus,
         input[type="file"]:focus {
             outline: none;
+
             border-color: var(--primary);
 
             box-shadow:
@@ -335,7 +375,9 @@
 
         .file-help {
             margin-top: 7px;
+
             color: var(--text-soft);
+
             font-size: 12px;
             line-height: 1.4;
         }
@@ -346,13 +388,15 @@
 
             display: flex;
             align-items: center;
+
             gap: 16px;
+
             flex-wrap: wrap;
         }
 
 
         /* =========================================================
-           PROGRESS
+           PROGRESO
         ========================================================= */
 
         .progress-wrapper {
@@ -363,9 +407,11 @@
         .progress-meta {
             display: flex;
             justify-content: space-between;
+
             gap: 15px;
 
             font-size: 13px;
+
             margin-bottom: 7px;
 
             color: var(--text-soft);
@@ -378,6 +424,7 @@
 
             border: 0;
             border-radius: 999px;
+
             overflow: hidden;
 
             appearance: none;
@@ -403,6 +450,7 @@
 
         .upload-status {
             margin-top: 9px;
+
             font-size: 13px;
             font-weight: 650;
         }
@@ -419,8 +467,10 @@
 
         table {
             width: 100%;
+
             border-collapse: collapse;
-            min-width: 1100px;
+
+            min-width: 1450px;
         }
 
 
@@ -429,6 +479,7 @@
 
             font-size: 12px;
             font-weight: 750;
+
             text-transform: uppercase;
             letter-spacing: .035em;
 
@@ -444,6 +495,7 @@
 
         td {
             padding: 15px 14px;
+
             vertical-align: middle;
 
             border-bottom: 1px solid #edf1ef;
@@ -463,7 +515,7 @@
 
 
         .file-name {
-            max-width: 280px;
+            max-width: 250px;
 
             font-size: 13px;
             font-weight: 700;
@@ -474,9 +526,11 @@
 
         .file-meta {
             display: block;
+
             margin-top: 4px;
 
             color: var(--text-soft);
+
             font-size: 11px;
         }
 
@@ -495,12 +549,106 @@
 
 
         /* =========================================================
+           PREVIEW
+        ========================================================= */
+
+        .preview-box {
+            width: 170px;
+            height: 105px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #edf3ef,
+                    #f8faf9
+                );
+
+            border: 1px solid var(--border);
+            border-radius: 10px;
+
+            overflow: hidden;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            position: relative;
+        }
+
+
+        .preview-box img {
+            width: 100%;
+            height: 100%;
+
+            object-fit: contain;
+
+            display: block;
+
+            background: #eef2ef;
+        }
+
+
+        .preview-empty {
+            padding: 12px;
+
+            color: #78857d;
+
+            font-size: 11px;
+
+            line-height: 1.35;
+
+            text-align: center;
+        }
+
+
+        .preview-link {
+            display: block;
+
+            text-decoration: none;
+
+            border-radius: 10px;
+        }
+
+
+        .preview-link:hover .preview-box {
+            border-color: var(--primary);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(23, 107, 77, .08);
+        }
+
+
+        .preview-label {
+            position: absolute;
+
+            left: 7px;
+            bottom: 7px;
+
+            padding: 3px 6px;
+
+            border-radius: 6px;
+
+            background:
+                rgba(20, 47, 37, .78);
+
+            color: white;
+
+            font-size: 10px;
+
+            backdrop-filter:
+                blur(4px);
+        }
+
+
+        /* =========================================================
            BADGES
         ========================================================= */
 
         .badge {
             display: inline-flex;
             align-items: center;
+
             gap: 6px;
 
             padding: 5px 9px;
@@ -516,9 +664,12 @@
 
         .badge::before {
             content: "";
+
             width: 7px;
             height: 7px;
+
             border-radius: 999px;
+
             background: currentColor;
         }
 
@@ -556,9 +707,14 @@
 
         .actions {
             display: flex;
+
             gap: 7px;
+
             align-items: center;
+
             flex-wrap: wrap;
+
+            min-width: 150px;
         }
 
 
@@ -578,7 +734,9 @@
 
         summary {
             color: var(--primary);
+
             font-weight: 650;
+
             cursor: pointer;
         }
 
@@ -587,10 +745,13 @@
             margin-top: 10px;
 
             display: grid;
+
             grid-template-columns: 1fr;
+
             gap: 6px;
 
             color: var(--text-soft);
+
             font-size: 12px;
         }
 
@@ -602,10 +763,13 @@
 
         .hash {
             display: inline-block;
+
             max-width: 230px;
 
             overflow: hidden;
+
             text-overflow: ellipsis;
+
             white-space: nowrap;
         }
 
@@ -616,14 +780,18 @@
 
         .empty-state {
             padding: 46px 20px;
+
             text-align: center;
+
             color: var(--text-soft);
         }
 
 
         .empty-title {
             color: var(--text);
+
             font-weight: 700;
+
             margin-bottom: 6px;
         }
 
@@ -660,7 +828,8 @@
 
 
             .stats-grid {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns:
+                    1fr 1fr;
             }
 
 
@@ -677,15 +846,21 @@
 
 <body>
 
+
 @php
 
     $totalMosaics =
         $mosaics->count();
 
+
     $readyMosaics =
         $mosaics
-            ->where('status', 'ready')
+            ->where(
+                'status',
+                'ready'
+            )
             ->count();
+
 
     $pendingMosaics =
         $mosaics
@@ -700,12 +875,29 @@
             )
             ->count();
 
+
     $failedMosaics =
         $mosaics
-            ->where('status', 'failed')
+            ->where(
+                'status',
+                'failed'
+            )
+            ->count();
+
+
+    $previewMosaics =
+        $mosaics
+            ->filter(
+                fn ($mosaic) =>
+                    !empty(
+                        $mosaic
+                            ->preview_object_key
+                    )
+            )
             ->count();
 
 @endphp
+
 
 
 <div class="page">
@@ -743,10 +935,16 @@
             )
 
                 <a
-                    href="{{ route('analysis.index') }}"
+                    href="{{
+                        route(
+                            'analysis.index'
+                        )
+                    }}"
                     class="btn btn-outline"
                 >
+
                     ← Análisis UAV
+
                 </a>
 
             @endif
@@ -764,7 +962,9 @@
     @if(session('success'))
 
         <div class="alert alert-success">
+
             {{ session('success') }}
+
         </div>
 
     @endif
@@ -773,7 +973,9 @@
     @if(session('error'))
 
         <div class="alert alert-error">
+
             {{ session('error') }}
+
         </div>
 
     @endif
@@ -832,11 +1034,11 @@
         <div class="stat-card">
 
             <div class="stat-label">
-                En preparación
+                Con vista previa
             </div>
 
             <div class="stat-value">
-                {{ $pendingMosaics }}
+                {{ $previewMosaics }}
             </div>
 
         </div>
@@ -845,11 +1047,17 @@
         <div class="stat-card">
 
             <div class="stat-label">
-                Con error
+                Pendientes / error
             </div>
 
             <div class="stat-value">
-                {{ $failedMosaics }}
+
+                {{
+                    $pendingMosaics
+                    +
+                    $failedMosaics
+                }}
+
             </div>
 
         </div>
@@ -866,29 +1074,29 @@
 
         <div class="card-header">
 
-            <div>
-
-                <h2>
-                    Nuevo ortomosaico
-                </h2>
-
-            </div>
+            <h2>
+                Nuevo ortomosaico
+            </h2>
 
         </div>
 
 
         <div class="card-body">
 
+
             @if($projects->isEmpty())
 
                 <div class="alert alert-error">
 
                     No existe ningún proyecto activo.
-                    Primero debes crear o activar un proyecto.
+                    Primero debes crear o activar
+                    un proyecto.
 
                 </div>
 
+
             @else
+
 
                 <div class="upload-grid">
 
@@ -900,13 +1108,21 @@
 
                         <select id="project">
 
-                            @foreach($projects as $project)
+                            @foreach(
+                                $projects
+                                as
+                                $project
+                            )
 
                                 <option
-                                    value="{{ $project->id }}"
+                                    value="{{
+                                        $project->id
+                                    }}"
                                 >
 
-                                    {{ $project->name }}
+                                    {{
+                                        $project->name
+                                    }}
 
                                 </option>
 
@@ -920,7 +1136,9 @@
                     <div class="field">
 
                         <label for="mosaicFile">
+
                             Ortomosaico GeoTIFF
+
                         </label>
 
                         <input
@@ -931,12 +1149,12 @@
 
                         <div class="file-help">
 
-                            Formatos admitidos:
+                            Formatos permitidos:
                             .tif y .tiff.
 
                             El archivo se transfiere
                             directamente desde el navegador
-                            a Cloudflare R2.
+                            hacia Cloudflare R2.
 
                         </div>
 
@@ -956,6 +1174,7 @@
                         Subir ortomosaico
 
                     </button>
+
 
                     <span
                         id="selectedFileInfo"
@@ -983,11 +1202,13 @@
 
                     </div>
 
+
                     <progress
                         id="uploadProgress"
                         value="0"
                         max="100"
                     ></progress>
+
 
                     <div
                         id="uploadStatus"
@@ -995,6 +1216,7 @@
                     ></div>
 
                 </div>
+
 
             @endif
 
@@ -1005,7 +1227,7 @@
 
 
     {{-- =========================================================
-         TABLA DE ORTOMOSAICOS
+         TABLA
     ========================================================== --}}
 
     <div class="card">
@@ -1016,9 +1238,17 @@
                 Ortomosaicos registrados
             </h2>
 
+
             <span class="file-help">
+
                 {{ $totalMosaics }}
-                registro{{ $totalMosaics === 1 ? '' : 's' }}
+
+                registro{{
+                    $totalMosaics === 1
+                        ? ''
+                        : 's'
+                }}
+
             </span>
 
         </div>
@@ -1026,20 +1256,27 @@
 
         @if($mosaics->isEmpty())
 
+
             <div class="empty-state">
 
                 <div class="empty-title">
+
                     Todavía no hay ortomosaicos
+
                 </div>
 
                 <div>
+
                     Selecciona un proyecto y carga
                     tu primer GeoTIFF.
+
                 </div>
 
             </div>
 
+
         @else
+
 
             <div class="table-wrapper">
 
@@ -1048,6 +1285,10 @@
                     <thead>
 
                         <tr>
+
+                            <th>
+                                Vista
+                            </th>
 
                             <th>
                                 Archivo
@@ -1096,12 +1337,20 @@
 
                     <tbody>
 
-                    @foreach($mosaics as $mosaic)
+
+                    @foreach(
+                        $mosaics
+                        as
+                        $mosaic
+                    )
+
 
                         @php
 
                             $badgeClass =
-                                match($mosaic->status) {
+                                match(
+                                    $mosaic->status
+                                ) {
 
                                     'ready' =>
                                         'badge-ready',
@@ -1123,7 +1372,9 @@
 
 
                             $statusText =
-                                match($mosaic->status) {
+                                match(
+                                    $mosaic->status
+                                ) {
 
                                     'uploading' =>
                                         'Subiendo',
@@ -1149,21 +1400,131 @@
                                         ),
                                 };
 
+
+                            $hasPreview =
+                                !empty(
+                                    $mosaic
+                                        ->preview_object_key
+                                );
+
+
+                            $previewMetadata =
+                                data_get(
+                                    $mosaic->metadata,
+                                    'preview',
+                                    []
+                                );
+
                         @endphp
+
 
 
                         <tr>
 
-                            {{-- ARCHIVO --}}
+
+                            {{-- =================================================
+                                 PREVIEW
+                            ================================================== --}}
+
+                            <td>
+
+
+                                @if(
+                                    $hasPreview
+                                    &&
+                                    \Illuminate\Support\Facades\Route::has(
+                                        'mosaics.preview'
+                                    )
+                                )
+
+
+                                    <a
+                                        href="{{
+                                            route(
+                                                'mosaics.preview',
+                                                $mosaic->uuid
+                                            )
+                                        }}"
+                                        target="_blank"
+                                        class="preview-link"
+                                        title="Abrir vista previa"
+                                    >
+
+                                        <div class="preview-box">
+
+                                            <img
+                                                src="{{
+                                                    route(
+                                                        'mosaics.preview',
+                                                        $mosaic->uuid
+                                                    )
+                                                }}"
+                                                alt="Vista previa de {{
+                                                    $mosaic
+                                                        ->original_name
+                                                }}"
+                                                loading="lazy"
+                                            >
+
+                                            <span
+                                                class="preview-label"
+                                            >
+                                                Preview
+                                            </span>
+
+                                        </div>
+
+                                    </a>
+
+
+                                @else
+
+
+                                    <div class="preview-box">
+
+                                        <div class="preview-empty">
+
+                                            Sin vista previa
+
+                                            @if(
+                                                $mosaic->status
+                                                === 'ready'
+                                            )
+
+                                                <br>
+
+                                                Genérala desde
+                                                Acciones.
+
+                                            @endif
+
+                                        </div>
+
+                                    </div>
+
+
+                                @endif
+
+
+                            </td>
+
+
+
+                            {{-- =================================================
+                                 ARCHIVO
+                            ================================================== --}}
+
                             <td>
 
                                 <div class="file-name">
 
                                     {{
-                                        $mosaic->original_name
+                                        $mosaic
+                                            ->original_name
                                     }}
 
                                 </div>
+
 
                                 <span class="file-meta">
 
@@ -1173,6 +1534,7 @@
                                             ?? 'tif'
                                         )
                                     }}
+
 
                                     @if($mosaic->dtype)
 
@@ -1186,25 +1548,37 @@
                             </td>
 
 
-                            {{-- PROYECTO --}}
+
+                            {{-- =================================================
+                                 PROYECTO
+                            ================================================== --}}
+
                             <td>
 
                                 {{
-                                    $mosaic->project->name
+                                    $mosaic->project?->name
                                     ?? 'Sin proyecto'
                                 }}
 
                             </td>
 
 
-                            {{-- TAMAÑO --}}
+
+                            {{-- =================================================
+                                 TAMAÑO
+                            ================================================== --}}
+
                             <td>
 
-                                @if($mosaic->size_bytes)
+                                @if(
+                                    $mosaic
+                                        ->size_bytes
+                                )
 
                                     {{
                                         number_format(
-                                            $mosaic->size_bytes
+                                            $mosaic
+                                                ->size_bytes
                                             / 1024
                                             / 1024,
                                             2
@@ -1222,7 +1596,11 @@
                             </td>
 
 
-                            {{-- GSD --}}
+
+                            {{-- =================================================
+                                 GSD
+                            ================================================== --}}
+
                             <td>
 
                                 @if(
@@ -1234,7 +1612,8 @@
 
                                         {{
                                             number_format(
-                                                $mosaic->gsd_cm,
+                                                $mosaic
+                                                    ->gsd_cm,
                                                 3
                                             )
                                         }}
@@ -1252,7 +1631,11 @@
                             </td>
 
 
-                            {{-- CRS --}}
+
+                            {{-- =================================================
+                                 CRS
+                            ================================================== --}}
+
                             <td>
 
                                 @if($mosaic->crs)
@@ -1274,7 +1657,11 @@
                             </td>
 
 
-                            {{-- RESOLUCIÓN --}}
+
+                            {{-- =================================================
+                                 RESOLUCIÓN
+                            ================================================== --}}
+
                             <td>
 
                                 @if(
@@ -1310,7 +1697,11 @@
                             </td>
 
 
-                            {{-- BANDAS --}}
+
+                            {{-- =================================================
+                                 BANDAS
+                            ================================================== --}}
+
                             <td>
 
                                 {{
@@ -1321,7 +1712,11 @@
                             </td>
 
 
-                            {{-- ESTADO --}}
+
+                            {{-- =================================================
+                                 ESTADO
+                            ================================================== --}}
+
                             <td>
 
                                 <span
@@ -1338,13 +1733,19 @@
                             </td>
 
 
-                            {{-- DETALLES --}}
+
+                            {{-- =================================================
+                                 INFORMACIÓN
+                            ================================================== --}}
+
                             <td>
+
 
                                 @if(
                                     $mosaic->status
                                     === 'ready'
                                 )
+
 
                                     <details>
 
@@ -1353,9 +1754,8 @@
                                         </summary>
 
 
-                                        <div
-                                            class="details-grid"
-                                        >
+                                        <div class="details-grid">
+
 
                                             <div>
 
@@ -1366,7 +1766,7 @@
                                                 {{
                                                     $mosaic
                                                         ->pixel_size_x
-                                                        ?? '—'
+                                                    ?? '—'
                                                 }}
 
                                                 m
@@ -1383,7 +1783,7 @@
                                                 {{
                                                     $mosaic
                                                         ->pixel_size_y
-                                                        ?? '—'
+                                                    ?? '—'
                                                 }}
 
                                                 m
@@ -1399,11 +1799,12 @@
 
                                                 {{
                                                     data_get(
-                                                        $mosaic->metadata,
+                                                        $mosaic
+                                                            ->metadata,
                                                         'has_alpha'
                                                     )
-                                                        ? 'Sí'
-                                                        : 'No'
+                                                    ? 'Sí'
+                                                    : 'No'
                                                 }}
 
                                             </div>
@@ -1417,7 +1818,8 @@
 
                                                 {{
                                                     data_get(
-                                                        $mosaic->metadata,
+                                                        $mosaic
+                                                            ->metadata,
                                                         'compression'
                                                     )
                                                     ?? '—'
@@ -1434,11 +1836,12 @@
 
                                                 {{
                                                     data_get(
-                                                        $mosaic->metadata,
+                                                        $mosaic
+                                                            ->metadata,
                                                         'is_projected'
                                                     )
-                                                        ? 'Sí'
-                                                        : 'No'
+                                                    ? 'Sí'
+                                                    : 'No'
                                                 }}
 
                                             </div>
@@ -1472,16 +1875,118 @@
                                             </div>
 
 
+
+                                            @if($hasPreview)
+
+
+                                                <div>
+
+                                                    <strong>
+                                                        Preview:
+                                                    </strong>
+
+                                                    Disponible
+
+                                                </div>
+
+
+                                                <div>
+
+                                                    <strong>
+                                                        Resolución preview:
+                                                    </strong>
+
+                                                    {{
+                                                        data_get(
+                                                            $previewMetadata,
+                                                            'width'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    ×
+
+                                                    {{
+                                                        data_get(
+                                                            $previewMetadata,
+                                                            'height'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    px
+
+                                                </div>
+
+
+                                                <div>
+
+                                                    <strong>
+                                                        Tamaño preview:
+                                                    </strong>
+
+                                                    @if(
+                                                        data_get(
+                                                            $previewMetadata,
+                                                            'size_bytes'
+                                                        )
+                                                    )
+
+                                                        {{
+                                                            number_format(
+                                                                data_get(
+                                                                    $previewMetadata,
+                                                                    'size_bytes'
+                                                                )
+                                                                / 1024,
+                                                                1
+                                                            )
+                                                        }}
+
+                                                        KiB
+
+                                                    @else
+
+                                                        —
+
+                                                    @endif
+
+                                                </div>
+
+
+                                                <div>
+
+                                                    <strong>
+                                                        Calidad JPEG:
+                                                    </strong>
+
+                                                    {{
+                                                        data_get(
+                                                            $previewMetadata,
+                                                            'jpeg_quality'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                </div>
+
+
+                                            @endif
+
+
+
                                             @if(
                                                 $mosaic
                                                     ->checksum_sha256
                                             )
+
 
                                                 <div>
 
                                                     <strong>
                                                         SHA-256:
                                                     </strong>
+
 
                                                     <span
                                                         class="
@@ -1503,13 +2008,17 @@
 
                                                 </div>
 
+
                                             @endif
+
 
                                         </div>
 
                                     </details>
 
+
                                 @else
+
 
                                     <span class="file-meta">
 
@@ -1517,16 +2026,24 @@
 
                                     </span>
 
+
                                 @endif
+
 
                             </td>
 
 
-                            {{-- ACCIONES --}}
+
+                            {{-- =================================================
+                                 ACCIONES
+                            ================================================== --}}
+
                             <td>
 
                                 <div class="actions">
 
+
+                                    {{-- Inspección --}}
                                     @if(
                                         in_array(
                                             $mosaic->status,
@@ -1536,6 +2053,7 @@
                                             ]
                                         )
                                     )
+
 
                                         <form
                                             method="POST"
@@ -1548,6 +2066,7 @@
                                         >
 
                                             @csrf
+
 
                                             <button
                                                 type="submit"
@@ -1565,10 +2084,13 @@
                                         </form>
 
 
+
+                                    {{-- Ya está listo --}}
                                     @elseif(
                                         $mosaic->status
                                         === 'ready'
                                     )
+
 
                                         <span
                                             class="
@@ -1582,6 +2104,82 @@
                                         </span>
 
 
+
+                                        {{-- Generar preview --}}
+                                        @if(
+                                            !$hasPreview
+                                            &&
+                                            \Illuminate\Support\Facades\Route::has(
+                                                'mosaics.preview.generate'
+                                            )
+                                        )
+
+
+                                            <form
+                                                method="POST"
+                                                action="{{
+                                                    route(
+                                                        'mosaics.preview.generate',
+                                                        $mosaic->uuid
+                                                    )
+                                                }}"
+                                            >
+
+                                                @csrf
+
+
+                                                <button
+                                                    type="submit"
+                                                    class="
+                                                        btn
+                                                        btn-secondary
+                                                        btn-small
+                                                    "
+                                                >
+
+                                                    Generar vista
+
+                                                </button>
+
+                                            </form>
+
+
+
+                                        {{-- Abrir preview --}}
+                                        @elseif(
+                                            $hasPreview
+                                            &&
+                                            \Illuminate\Support\Facades\Route::has(
+                                                'mosaics.preview'
+                                            )
+                                        )
+
+
+                                            <a
+                                                href="{{
+                                                    route(
+                                                        'mosaics.preview',
+                                                        $mosaic->uuid
+                                                    )
+                                                }}"
+                                                target="_blank"
+                                                class="
+                                                    btn
+                                                    btn-outline
+                                                    btn-small
+                                                "
+                                            >
+
+                                                Ver mosaico
+
+                                            </a>
+
+
+                                        @endif
+
+
+
+                                    {{-- Procesando --}}
                                     @elseif(
                                         in_array(
                                             $mosaic->status,
@@ -1593,27 +2191,34 @@
                                         )
                                     )
 
-                                        <span
-                                            class="file-meta"
-                                        >
+
+                                        <span class="file-meta">
+
                                             En proceso...
+
                                         </span>
 
+
                                     @endif
+
 
                                 </div>
 
                             </td>
 
+
                         </tr>
 
+
                     @endforeach
+
 
                     </tbody>
 
                 </table>
 
             </div>
+
 
         @endif
 
@@ -1642,12 +2247,16 @@
                 "
             >
 
-                El archivo GeoTIFF original permanece
-                almacenado sin modificaciones en R2.
-                La inspección obtiene CRS, resolución espacial,
-                bandas, transformación geográfica y SHA-256
-                antes del procesamiento mediante inteligencia
-                artificial.
+                El GeoTIFF original permanece almacenado
+                sin modificaciones en Cloudflare R2.
+
+                La vista JPG se utiliza exclusivamente para
+                visualización y no interviene en cálculos
+                dasométricos, segmentación ni mediciones.
+
+                Los análisis científicos continúan utilizando
+                el raster original junto con su CRS, GSD,
+                transformación espacial y SHA-256.
 
             </p>
 
@@ -1727,7 +2336,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Información del archivo seleccionado
+    | ARCHIVO SELECCIONADO
     |--------------------------------------------------------------------------
     */
 
@@ -1737,10 +2346,22 @@
             'change',
             () => {
 
-                if (!fileInput.files.length) {
 
-                    selectedFileInfo.textContent =
-                        '';
+                if (
+                    !fileInput
+                        .files
+                        .length
+                ) {
+
+                    if (
+                        selectedFileInfo
+                    ) {
+
+                        selectedFileInfo
+                            .textContent =
+                            '';
+
+                    }
 
                     return;
                 }
@@ -1750,12 +2371,19 @@
                     fileInput.files[0];
 
 
-                selectedFileInfo.textContent =
-                    file.name
-                    + ' · '
-                    + formatBytes(
-                        file.size
-                    );
+                if (
+                    selectedFileInfo
+                ) {
+
+                    selectedFileInfo
+                        .textContent =
+                        file.name
+                        + ' · '
+                        + formatBytes(
+                            file.size
+                        );
+
+                }
 
             }
         );
@@ -1766,7 +2394,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | SUBIDA
+    | SUBIDA DIRECTA
     |--------------------------------------------------------------------------
     */
 
@@ -1780,7 +2408,9 @@
                 if (
                     !fileInput
                     ||
-                    !fileInput.files.length
+                    !fileInput
+                        .files
+                        .length
                 ) {
 
                     showUploadMessage(
@@ -1792,7 +2422,11 @@
                 }
 
 
-                if (!project.value) {
+                if (
+                    !project
+                    ||
+                    !project.value
+                ) {
 
                     showUploadMessage(
                         'Selecciona un proyecto.',
@@ -1818,7 +2452,9 @@
                     ![
                         'tif',
                         'tiff'
-                    ].includes(extension)
+                    ].includes(
+                        extension
+                    )
                 ) {
 
                     showUploadMessage(
@@ -1832,16 +2468,28 @@
 
                 try {
 
+
                     button.disabled =
                         true;
 
 
-                    progressWrapper.hidden =
-                        false;
+                    if (
+                        progressWrapper
+                    ) {
+
+                        progressWrapper
+                            .hidden =
+                            false;
+
+                    }
 
 
-                    progress.value =
-                        0;
+                    if (progress) {
+
+                        progress.value =
+                            0;
+
+                    }
 
 
                     updateProgress(
@@ -1852,7 +2500,7 @@
 
                     /*
                     |--------------------------------------------------------------------------
-                    | 1. SOLICITAR URL FIRMADA
+                    | 1. URL FIRMADA
                     |--------------------------------------------------------------------------
                     */
 
@@ -1860,6 +2508,7 @@
                         await fetch(
                             '{{ route('mosaics.presign') }}',
                             {
+
                                 method:
                                     'POST',
 
@@ -1905,17 +2554,23 @@
                     ) {
 
                         throw new Error(
+
                             presign.message
+
                             || (
+
                                 presign.errors
+
                                 ? Object
                                     .values(
                                         presign.errors
                                     )
                                     .flat()
                                     .join(' ')
+
                                 : null
                             )
+
                             || 'No se pudo preparar la subida.'
                         );
 
@@ -1935,9 +2590,14 @@
                     */
 
                     await uploadToR2(
+
                         file,
-                        presign.upload_url,
-                        presign.headers
+
+                        presign
+                            .upload_url,
+
+                        presign
+                            .headers
                     );
 
 
@@ -1957,6 +2617,7 @@
                         await fetch(
                             '{{ route('mosaics.complete') }}',
                             {
+
                                 method:
                                     'POST',
 
@@ -1993,7 +2654,9 @@
                     ) {
 
                         throw new Error(
+
                             complete.message
+
                             || 'No se pudo confirmar la subida.'
                         );
 
@@ -2006,14 +2669,15 @@
                     );
 
 
-                    statusBox.style.color =
-                        '#177245';
+                    if (statusBox) {
 
+                        statusBox
+                            .style
+                            .color =
+                            '#177245';
 
-                    /*
-                     * Recargamos para mostrar
-                     * el nuevo registro.
-                     */
+                    }
+
 
                     setTimeout(
                         () => {
@@ -2028,6 +2692,7 @@
 
                 } catch (error) {
 
+
                     console.error(
                         error
                     );
@@ -2040,6 +2705,7 @@
 
 
                 } finally {
+
 
                     button.disabled =
                         false;
@@ -2068,6 +2734,7 @@
         return new Promise(
             (resolve, reject) => {
 
+
                 const xhr =
                     new XMLHttpRequest();
 
@@ -2079,19 +2746,15 @@
                 );
 
 
-                if (signedHeaders) {
+                if (
+                    signedHeaders
+                ) {
 
                     Object.entries(
                         signedHeaders
                     ).forEach(
                         ([key, value]) => {
 
-
-                            /*
-                             * Host lo controla
-                             * automáticamente
-                             * el navegador.
-                             */
 
                             if (
                                 key
@@ -2114,6 +2777,7 @@
 
                 xhr.upload.onprogress =
                     function (event) {
+
 
                         if (
                             event
@@ -2143,6 +2807,7 @@
 
                 xhr.onload =
                     function () {
+
 
                         if (
                             xhr.status >= 200
@@ -2190,7 +2855,9 @@
                     };
 
 
-                xhr.send(file);
+                xhr.send(
+                    file
+                );
 
             }
         );
@@ -2210,24 +2877,51 @@
         text
     ) {
 
-        progress.value =
-            percent;
+
+        if (progress) {
+
+            progress.value =
+                percent;
+
+        }
 
 
-        progressPercent.textContent =
-            percent + ' %';
+        if (
+            progressPercent
+        ) {
+
+            progressPercent
+                .textContent =
+                percent
+                + ' %';
+
+        }
 
 
-        progressLabel.textContent =
-            text;
+        if (
+            progressLabel
+        ) {
+
+            progressLabel
+                .textContent =
+                text;
+
+        }
 
 
-        statusBox.textContent =
-            text;
+        if (statusBox) {
+
+            statusBox
+                .textContent =
+                text;
 
 
-        statusBox.style.color =
-            '#176b4d';
+            statusBox
+                .style
+                .color =
+                '#176b4d';
+
+        }
 
     }
 
@@ -2238,50 +2932,70 @@
         type = 'info'
     ) {
 
-        if (progressWrapper) {
 
-            progressWrapper.hidden =
+        if (
+            progressWrapper
+        ) {
+
+            progressWrapper
+                .hidden =
                 false;
 
         }
 
 
-        statusBox.textContent =
-            message;
+        if (statusBox) {
+
+            statusBox
+                .textContent =
+                message;
 
 
-        statusBox.style.color =
-            type === 'error'
-                ? '#b42318'
-                : '#176b4d';
+            statusBox
+                .style
+                .color =
+                type === 'error'
+                    ? '#b42318'
+                    : '#176b4d';
+
+        }
 
     }
 
 
 
-    function formatBytes(bytes) {
+    function formatBytes(
+        bytes
+    ) {
+
 
         if (!bytes) {
+
             return '0 B';
+
         }
 
 
         const units = [
+
             'B',
             'KiB',
             'MiB',
             'GiB',
             'TiB'
+
         ];
 
 
         const index =
             Math.min(
+
                 Math.floor(
                     Math.log(bytes)
                     /
                     Math.log(1024)
                 ),
+
                 units.length - 1
             );
 

@@ -398,4 +398,156 @@ public function inspect(
             );
     }
 }
+
+
+
+public function generatePreview(
+    Mosaic $mosaic,
+    AiService $ai
+)
+{
+    if ($mosaic->status !== 'ready') {
+
+        return redirect()
+            ->route('mosaics.index')
+            ->with(
+                'error',
+                'El ortomosaico debe estar inspeccionado antes de generar la vista previa.'
+            );
+    }
+
+
+    try {
+
+        $result =
+            $ai->generateMosaicPreview(
+                $mosaic->uuid,
+                $mosaic->object_key
+            );
+
+
+        $metadata =
+            $mosaic->metadata
+            ?? [];
+
+
+        $metadata['preview'] = [
+
+            'width' =>
+                $result[
+                    'preview_width'
+                ] ?? null,
+
+            'height' =>
+                $result[
+                    'preview_height'
+                ] ?? null,
+
+            'size_bytes' =>
+                $result[
+                    'size_bytes'
+                ] ?? null,
+
+            'jpeg_quality' =>
+                $result[
+                    'jpeg_quality'
+                ] ?? null,
+
+            'processing_seconds' =>
+                $result[
+                    'processing_seconds'
+                ] ?? null,
+
+            'generated_at' =>
+                now()
+                    ->toIso8601String(),
+        ];
+
+
+        $mosaic->update([
+
+            'preview_object_key' =>
+                $result[
+                    'preview_object_key'
+                ],
+
+            'metadata' =>
+                $metadata,
+        ]);
+
+
+        return redirect()
+            ->route('mosaics.index')
+            ->with(
+                'success',
+                'Vista previa generada correctamente.'
+            );
+
+
+    } catch (\Throwable $e) {
+
+        Log::error(
+            'Error generando preview de ortomosaico',
+            [
+                'mosaic_uuid' =>
+                    $mosaic->uuid,
+
+                'error' =>
+                    $e->getMessage(),
+            ]
+        );
+
+
+        return redirect()
+            ->route('mosaics.index')
+            ->with(
+                'error',
+                'No se pudo generar la vista previa: '
+                . $e->getMessage()
+            );
+    }
+}
+
+
+public function preview(
+    Mosaic $mosaic
+)
+{
+    if (
+        !$mosaic->preview_object_key
+    ) {
+
+        abort(
+            404,
+            'Este ortomosaico no tiene vista previa.'
+        );
+    }
+
+
+    if (
+        !Storage::disk('r2')
+            ->exists(
+                $mosaic->preview_object_key
+            )
+    ) {
+
+        abort(
+            404,
+            'La vista previa no existe en R2.'
+        );
+    }
+
+
+    $url =
+        Storage::disk('r2')
+            ->temporaryUrl(
+                $mosaic->preview_object_key,
+                now()->addMinutes(10)
+            );
+
+
+    return redirect()->away(
+        $url
+    );
+}
 }
