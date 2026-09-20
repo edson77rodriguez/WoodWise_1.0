@@ -914,7 +914,14 @@
                     !empty(
                         data_get(
                             $mosaic->metadata,
-                            'tiling_preview.object_key'
+                            'tiling_preview.footprints_object_key'
+                        )
+                    )
+                    &&
+                    !empty(
+                        data_get(
+                            $mosaic->metadata,
+                            'tiling_preview.coverage_object_key'
                         )
                     )
             )
@@ -1447,16 +1454,27 @@
                                 );
 
 
-                            $tilingPreviewObjectKey =
+                            $tilingFootprintsObjectKey =
                                 data_get(
                                     $mosaic->metadata,
-                                    'tiling_preview.object_key'
+                                    'tiling_preview.footprints_object_key'
+                                );
+
+
+                            $tilingCoverageObjectKey =
+                                data_get(
+                                    $mosaic->metadata,
+                                    'tiling_preview.coverage_object_key'
                                 );
 
 
                             $hasTilingPreview =
                                 !empty(
-                                    $tilingPreviewObjectKey
+                                    $tilingFootprintsObjectKey
+                                )
+                                &&
+                                !empty(
+                                    $tilingCoverageObjectKey
                                 );
 
                         @endphp
@@ -2022,21 +2040,12 @@
                                             @if($hasTilingPreview)
 
                                                 <div>
-
-                                                    <strong>
-                                                        Cuadrícula:
-                                                    </strong>
-
+                                                    <strong>Cuadrícula:</strong>
                                                     Disponible
-
                                                 </div>
 
-
                                                 <div>
-
-                                                    <strong>
-                                                        Grid:
-                                                    </strong>
+                                                    <strong>Grid:</strong>
 
                                                     {{
                                                         data_get(
@@ -2055,15 +2064,10 @@
                                                         )
                                                         ?? '—'
                                                     }}
-
                                                 </div>
 
-
                                                 <div>
-
-                                                    <strong>
-                                                        Total tiles:
-                                                    </strong>
+                                                    <strong>Total tiles:</strong>
 
                                                     {{
                                                         data_get(
@@ -2072,15 +2076,10 @@
                                                         )
                                                         ?? '—'
                                                     }}
-
                                                 </div>
 
-
                                                 <div>
-
-                                                    <strong>
-                                                        Tile:
-                                                    </strong>
+                                                    <strong>Tile:</strong>
 
                                                     {{
                                                         data_get(
@@ -2091,15 +2090,10 @@
                                                     }}
 
                                                     px
-
                                                 </div>
 
-
                                                 <div>
-
-                                                    <strong>
-                                                        Overlap solicitado:
-                                                    </strong>
+                                                    <strong>Overlap solicitado:</strong>
 
                                                     {{
                                                         data_get(
@@ -2110,15 +2104,58 @@
                                                     }}
 
                                                     px
-
                                                 </div>
 
+                                                <div>
+                                                    <strong>Overlap real X:</strong>
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'actual_overlap.x_min_px'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    –
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'actual_overlap.x_max_px'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    px
+                                                </div>
 
                                                 <div>
+                                                    <strong>Overlap real Y:</strong>
 
-                                                    <strong>
-                                                        Validez media:
-                                                    </strong>
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'actual_overlap.y_min_px'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    –
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'actual_overlap.y_max_px'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    px
+                                                </div>
+
+                                                <div>
+                                                    <strong>Validez media:</strong>
 
                                                     @php
                                                         $meanValidFraction =
@@ -2142,7 +2179,46 @@
                                                         —
 
                                                     @endif
+                                                </div>
 
+                                                <div>
+                                                    <strong>Cobertura mínima:</strong>
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'coverage.min_valid'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    ×
+                                                </div>
+
+                                                <div>
+                                                    <strong>Cobertura máxima:</strong>
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'coverage.max_valid'
+                                                        )
+                                                        ?? '—'
+                                                    }}
+
+                                                    ×
+                                                </div>
+
+                                                <div>
+                                                    <strong>Píxeles válidos sin cubrir:</strong>
+
+                                                    {{
+                                                        data_get(
+                                                            $tilingPreviewMetadata,
+                                                            'coverage.uncovered_valid_pixels'
+                                                        )
+                                                        ?? '—'
+                                                    }}
                                                 </div>
 
                                             @endif
@@ -2352,7 +2428,7 @@
                                         @endif
 
 
-                                        {{-- Cuadrícula de tiling --}}
+                                        {{-- Productos QA/QC de tiling --}}
                                         @if(
                                             !$hasTilingPreview
                                             &&
@@ -2381,9 +2457,7 @@
                                                         btn-small
                                                     "
                                                 >
-
                                                     Generar cuadrícula
-
                                                 </button>
 
                                             </form>
@@ -2400,19 +2474,48 @@
                                                 href="{{
                                                     route(
                                                         'mosaics.tiling.preview',
-                                                        $mosaic->uuid
+                                                        [
+                                                            'mosaic' =>
+                                                                $mosaic->uuid,
+
+                                                            'type' =>
+                                                                'footprints',
+                                                        ]
                                                     )
                                                 }}"
                                                 target="_blank"
+                                                rel="noopener"
                                                 class="
                                                     btn
                                                     btn-outline
                                                     btn-small
                                                 "
                                             >
+                                                Ver tiles
+                                            </a>
 
-                                                Ver cuadrícula
+                                            <a
+                                                href="{{
+                                                    route(
+                                                        'mosaics.tiling.preview',
+                                                        [
+                                                            'mosaic' =>
+                                                                $mosaic->uuid,
 
+                                                            'type' =>
+                                                                'coverage',
+                                                        ]
+                                                    )
+                                                }}"
+                                                target="_blank"
+                                                rel="noopener"
+                                                class="
+                                                    btn
+                                                    btn-outline
+                                                    btn-small
+                                                "
+                                            >
+                                                Ver cobertura
                                             </a>
 
                                         @endif
@@ -2490,17 +2593,17 @@
                 El GeoTIFF original permanece almacenado
                 sin modificaciones en Cloudflare R2.
 
-                La vista JPG y la cuadrícula de tiling se utilizan
-                exclusivamente para visualización y control QA/QC;
-                no sustituyen al GeoTIFF ni intervienen directamente
-                en cálculos dasométricos o mediciones.
+                La vista JPG, los footprints de tiles y el mapa de
+                cobertura se utilizan exclusivamente para visualización
+                y control QA/QC; no sustituyen al GeoTIFF ni representan
+                confianza de la inteligencia artificial.
 
-                Los análisis científicos continúan utilizando
-                el raster original junto con su CRS, GSD,
-                transformación espacial y SHA-256. La cuadrícula
-                permite verificar visualmente la cobertura de las
-                ventanas de 1024 px y su solapamiento antes de ejecutar
-                YOLO-Seg y Mask R-CNN.
+                Los análisis científicos continúan utilizando el raster
+                original junto con su CRS, GSD, transformación espacial
+                y SHA-256. Los productos de tiling permiten verificar la
+                cobertura de las ventanas de 1024 px, su solapamiento y
+                la ausencia de píxeles válidos sin cubrir antes de
+                ejecutar YOLO-Seg y Mask R-CNN.
 
             </p>
 

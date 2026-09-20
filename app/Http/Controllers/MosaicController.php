@@ -562,80 +562,78 @@ public function generateTilingPreview(
             ->route('mosaics.index')
             ->with(
                 'error',
-                'El ortomosaico debe estar inspeccionado.'
+                'El ortomosaico debe estar inspeccionado antes de generar la cuadrícula.'
             );
     }
 
-
     try {
 
-        $result =
-            $ai->generateMosaicTilingPreview(
-                $mosaic->uuid,
-                $mosaic->object_key
+        $result = $ai->generateMosaicTilingPreview(
+            $mosaic->uuid,
+            $mosaic->object_key
+        );
+
+
+        if (
+            empty($result['footprints_object_key'])
+            ||
+            empty($result['coverage_object_key'])
+        ) {
+
+            throw new \RuntimeException(
+                'FastAPI no devolvió las rutas de los productos de tiling.'
             );
+        }
 
 
-        $metadata =
-            $mosaic->metadata
-            ?? [];
+        $metadata = $mosaic->metadata ?? [];
 
 
         $metadata['tiling_preview'] = [
 
-            'object_key' =>
-                $result[
-                    'tiling_preview_object_key'
-                ],
+            'footprints_object_key' =>
+                $result['footprints_object_key'],
+
+            'coverage_object_key' =>
+                $result['coverage_object_key'],
 
             'width' =>
-                $result[
-                    'preview_width'
-                ] ?? null,
+                $result['preview_width'] ?? null,
 
             'height' =>
-                $result[
-                    'preview_height'
-                ] ?? null,
+                $result['preview_height'] ?? null,
 
-            'size_bytes' =>
-                $result[
-                    'size_bytes'
-                ] ?? null,
+            'footprints_size_bytes' =>
+                $result['footprints_size_bytes'] ?? null,
+
+            'coverage_size_bytes' =>
+                $result['coverage_size_bytes'] ?? null,
 
             'processing_seconds' =>
-                $result[
-                    'processing_seconds'
-                ] ?? null,
+                $result['processing_seconds'] ?? null,
 
             'configuration' =>
-                $result[
-                    'configuration'
-                ] ?? [],
+                $result['configuration'] ?? [],
 
             'grid' =>
-                $result[
-                    'grid'
-                ] ?? [],
+                $result['grid'] ?? [],
 
             'actual_overlap' =>
-                $result[
-                    'actual_overlap'
-                ] ?? [],
+                $result['actual_overlap'] ?? [],
 
             'summary' =>
-                $result[
-                    'summary'
-                ] ?? [],
+                $result['summary'] ?? [],
+
+            'coverage' =>
+                $result['coverage'] ?? [],
 
             'generated_at' =>
-                now()
-                    ->toIso8601String(),
+                now()->toIso8601String(),
         ];
 
 
         $mosaic->update([
-            'metadata' => $metadata
+            'metadata' => $metadata,
         ]);
 
 
@@ -643,21 +641,17 @@ public function generateTilingPreview(
             ->route('mosaics.index')
             ->with(
                 'success',
-                'Cuadrícula de tiling generada correctamente.'
+                'Productos QA/QC de tiling generados correctamente.'
             );
-
 
     } catch (\Throwable $e) {
 
-
         Log::error(
-            'Error generando preview de tiling',
+            'Error generando productos de tiling',
             [
-                'mosaic_uuid' =>
-                    $mosaic->uuid,
-
-                'error' =>
-                    $e->getMessage(),
+                'mosaic_uuid' => $mosaic->uuid,
+                'object_key' => $mosaic->object_key,
+                'error' => $e->getMessage(),
             ]
         );
 
@@ -666,55 +660,81 @@ public function generateTilingPreview(
             ->route('mosaics.index')
             ->with(
                 'error',
-                'No se pudo generar la cuadrícula: '
+                'No se pudieron generar los productos de tiling: '
                 . $e->getMessage()
             );
     }
 }
 public function tilingPreview(
-    Mosaic $mosaic
+    Mosaic $mosaic,
+    string $type = 'footprints'
 )
 {
-    $objectKey =
-        data_get(
-            $mosaic->metadata,
-            'tiling_preview.object_key'
+    if (
+        !in_array(
+            $type,
+            [
+                'footprints',
+                'coverage',
+            ],
+            true
+        )
+    ) {
+
+        abort(
+            404,
+            'Tipo de vista de tiling no válido.'
         );
+    }
+
+
+    $metadataPath =
+        $type === 'coverage'
+            ? 'tiling_preview.coverage_object_key'
+            : 'tiling_preview.footprints_object_key';
+
+
+    $objectKey = data_get(
+        $mosaic->metadata,
+        $metadataPath
+    );
 
 
     if (!$objectKey) {
 
         abort(
             404,
-            'No existe una cuadrícula de tiling.'
+            'No existe la vista de tiling solicitada.'
         );
     }
 
 
     if (
         !Storage::disk('r2')
-            ->exists(
-                $objectKey
-            )
+            ->exists($objectKey)
     ) {
 
         abort(
             404,
-            'La cuadrícula no existe en R2.'
+            'El archivo de tiling no existe en R2.'
         );
     }
 
 
-    $url =
-        Storage::disk('r2')
-            ->temporaryUrl(
-                $objectKey,
-                now()->addMinutes(10)
-            );
+    $url = Storage::disk('r2')
+        ->temporaryUrl(
+            $objectKey,
+            now()->addMinutes(10)
+        );
 
 
     return redirect()->away(
         $url
     );
 }
+
+
+
+
+
 }

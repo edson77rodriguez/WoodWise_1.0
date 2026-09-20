@@ -146,7 +146,7 @@ Route::post(
 
 
 Route::get(
-    '/ortomosaicos/{mosaic:uuid}/tiling-preview',
+    '/ortomosaicos/{mosaic:uuid}/tiling-preview/{type?}',
     [MosaicController::class, 'tilingPreview']
 )->name('mosaics.tiling.preview');
 
