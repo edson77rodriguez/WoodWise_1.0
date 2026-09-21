@@ -256,4 +256,116 @@ public function generateMosaicTilingPreview(
 }
 
 
+/**
+ * Ejecutar análisis wall-to-wall completo
+ * sobre un ortomosaico almacenado en R2.
+ */
+public function analyzeMosaicWallToWall(
+    string $analysisUuid,
+    string $projectUuid,
+    string $mosaicUuid,
+    string $objectKey,
+    array $configuration = []
+): array {
+
+    $payload = [
+
+        'analysis_uuid' =>
+            $analysisUuid,
+
+        'project_uuid' =>
+            $projectUuid,
+
+        'mosaic_uuid' =>
+            $mosaicUuid,
+
+        'object_key' =>
+            $objectKey,
+
+        'analysis_version' =>
+            $configuration[
+                'analysis_version'
+            ]
+            ?? 'V0.7E',
+
+        'configuration' => [
+
+            'source_size' =>
+                $configuration[
+                    'source_size'
+                ]
+                ?? 2144,
+
+            'output_size' =>
+                $configuration[
+                    'output_size'
+                ]
+                ?? 1024,
+
+            'yolo_threshold' =>
+                $configuration[
+                    'yolo_threshold'
+                ]
+                ?? 0.25,
+
+            'maskrcnn_threshold' =>
+                $configuration[
+                    'maskrcnn_threshold'
+                ]
+                ?? 0.40,
+
+            'mask_threshold' =>
+                $configuration[
+                    'mask_threshold'
+                ]
+                ?? 0.50,
+
+            'intramodel_iou' =>
+                $configuration[
+                    'intramodel_iou'
+                ]
+                ?? 0.50,
+
+            'intermodel_iou' =>
+                $configuration[
+                    'intermodel_iou'
+                ]
+                ?? 0.50,
+        ],
+    ];
+
+
+    $response = Http::timeout(900)
+        ->connectTimeout(30)
+        ->acceptJson()
+        ->post(
+            $this->baseUrl
+            . '/mosaic/analyze/wall-to-wall',
+            $payload
+        );
+
+
+    $response->throw();
+
+
+    $data = $response->json();
+
+
+    if (
+        !is_array($data)
+        ||
+        ($data['status'] ?? null)
+        !== 'ok'
+    ) {
+
+        throw new RuntimeException(
+            'El análisis wall-to-wall devolvió '
+            . 'una respuesta inválida.'
+        );
+    }
+
+
+    return $data;
+}
+
 }
