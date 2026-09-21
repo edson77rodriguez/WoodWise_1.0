@@ -1109,6 +1109,301 @@
             }
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Persistent wall-to-wall analysis
+        |--------------------------------------------------------------------------
+        */
+
+        .wall-analysis {
+
+            margin-top: 28px;
+
+            overflow: hidden;
+        }
+
+
+        .wall-analysis-header {
+
+            padding: 22px 24px;
+
+            display: flex;
+
+            align-items: flex-start;
+
+            justify-content: space-between;
+
+            gap: 20px;
+
+            border-bottom:
+                1px solid var(--border);
+        }
+
+
+        .wall-analysis-title {
+
+            margin: 0;
+
+            font-size: 19px;
+        }
+
+
+        .wall-analysis-subtitle {
+
+            margin-top: 6px;
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            line-height: 1.5;
+        }
+
+
+        .wall-status {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            padding: 7px 11px;
+
+            border-radius: 999px;
+
+            background:
+                var(--forest-soft);
+
+            color:
+                var(--forest-dark);
+
+            font-size: 11px;
+
+            font-weight: 700;
+
+            white-space: nowrap;
+        }
+
+
+        .wall-summary {
+
+            padding: 20px 24px;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, minmax(0,1fr));
+
+            gap: 12px;
+        }
+
+
+        .wall-stat {
+
+            padding: 15px;
+
+            border:
+                1px solid var(--border);
+
+            border-radius: 12px;
+
+            background:
+                var(--surface-soft);
+        }
+
+
+        .wall-stat-name {
+
+            margin-bottom: 5px;
+
+            color:
+                var(--muted);
+
+            font-size: 10px;
+
+            text-transform: uppercase;
+
+            letter-spacing: .03em;
+        }
+
+
+        .wall-stat-value {
+
+            font-size: 23px;
+
+            font-weight: 750;
+        }
+
+
+        .wall-stat-detail {
+
+            margin-top: 4px;
+
+            color:
+                var(--muted);
+
+            font-size: 10px;
+
+            line-height: 1.4;
+        }
+
+
+        .wall-method {
+
+            margin:
+                0 24px 20px;
+
+            padding: 16px;
+
+            border-radius: 12px;
+
+            background:
+                #eef6f2;
+
+            border:
+                1px solid #d2e7dc;
+
+            font-size: 12px;
+
+            line-height: 1.6;
+        }
+
+
+        .wall-warning {
+
+            margin:
+                0 24px 20px;
+
+            padding: 14px 16px;
+
+            border-radius: 12px;
+
+            background:
+                var(--warning-soft);
+
+            border:
+                1px solid #ecd69c;
+
+            color:
+                var(--warning);
+
+            font-size: 12px;
+
+            line-height: 1.5;
+        }
+
+
+        .artifact-actions {
+
+            padding:
+                0 24px 24px;
+
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 10px;
+        }
+
+
+        .artifact-button {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 10px 14px;
+
+            border-radius: 10px;
+
+            text-decoration: none;
+
+            font-size: 12px;
+
+            font-weight: 700;
+
+            transition: .2s;
+        }
+
+
+        .artifact-button-primary {
+
+            background:
+                var(--forest);
+
+            color: white;
+        }
+
+
+        .artifact-button-primary:hover {
+
+            background:
+                var(--forest-dark);
+        }
+
+
+        .artifact-button-secondary {
+
+            background: white;
+
+            color:
+                var(--forest-dark);
+
+            border:
+                1px solid var(--border);
+        }
+
+
+        .artifact-button-secondary:hover {
+
+            background:
+                var(--forest-soft);
+        }
+
+
+        .wall-analysis-meta {
+
+            padding:
+                0 24px 20px;
+
+            color:
+                var(--muted);
+
+            font-size: 10px;
+
+            line-height: 1.5;
+        }
+
+
+        @media(max-width:900px) {
+
+            .wall-summary {
+
+                grid-template-columns:
+                    repeat(2, minmax(0,1fr));
+            }
+
+
+            .wall-analysis-header {
+
+                flex-direction: column;
+            }
+        }
+
+
+        @media(max-width:500px) {
+
+            .wall-summary {
+
+                grid-template-columns:
+                    1fr;
+            }
+        }
+
     </style>
 
 </head>
@@ -2488,6 +2783,591 @@
 
 
 </div>
+
+
+{{-- ==========================================================
+     ANÁLISIS WALL-TO-WALL PERSISTENTE
+     ========================================================== --}}
+
+@if($wallToWallAnalysis)
+
+    @php
+
+        $wallSummary =
+            $wallToWallAnalysis->summary
+            ?? [];
+
+        $wallModels =
+            $wallToWallAnalysis->models
+            ?? [];
+
+        $wallParameters =
+            $wallToWallAnalysis->parameters
+            ?? [];
+
+
+        $gpkgArtifact =
+            $wallToWallAnalysis
+                ->artifacts
+                ->firstWhere(
+                    'type',
+                    'geopackage'
+                );
+
+
+        $manifestArtifact =
+            $wallToWallAnalysis
+                ->artifacts
+                ->firstWhere(
+                    'type',
+                    'manifest'
+                );
+
+
+        $structuralConflictObjects =
+            (
+                $wallSummary[
+                    'split_merge_objects'
+                ]
+                ?? 0
+            )
+            +
+            (
+                $wallSummary[
+                    'containment_conflict_objects'
+                ]
+                ?? 0
+            );
+
+    @endphp
+
+
+    <section
+        class="card wall-analysis"
+    >
+
+
+        <div class="wall-analysis-header">
+
+            <div>
+
+                <h2 class="wall-analysis-title">
+
+                    Análisis wall-to-wall
+
+                    ·
+
+                    {{
+                        $wallParameters[
+                            'analysis_version'
+                        ]
+                        ?? '—'
+                    }}
+
+                </h2>
+
+
+                <div class="wall-analysis-subtitle">
+
+                    Inferencia espacial consolidada sobre
+                    el ortomosaico completo.
+
+                    <br>
+
+                    Geometría primaria:
+
+                    <strong>
+                        {{
+                            $wallModels[
+                                'primary_geometry_model'
+                            ]
+                            ?? '—'
+                        }}
+                    </strong>
+
+                    ·
+
+                    Modelo secundario:
+
+                    <strong>
+                        {{
+                            $wallModels[
+                                'secondary_model'
+                            ]
+                            ?? '—'
+                        }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="wall-status">
+
+                ●
+
+                {{
+                    strtoupper(
+                        $wallToWallAnalysis->status
+                    )
+                }}
+
+            </div>
+
+        </div>
+
+
+        <div class="wall-summary">
+
+
+            <div class="wall-stat">
+
+                <div class="wall-stat-name">
+                    Predicciones RAW
+                </div>
+
+                <div class="wall-stat-value">
+
+                    {{
+                        $wallSummary[
+                            'raw_predictions'
+                        ]
+                        ?? 0
+                    }}
+
+                </div>
+
+                <div class="wall-stat-detail">
+                    Antes de deduplicación.
+                </div>
+
+            </div>
+
+
+            <div class="wall-stat">
+
+                <div class="wall-stat-name">
+                    Candidatos intramodelo
+                </div>
+
+                <div class="wall-stat-value">
+
+                    {{
+                        $wallSummary[
+                            'unique_predictions'
+                        ]
+                        ?? 0
+                    }}
+
+                </div>
+
+                <div class="wall-stat-detail">
+
+                    YOLO:
+
+                    {{
+                        $wallSummary[
+                            'unique_yolo'
+                        ]
+                        ?? 0
+                    }}
+
+                    · Mask R-CNN:
+
+                    {{
+                        $wallSummary[
+                            'unique_maskrcnn'
+                        ]
+                        ?? 0
+                    }}
+
+                </div>
+
+            </div>
+
+
+            <div class="wall-stat">
+
+                <div class="wall-stat-name">
+                    Grupos de evidencia
+                </div>
+
+                <div class="wall-stat-value">
+
+                    {{
+                        $wallSummary[
+                            'catalog_groups'
+                        ]
+                        ?? 0
+                    }}
+
+                </div>
+
+                <div class="wall-stat-detail">
+                    Catálogo intermodelo.
+                </div>
+
+            </div>
+
+
+            <div class="wall-stat">
+
+                <div class="wall-stat-name">
+                    Objetos operativos
+                </div>
+
+                <div class="wall-stat-value">
+
+                    {{
+                        $wallSummary[
+                            'primary_objects'
+                        ]
+                        ?? 0
+                    }}
+
+                </div>
+
+                <div class="wall-stat-detail">
+
+                    Mask R-CNN:
+
+                    {{
+                        $wallSummary[
+                            'primary_maskrcnn'
+                        ]
+                        ?? 0
+                    }}
+
+                    · fallback YOLO:
+
+                    {{
+                        $wallSummary[
+                            'primary_yolo_fallback'
+                        ]
+                        ?? 0
+                    }}
+
+                </div>
+
+            </div>
+
+
+            <div class="wall-stat">
+
+                <div class="wall-stat-name">
+                    Bilaterales
+                </div>
+
+                <div
+                    class="wall-stat-value"
+                    style="
+                        color:
+                            var(--match);
+                    "
+                >
+
+                    {{
+                        $wallSummary[
+                            'bilateral_clean'
+                        ]
+                        ?? 0
+                    }}
+
+                </div>
+
+                <div class="wall-stat-detail">
+                    Evidencia de ambos modelos.
+                </div>
+
+            </div>
+
+
+            <div class="wall-stat">
+
+                <div class="wall-stat-name">
+                    Mask R-CNN-only
+                </div>
+
+                <div
+                    class="wall-stat-value"
+                    style="
+                        color:
+                            var(--mask);
+                    "
+                >
+
+                    {{
+                        $wallSummary[
+                            'mrcnn_only'
+                        ]
+                        ?? 0
+                    }}
+
+                </div>
+
+                <div class="wall-stat-detail">
+                    Evidencia unilateral.
+                </div>
+
+            </div>
+
+
+            <div class="wall-stat">
+
+                <div class="wall-stat-name">
+                    YOLO-only
+                </div>
+
+                <div
+                    class="wall-stat-value"
+                    style="
+                        color:
+                            var(--yolo);
+                    "
+                >
+
+                    {{
+                        $wallSummary[
+                            'yolo_only'
+                        ]
+                        ?? 0
+                    }}
+
+                </div>
+
+                <div class="wall-stat-detail">
+                    Fallback provisional.
+                </div>
+
+            </div>
+
+
+            <div class="wall-stat">
+
+                <div class="wall-stat-name">
+                    Requieren revisión
+                </div>
+
+                <div
+                    class="wall-stat-value"
+                    style="
+                        color:
+                            var(--warning);
+                    "
+                >
+
+                    {{
+                        $wallSummary[
+                            'requires_review'
+                        ]
+                        ?? 0
+                    }}
+
+                </div>
+
+                <div class="wall-stat-detail">
+
+                    Objetos con conflicto estructural:
+
+                    {{
+                        $structuralConflictObjects
+                    }}
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <div class="wall-method">
+
+            <strong>
+                Regla de consolidación:
+            </strong>
+
+            Mask R-CNN se utiliza como fuente
+            geométrica primaria cuando existe una
+            detección asociada.
+
+            YOLO-Seg se conserva como evidencia
+            independiente y como fallback cuando
+            Mask R-CNN no presenta candidato.
+
+        </div>
+
+
+        <div class="wall-warning">
+
+            <strong>
+                Interpretación científica:
+            </strong>
+
+            Los
+
+            <strong>
+                {{
+                    $wallSummary[
+                        'primary_objects'
+                    ]
+                    ?? 0
+                }}
+                objetos operativos
+            </strong>
+
+            no representan todavía un número
+            validado de árboles.
+
+            Los
+
+            <strong>
+                {{
+                    $wallSummary[
+                        'requires_review'
+                    ]
+                    ?? 0
+                }}
+            </strong>
+
+            objetos marcados para revisión tampoco
+            deben interpretarse automáticamente
+            como errores.
+
+            La clasificación definitiva requiere
+            contraste con verdad de campo.
+
+        </div>
+
+
+        <div class="artifact-actions">
+
+
+            @if($gpkgArtifact)
+
+                <a
+                    class="
+                        artifact-button
+                        artifact-button-primary
+                    "
+                    href="{{
+                        route(
+                            'analysis.artifacts.download',
+                            [
+                                'analysisUuid' =>
+                                    $wallToWallAnalysis->uuid,
+
+                                'artifactUuid' =>
+                                    $gpkgArtifact->uuid,
+                            ]
+                        )
+                    }}"
+                >
+
+                    Descargar GeoPackage
+
+                </a>
+
+            @endif
+
+
+            @if($manifestArtifact)
+
+                <a
+                    class="
+                        artifact-button
+                        artifact-button-secondary
+                    "
+                    href="{{
+                        route(
+                            'analysis.artifacts.download',
+                            [
+                                'analysisUuid' =>
+                                    $wallToWallAnalysis->uuid,
+
+                                'artifactUuid' =>
+                                    $manifestArtifact->uuid,
+                            ]
+                        )
+                    }}"
+                >
+
+                    Descargar Manifest
+
+                </a>
+
+            @endif
+
+
+            <a
+                class="
+                    artifact-button
+                    artifact-button-secondary
+                "
+                href="{{
+                    route(
+                        'analysis.jobs.show',
+                        [
+                            'analysisUuid' =>
+                                $wallToWallAnalysis->uuid,
+                        ]
+                    )
+                }}"
+            >
+
+                Ver JSON técnico
+
+            </a>
+
+
+        </div>
+
+
+        <div class="wall-analysis-meta">
+
+            Analysis UUID:
+
+            <strong>
+                {{ $wallToWallAnalysis->uuid }}
+            </strong>
+
+            @if(
+                $wallToWallAnalysis->completed_at
+            )
+
+                · Completado:
+
+                {{
+                    $wallToWallAnalysis
+                        ->completed_at
+                        ->format(
+                            'd/m/Y H:i'
+                        )
+                }}
+
+            @endif
+
+            · Ventanas procesadas:
+
+            {{
+                $wallToWallAnalysis
+                    ->processed_tiles
+            }}
+
+            /
+
+            {{
+                $wallToWallAnalysis
+                    ->total_tiles
+            }}
+
+        </div>
+
+
+    </section>
+
+@endif
 
 
 </main>

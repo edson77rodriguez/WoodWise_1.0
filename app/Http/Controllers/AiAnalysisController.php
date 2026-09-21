@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AnalysisArtifact;
+use App\Models\AnalysisJob;
 use App\Services\AiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -9,8 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
-use App\Models\AnalysisJob;
-use App\Models\AnalysisArtifact;
+
 class AiAnalysisController extends Controller
 {
     /**
@@ -129,6 +130,31 @@ class AiAnalysisController extends Controller
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Último análisis wall-to-wall persistente
+        |--------------------------------------------------------------------------
+        */
+
+        $wallToWallAnalysis = AnalysisJob::query()
+            ->with('artifacts')
+            ->where(
+                'analysis_type',
+                'wall_to_wall_tree_crown'
+            )
+            ->where(
+                'status',
+                'completed'
+            )
+            ->orderByDesc(
+                'completed_at'
+            )
+            ->orderByDesc(
+                'id'
+            )
+            ->first();
+
+
         return view(
             'analysis.index',
             compact(
@@ -136,7 +162,8 @@ class AiAnalysisController extends Controller
                 'result',
                 'analysisMode',
                 'imageUrl',
-                'analysisId'
+                'analysisId',
+                'wallToWallAnalysis'
             )
         );
     }
