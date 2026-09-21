@@ -262,110 +262,63 @@ public function generateMosaicTilingPreview(
  */
 public function analyzeMosaicWallToWall(
     string $analysisUuid,
-    string $projectUuid,
     string $mosaicUuid,
     string $objectKey,
-    array $configuration = []
+    string $projectUuid
 ): array {
-
-    $payload = [
-
-        'analysis_uuid' =>
-            $analysisUuid,
-
-        'project_uuid' =>
-            $projectUuid,
-
-        'mosaic_uuid' =>
-            $mosaicUuid,
-
-        'object_key' =>
-            $objectKey,
-
-        'analysis_version' =>
-            $configuration[
-                'analysis_version'
-            ]
-            ?? 'V0.7E',
-
-        'configuration' => [
-
-            'source_size' =>
-                $configuration[
-                    'source_size'
-                ]
-                ?? 2144,
-
-            'output_size' =>
-                $configuration[
-                    'output_size'
-                ]
-                ?? 1024,
-
-            'yolo_threshold' =>
-                $configuration[
-                    'yolo_threshold'
-                ]
-                ?? 0.25,
-
-            'maskrcnn_threshold' =>
-                $configuration[
-                    'maskrcnn_threshold'
-                ]
-                ?? 0.40,
-
-            'mask_threshold' =>
-                $configuration[
-                    'mask_threshold'
-                ]
-                ?? 0.50,
-
-            'intramodel_iou' =>
-                $configuration[
-                    'intramodel_iou'
-                ]
-                ?? 0.50,
-
-            'intermodel_iou' =>
-                $configuration[
-                    'intermodel_iou'
-                ]
-                ?? 0.50,
-        ],
-    ];
-
 
     $response = Http::timeout(900)
         ->connectTimeout(30)
         ->acceptJson()
         ->post(
-            $this->baseUrl
-            . '/mosaic/analyze/wall-to-wall',
-            $payload
+            $this->baseUrl . '/mosaic/analyze/wall-to-wall',
+            [
+                'analysis_uuid' => $analysisUuid,
+                'mosaic_uuid' => $mosaicUuid,
+                'object_key' => $objectKey,
+                'project_uuid' => $projectUuid,
+                'analysis_version' => 'V0.7E',
+
+                'configuration' => [
+                    'source_size' => 2144,
+                    'output_size' => 1024,
+                    'output_overlap' => 256,
+
+                    'yolo_threshold' => 0.25,
+                    'maskrcnn_threshold' => 0.40,
+                    'mask_threshold' => 0.50,
+
+                    'intramodel_iou' => 0.50,
+                    'intermodel_iou' => 0.50,
+                ],
+            ]
         );
 
+    if (!$response->successful()) {
 
-    $response->throw();
-
+        throw new RuntimeException(
+            'Error en análisis wall-to-wall. '
+            . 'HTTP '
+            . $response->status()
+            . ': '
+            . $response->body()
+        );
+    }
 
     $data = $response->json();
-
 
     if (
         !is_array($data)
         ||
-        ($data['status'] ?? null)
-        !== 'ok'
+        ($data['status'] ?? null) !== 'ok'
     ) {
 
         throw new RuntimeException(
-            'El análisis wall-to-wall devolvió '
-            . 'una respuesta inválida.'
+            'FastAPI devolvió una respuesta '
+            . 'wall-to-wall inválida.'
         );
     }
 
-
     return $data;
 }
-
 }
