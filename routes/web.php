@@ -150,7 +150,32 @@ Route::get(
     [MosaicController::class, 'tilingPreview']
 )->name('mosaics.tiling.preview');
 
+/*
+|--------------------------------------------------------------------------
+| Análisis UAV persistentes
+|--------------------------------------------------------------------------
+*/
 
+Route::get(
+    '/analisis-uav/jobs/{analysisUuid}',
+    [
+        AiAnalysisController::class,
+        'showJob'
+    ]
+)->name(
+    'analysis.jobs.show'
+);
+
+
+Route::get(
+    '/analisis-uav/jobs/{analysisUuid}/artifacts/{artifactUuid}/download',
+    [
+        AiAnalysisController::class,
+        'downloadArtifact'
+    ]
+)->name(
+    'analysis.artifacts.download'
+);
 
 
 });

@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
-
+use App\Models\AnalysisJob;
+use App\Models\AnalysisArtifact;
 class AiAnalysisController extends Controller
 {
     /**
@@ -543,4 +544,227 @@ class AiAnalysisController extends Controller
                 );
         }
     }
+    /**
+ * Consultar un análisis UAV persistente.
+ */
+public function showJob(
+    string $analysisUuid
+) {
+
+    $job = AnalysisJob::query()
+        ->where(
+            'uuid',
+            $analysisUuid
+        )
+        ->with('artifacts')
+        ->firstOrFail();
+
+
+    return response()->json([
+
+        'status' => 'ok',
+
+        'analysis' => [
+
+            'uuid' =>
+                $job->uuid,
+
+            'analysis_type' =>
+                $job->analysis_type,
+
+            'status' =>
+                $job->status,
+
+            'progress' =>
+                $job->progress,
+
+            'total_tiles' =>
+                $job->total_tiles,
+
+            'processed_tiles' =>
+                $job->processed_tiles,
+
+            'models' =>
+                $job->models,
+
+            'parameters' =>
+                $job->parameters,
+
+            'summary' =>
+                $job->summary,
+
+            'started_at' =>
+                optional(
+                    $job->started_at
+                )->toIso8601String(),
+
+            'completed_at' =>
+                optional(
+                    $job->completed_at
+                )->toIso8601String(),
+        ],
+
+
+        'artifacts' =>
+            $job->artifacts
+                ->map(
+                    function (
+                        AnalysisArtifact $artifact
+                    ) use ($job) {
+
+                        return [
+
+                            'uuid' =>
+                                $artifact->uuid,
+
+                            'type' =>
+                                $artifact->type,
+
+                            'filename' =>
+                                $artifact->filename,
+
+                            'mime_type' =>
+                                $artifact->mime_type,
+
+                            'size_bytes' =>
+                                $artifact->size_bytes,
+
+                            'checksum_sha256' =>
+                                $artifact
+                                    ->checksum_sha256,
+
+                            'metadata' =>
+                                $artifact->metadata,
+
+                            /*
+                             * Importante:
+                             * no exponemos object_key.
+                             */
+                            'download_url' =>
+                                route(
+                                    'analysis.artifacts.download',
+                                    [
+                                        'analysisUuid' =>
+                                            $job->uuid,
+
+                                        'artifactUuid' =>
+                                            $artifact->uuid,
+                                    ]
+                                ),
+                        ];
+                    }
+                )
+                ->values(),
+    ]);
+}
+
+/**
+ * Descargar un artifact de un análisis desde R2 privado.
+ */
+public function downloadArtifact(
+    string $analysisUuid,
+    string $artifactUuid
+) {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resolver job
+    |--------------------------------------------------------------------------
+    */
+
+    $job = AnalysisJob::query()
+        ->where(
+            'uuid',
+            $analysisUuid
+        )
+        ->firstOrFail();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resolver artifact asegurando que pertenece al job
+    |--------------------------------------------------------------------------
+    */
+
+    $artifact = AnalysisArtifact::query()
+        ->where(
+            'uuid',
+            $artifactUuid
+        )
+        ->where(
+            'analysis_job_id',
+            $job->id
+        )
+        ->firstOrFail();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Protección adicional del prefijo
+    |--------------------------------------------------------------------------
+    |
+    | Incluso si hubiera un registro inconsistente en BD,
+    | el objeto debe pertenecer al result_prefix del análisis.
+    |
+    */
+
+    if (
+        empty($job->result_prefix)
+        ||
+        !str_starts_with(
+            $artifact->object_key,
+            $job->result_prefix
+        )
+    ) {
+
+        abort(
+            403,
+            'El archivo no pertenece al análisis solicitado.'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Comprobar que existe físicamente en R2
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        !Storage::disk('r2')
+            ->exists(
+                $artifact->object_key
+            )
+    ) {
+
+        abort(
+            404,
+            'El archivo del análisis no existe en R2.'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Generar acceso temporal
+    |--------------------------------------------------------------------------
+    */
+
+    $url = Storage::disk('r2')
+        ->temporaryUrl(
+            $artifact->object_key,
+            now()->addMinutes(10)
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Navegador → R2
+    |--------------------------------------------------------------------------
+    */
+
+    return redirect()->away(
+        $url
+    );
+}
 }
