@@ -337,13 +337,11 @@ class WallToWallAnalysisService
             if (
                 !is_array($artifacts)
                 ||
-                count($artifacts) < 2
-                ||
-                count($artifacts) > 3
+                count($artifacts) !== 3
             ) {
 
                 throw new RuntimeException(
-                    'Se esperaban 2 o 3 artifacts.'
+                    'Se esperaban exactamente 3 artifacts.'
                 );
             }
 
@@ -456,6 +454,150 @@ class WallToWallAnalysisService
                         );
                     }
                 }
+
+
+                if (
+                    !is_numeric(
+                        $artifact['size_bytes']
+                    )
+                    ||
+                    (int) $artifact['size_bytes'] <= 0
+                ) {
+
+                    throw new RuntimeException(
+                        "size_bytes inválido para {$type}."
+                    );
+                }
+
+
+                $expectedMimeTypes = [
+                    'geopackage' =>
+                        'application/geopackage+sqlite3',
+
+                    'manifest' =>
+                        'application/json',
+
+                    'geojson' =>
+                        'application/geo+json',
+                ];
+
+
+                if (
+                    $artifact['mime_type']
+                    !==
+                    $expectedMimeTypes[$type]
+                ) {
+
+                    throw new RuntimeException(
+                        "mime_type inesperado para {$type}."
+                    );
+                }
+
+
+                if ($type === 'geojson') {
+
+                    $featureCount = (
+                        $artifact['feature_count']
+                        ?? null
+                    );
+
+
+                    if (
+                        !is_numeric($featureCount)
+                        ||
+                        (int) $featureCount
+                        !==
+                        (int) ($summary['primary_objects'] ?? -1)
+                    ) {
+
+                        throw new RuntimeException(
+                            'feature_count del GeoJSON no coincide '
+                            . 'con summary.primary_objects.'
+                        );
+                    }
+
+
+                    if (
+                        ($artifact['source_crs'] ?? null)
+                        !==
+                        'EPSG:32614'
+                    ) {
+
+                        throw new RuntimeException(
+                            'source_crs inesperado en GeoJSON.'
+                        );
+                    }
+
+
+                    if (
+                        ($artifact['web_crs'] ?? null)
+                        !==
+                        'EPSG:4326'
+                    ) {
+
+                        throw new RuntimeException(
+                            'web_crs inesperado en GeoJSON.'
+                        );
+                    }
+
+
+                    $geometryTypes = (
+                        $artifact['geometry_types']
+                        ?? null
+                    );
+
+
+                    if (!is_array($geometryTypes)) {
+
+                        throw new RuntimeException(
+                            'geometry_types inválido en GeoJSON.'
+                        );
+                    }
+
+
+                    $allowedGeometryTypes = [
+                        'Polygon',
+                        'MultiPolygon',
+                    ];
+
+
+                    foreach (
+                        $geometryTypes
+                        as
+                        $geometryType => $geometryCount
+                    ) {
+
+                        if (
+                            !in_array(
+                                $geometryType,
+                                $allowedGeometryTypes,
+                                true
+                            )
+                            ||
+                            !is_numeric($geometryCount)
+                            ||
+                            (int) $geometryCount < 0
+                        ) {
+
+                            throw new RuntimeException(
+                                'geometry_types contiene valores inválidos.'
+                            );
+                        }
+                    }
+
+
+                    if (
+                        array_sum($geometryTypes)
+                        !==
+                        (int) $featureCount
+                    ) {
+
+                        throw new RuntimeException(
+                            'La suma de geometry_types no coincide '
+                            . 'con feature_count.'
+                        );
+                    }
+                }
             }
 
 
@@ -463,6 +605,7 @@ class WallToWallAnalysisService
                 [
                     'geopackage',
                     'manifest',
+                    'geojson',
                 ]
                 as
                 $requiredArtifactType
@@ -521,6 +664,27 @@ class WallToWallAnalysisService
             }
 
 
+            foreach (
+                $artifacts
+                as
+                $artifact
+            ) {
+
+                if (
+                    !str_starts_with(
+                        $artifact['object_key'],
+                        $resultPrefix . '/'
+                    )
+                ) {
+
+                    throw new RuntimeException(
+                        'Artifact fuera del result_prefix esperado: '
+                        . $artifact['type']
+                    );
+                }
+            }
+
+
             // =================================================
             // 9. PERSISTENCIA ATÓMICA
             // =================================================
@@ -539,6 +703,61 @@ class WallToWallAnalysisService
                         as
                         $artifact
                     ) {
+
+                        $artifactMetadata = [
+
+                            'verified' =>
+                                true,
+
+                            'scientific_method_version' =>
+                                $result[
+                                    'scientific_method_version'
+                                ]
+                                ?? 'V0.6G',
+
+                            'pipeline_version' =>
+                                $result[
+                                    'pipeline_version'
+                                ]
+                                ?? 'V0.7E',
+                        ];
+
+
+                        if (
+                            $artifact['type']
+                            ===
+                            'geojson'
+                        ) {
+
+                            $artifactMetadata[
+                                'feature_count'
+                            ] = (int) $artifact[
+                                'feature_count'
+                            ];
+
+                            $artifactMetadata[
+                                'source_crs'
+                            ] = $artifact[
+                                'source_crs'
+                            ];
+
+                            $artifactMetadata[
+                                'web_crs'
+                            ] = $artifact[
+                                'web_crs'
+                            ];
+
+                            $artifactMetadata[
+                                'geometry_types'
+                            ] = $artifact[
+                                'geometry_types'
+                            ];
+
+                            $artifactMetadata[
+                                'purpose'
+                            ] = 'web_visualization';
+                        }
+
 
                         AnalysisArtifact::create([
 
@@ -578,23 +797,8 @@ class WallToWallAnalysisService
                                     'checksum_sha256'
                                 ],
 
-                            'metadata' => [
-
-                                'verified' =>
-                                    true,
-
-                                'scientific_method_version' =>
-                                    $result[
-                                        'scientific_method_version'
-                                    ]
-                                    ?? 'V0.6G',
-
-                                'pipeline_version' =>
-                                    $result[
-                                        'pipeline_version'
-                                    ]
-                                    ?? 'V0.7E',
-                            ],
+                            'metadata' =>
+                                $artifactMetadata,
                         ]);
                     }
 
@@ -602,9 +806,8 @@ class WallToWallAnalysisService
                     // -----------------------------------------
                     // total_tiles:
                     //
-                    // Dejamos compatibilidad para cuando
-                    // FastAPI lo devuelva en el futuro.
-                    // Actualmente será NULL.
+                    // FastAPI V0.7E devuelve el número real
+                    // de ventanas planificadas para el mosaico.
                     // -----------------------------------------
 
                     $totalTiles = (
