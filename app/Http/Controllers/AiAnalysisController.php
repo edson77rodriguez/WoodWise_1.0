@@ -150,17 +150,6 @@ class AiAnalysisController extends Controller
                     'ready'
                 )
 
-                ->whereHas(
-                    'project',
-                    function ($query) use ($request) {
-
-                        $query->where(
-                            'user_id',
-                            $request->user()->id
-                        );
-                    }
-                )
-
                 ->orderByDesc(
                     'id'
                 )
@@ -683,11 +672,8 @@ class AiAnalysisController extends Controller
         }
     }
     /**
- * Consultar un análisis UAV persistente.
- */
-/**
- * Consultar un análisis UAV persistente autorizado.
- */
+     * Consultar un análisis UAV persistente.
+     */
 public function showJob(
     Request $request,
     string $analysisUuid
@@ -699,17 +685,6 @@ public function showJob(
             ->where(
                 'uuid',
                 $analysisUuid
-            )
-
-            ->whereHas(
-                'mosaic.project',
-                function ($query) use ($request) {
-
-                    $query->where(
-                        'user_id',
-                        $request->user()->id
-                    );
-                }
             )
 
             ->with([
@@ -844,17 +819,6 @@ public function downloadArtifact(
             $analysisUuid
         )
 
-        ->whereHas(
-            'mosaic.project',
-            function ($query) use ($request) {
-
-                $query->where(
-                    'user_id',
-                    $request->user()->id
-                );
-            }
-        )
-
         ->firstOrFail()
 );
 
@@ -958,7 +922,7 @@ public function runWallToWall(
 
     /*
     |--------------------------------------------------------------------------
-    | Resolver proyecto y autorizar propietario
+    | Resolver proyecto del mosaico
     |--------------------------------------------------------------------------
     */
 
@@ -972,19 +936,6 @@ public function runWallToWall(
         abort(
             404,
             'El mosaico no tiene proyecto asociado.'
-        );
-    }
-
-
-    if (
-        (int) $mosaic->project->user_id
-        !==
-        (int) $request->user()->id
-    ) {
-
-        abort(
-            403,
-            'No tienes acceso a este mosaico.'
         );
     }
 
