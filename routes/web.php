@@ -155,7 +155,15 @@ Route::get(
 | Análisis UAV persistentes
 |--------------------------------------------------------------------------
 */
-
+Route::post(
+    '/analisis-uav/mosaicos/{mosaic:uuid}/wall-to-wall',
+    [
+        AiAnalysisController::class,
+        'runWallToWall'
+    ]
+)->name(
+    'analysis.wall-to-wall.run'
+);
 Route::get(
     '/analisis-uav/jobs/{analysisUuid}',
     [

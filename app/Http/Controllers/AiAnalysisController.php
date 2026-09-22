@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\Mosaic;
+use App\Services\WallToWallAnalysisService;
 use App\Models\AnalysisArtifact;
 use App\Models\AnalysisJob;
 use App\Services\AiService;
@@ -136,23 +137,117 @@ class AiAnalysisController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $wallToWallAnalysis = AnalysisJob::query()
-            ->with('artifacts')
-            ->where(
-                'analysis_type',
-                'wall_to_wall_tree_crown'
-            )
-            ->where(
-                'status',
-                'completed'
-            )
-            ->orderByDesc(
-                'completed_at'
-            )
-            ->orderByDesc(
-                'id'
-            )
-            ->first();
+        /*
+|--------------------------------------------------------------------------
+| Último análisis wall-to-wall persistente autorizado
+|--------------------------------------------------------------------------
+*/
+
+$selectedMosaicUuid = (
+    $request->query(
+        'mosaic'
+    )
+);
+
+
+$wallToWallQuery = (
+    AnalysisJob::query()
+
+        ->with([
+            'artifacts',
+            'mosaic.project',
+        ])
+
+        ->where(
+            'analysis_type',
+            'wall_to_wall_tree_crown'
+        )
+
+        ->where(
+            'status',
+            'completed'
+        )
+
+        ->whereHas(
+            'mosaic.project',
+            function ($query) use ($request) {
+
+                $query->where(
+                    'user_id',
+                    $request->user()->id
+                );
+            }
+        )
+);
+
+
+if ($selectedMosaicUuid) {
+
+    $wallToWallQuery->whereHas(
+        'mosaic',
+        function ($query) use (
+            $selectedMosaicUuid
+        ) {
+
+            $query->where(
+                'uuid',
+                $selectedMosaicUuid
+            );
+        }
+    );
+}
+
+
+$wallToWallAnalysis = (
+    $wallToWallQuery
+
+        ->orderByDesc(
+            'completed_at'
+        )
+
+        ->orderByDesc(
+            'id'
+        )
+
+        ->first()
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| Mosaicos disponibles para wall-to-wall
+|--------------------------------------------------------------------------
+*/
+
+$availableMosaics = (
+    Mosaic::query()
+
+        ->with(
+            'project'
+        )
+
+        ->where(
+            'status',
+            'ready'
+        )
+
+        ->whereHas(
+            'project',
+            function ($query) use ($request) {
+
+                $query->where(
+                    'user_id',
+                    $request->user()->id
+                );
+            }
+        )
+
+        ->orderByDesc(
+            'id'
+        )
+
+        ->get()
+);
 
 
         return view(
@@ -163,7 +258,9 @@ class AiAnalysisController extends Controller
                 'analysisMode',
                 'imageUrl',
                 'analysisId',
-                'wallToWallAnalysis'
+                'wallToWallAnalysis',
+                'availableMosaics',
+                'selectedMosaicUuid'
             )
         );
     }
@@ -574,27 +671,54 @@ class AiAnalysisController extends Controller
     /**
  * Consultar un análisis UAV persistente.
  */
+/**
+ * Consultar un análisis UAV persistente autorizado.
+ */
 public function showJob(
+    Request $request,
     string $analysisUuid
 ) {
 
-    $job = AnalysisJob::query()
-        ->where(
-            'uuid',
-            $analysisUuid
-        )
-        ->with('artifacts')
-        ->firstOrFail();
+    $job = (
+        AnalysisJob::query()
+
+            ->where(
+                'uuid',
+                $analysisUuid
+            )
+
+            ->whereHas(
+                'mosaic.project',
+                function ($query) use ($request) {
+
+                    $query->where(
+                        'user_id',
+                        $request->user()->id
+                    );
+                }
+            )
+
+            ->with([
+                'artifacts',
+                'mosaic',
+            ])
+
+            ->firstOrFail()
+    );
 
 
     return response()->json([
 
-        'status' => 'ok',
+        'status' =>
+            'ok',
 
         'analysis' => [
 
             'uuid' =>
                 $job->uuid,
+
+            'mosaic_uuid' =>
+                $job->mosaic->uuid,
 
             'analysis_type' =>
                 $job->analysis_type,
@@ -631,7 +755,6 @@ public function showJob(
                 )->toIso8601String(),
         ],
 
-
         'artifacts' =>
             $job->artifacts
                 ->map(
@@ -664,8 +787,7 @@ public function showJob(
                                 $artifact->metadata,
 
                             /*
-                             * Importante:
-                             * no exponemos object_key.
+                             * No exponemos object_key.
                              */
                             'download_url' =>
                                 route(
@@ -689,6 +811,7 @@ public function showJob(
  * Descargar un artifact de un análisis desde R2 privado.
  */
 public function downloadArtifact(
+    Request $request,
     string $analysisUuid,
     string $artifactUuid
 ) {
@@ -699,12 +822,27 @@ public function downloadArtifact(
     |--------------------------------------------------------------------------
     */
 
-    $job = AnalysisJob::query()
+   $job = (
+    AnalysisJob::query()
+
         ->where(
             'uuid',
             $analysisUuid
         )
-        ->firstOrFail();
+
+        ->whereHas(
+            'mosaic.project',
+            function ($query) use ($request) {
+
+                $query->where(
+                    'user_id',
+                    $request->user()->id
+                );
+            }
+        )
+
+        ->firstOrFail()
+);
 
 
     /*
@@ -793,5 +931,176 @@ public function downloadArtifact(
     return redirect()->away(
         $url
     );
+}
+
+/**
+ * Ejecutar análisis wall-to-wall persistente V0.7E.
+ */
+public function runWallToWall(
+    Request $request,
+    Mosaic $mosaic,
+    WallToWallAnalysisService $runner
+) {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resolver proyecto y autorizar propietario
+    |--------------------------------------------------------------------------
+    */
+
+    $mosaic->loadMissing(
+        'project'
+    );
+
+
+    if (!$mosaic->project) {
+
+        abort(
+            404,
+            'El mosaico no tiene proyecto asociado.'
+        );
+    }
+
+
+    if (
+        (int) $mosaic->project->user_id
+        !==
+        (int) $request->user()->id
+    ) {
+
+        abort(
+            403,
+            'No tienes acceso a este mosaico.'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validar estado del mosaico
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $mosaic->status
+        !==
+        'ready'
+    ) {
+
+        return redirect()
+            ->route(
+                'analysis.index',
+                [
+                    'mosaic' =>
+                        $mosaic->uuid,
+                ]
+            )
+            ->with(
+                'error',
+                'El ortomosaico todavía no está listo para análisis.'
+            );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Evitar análisis simultáneos del mismo mosaico
+    |--------------------------------------------------------------------------
+    */
+
+    $alreadyProcessing = (
+        $mosaic
+            ->analysisJobs()
+            ->where(
+                'analysis_type',
+                'wall_to_wall_tree_crown'
+            )
+            ->where(
+                'status',
+                'processing'
+            )
+            ->exists()
+    );
+
+
+    if ($alreadyProcessing) {
+
+        return redirect()
+            ->route(
+                'analysis.index',
+                [
+                    'mosaic' =>
+                        $mosaic->uuid,
+                ]
+            )
+            ->with(
+                'error',
+                'Ya existe un análisis wall-to-wall en proceso para este mosaico.'
+            );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ejecutar pipeline persistente
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+
+        $job = (
+            $runner->run(
+                $mosaic
+            )
+        );
+
+
+        return redirect()
+            ->route(
+                'analysis.index',
+                [
+                    'mosaic' =>
+                        $mosaic->uuid,
+
+                    'job' =>
+                        $job->uuid,
+                ]
+            )
+            ->with(
+                'success',
+                'Análisis wall-to-wall V0.7E completado correctamente.'
+            );
+
+    } catch (Throwable $e) {
+
+        Log::error(
+            'Error al ejecutar wall-to-wall desde Laravel.',
+            [
+                'mosaic_uuid' =>
+                    $mosaic->uuid,
+
+                'user_id' =>
+                    $request->user()->id,
+
+                'message' =>
+                    $e->getMessage(),
+            ]
+        );
+
+
+        return redirect()
+            ->route(
+                'analysis.index',
+                [
+                    'mosaic' =>
+                        $mosaic->uuid,
+                ]
+            )
+            ->with(
+                'error',
+                'No fue posible completar el análisis wall-to-wall. '
+                . $e->getMessage()
+            );
+    }
 }
 }
