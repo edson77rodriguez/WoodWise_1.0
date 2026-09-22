@@ -1112,6 +1112,234 @@
 
         /*
         |--------------------------------------------------------------------------
+        | Wall-to-wall execution
+        |--------------------------------------------------------------------------
+        */
+
+        .wall-execution {
+
+            margin-top: 28px;
+
+            padding: 24px;
+        }
+
+
+        .wall-execution-header {
+
+            display: flex;
+
+            align-items: flex-start;
+
+            justify-content: space-between;
+
+            gap: 20px;
+
+            margin-bottom: 22px;
+        }
+
+
+        .wall-execution-title {
+
+            margin: 0;
+
+            font-size: 19px;
+        }
+
+
+        .wall-execution-subtitle {
+
+            margin-top: 6px;
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            line-height: 1.5;
+        }
+
+
+        .wall-api-badge {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            padding: 7px 11px;
+
+            border-radius: 999px;
+
+            font-size: 11px;
+
+            font-weight: 700;
+
+            white-space: nowrap;
+        }
+
+
+        .wall-api-badge.online-state {
+
+            background:
+                var(--forest-soft);
+
+            color:
+                var(--forest-dark);
+        }
+
+
+        .wall-api-badge.offline-state {
+
+            background:
+                var(--danger-soft);
+
+            color:
+                var(--danger);
+        }
+
+
+        .wall-selector {
+
+            margin-bottom: 20px;
+        }
+
+
+        .wall-selector label {
+
+            margin-bottom: 8px;
+        }
+
+
+        .wall-mosaic-info {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, minmax(0,1fr));
+
+            gap: 12px;
+
+            margin-bottom: 20px;
+        }
+
+
+        .wall-mosaic-item {
+
+            padding: 14px;
+
+            border:
+                1px solid var(--border);
+
+            border-radius: 11px;
+
+            background:
+                var(--surface-soft);
+        }
+
+
+        .wall-mosaic-label {
+
+            margin-bottom: 5px;
+
+            color:
+                var(--muted);
+
+            font-size: 10px;
+
+            text-transform: uppercase;
+
+            letter-spacing: .03em;
+        }
+
+
+        .wall-mosaic-value {
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            word-break: break-word;
+        }
+
+
+        .wall-frozen-config {
+
+            margin-bottom: 18px;
+
+            padding: 15px;
+
+            border-radius: 11px;
+
+            background:
+                #eef6f2;
+
+            border:
+                1px solid #d2e7dc;
+
+            color:
+                #456156;
+
+            font-size: 11px;
+
+            line-height: 1.6;
+        }
+
+
+        .wall-run-button {
+
+            width: 100%;
+        }
+
+
+        .wall-empty {
+
+            padding: 15px 18px;
+
+            border-radius: 12px;
+
+            background:
+                var(--warning-soft);
+
+            border:
+                1px solid #ecd69c;
+
+            color:
+                var(--warning);
+
+            font-size: 12px;
+
+            line-height: 1.5;
+        }
+
+
+        @media(max-width:900px) {
+
+            .wall-mosaic-info {
+
+                grid-template-columns:
+                    repeat(2, minmax(0,1fr));
+            }
+
+
+            .wall-execution-header {
+
+                flex-direction: column;
+            }
+        }
+
+
+        @media(max-width:500px) {
+
+            .wall-mosaic-info {
+
+                grid-template-columns:
+                    1fr;
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
         | Persistent wall-to-wall analysis
         |--------------------------------------------------------------------------
         */
@@ -2786,6 +3014,303 @@
 
 
 {{-- ==========================================================
+     EJECUCIÓN WALL-TO-WALL V0.7E
+     ========================================================== --}}
+
+<section class="card wall-execution">
+
+    <div class="wall-execution-header">
+
+        <div>
+
+            <h2 class="wall-execution-title">
+                Análisis wall-to-wall
+            </h2>
+
+            <div class="wall-execution-subtitle">
+
+                Ejecuta el pipeline V0.7E sobre un ortomosaico
+                completo utilizando el método científico V0.6G.
+
+            </div>
+
+        </div>
+
+
+        @if(
+            ($apiStatus['status'] ?? 'offline')
+            === 'ok'
+        )
+
+            <div class="wall-api-badge online-state">
+                ● FastAPI disponible
+            </div>
+
+        @else
+
+            <div class="wall-api-badge offline-state">
+                ● FastAPI no disponible
+            </div>
+
+        @endif
+
+    </div>
+
+
+    @if($availableMosaics->isNotEmpty())
+
+        <form
+            method="GET"
+            action="{{ route('analysis.index') }}"
+            class="wall-selector"
+        >
+
+            <label for="wallToWallMosaic">
+                Ortomosaico listo para análisis
+            </label>
+
+            <select
+                id="wallToWallMosaic"
+                name="mosaic"
+                onchange="this.form.submit()"
+            >
+
+                @foreach(
+                    $availableMosaics
+                    as $mosaic
+                )
+
+                    <option
+                        value="{{ $mosaic->uuid }}"
+                        {{
+                            $selectedMosaicUuid
+                            ===
+                            $mosaic->uuid
+                                ? 'selected'
+                                : ''
+                        }}
+                    >
+
+                        {{ $mosaic->original_name }}
+
+                        ·
+
+                        {{ number_format($mosaic->width) }}
+                        ×
+                        {{ number_format($mosaic->height) }}
+                        px
+
+                        @if($mosaic->gsd_cm)
+
+                            · GSD
+                            {{
+                                number_format(
+                                    (float) $mosaic->gsd_cm,
+                                    4
+                                )
+                            }}
+                            cm/px
+
+                        @endif
+
+                    </option>
+
+                @endforeach
+
+            </select>
+
+            <div class="helper">
+                El cambio de ortomosaico actualiza también
+                el último resultado wall-to-wall mostrado.
+            </div>
+
+        </form>
+
+
+        @if($selectedMosaic)
+
+            <div class="wall-mosaic-info">
+
+                <div class="wall-mosaic-item">
+
+                    <div class="wall-mosaic-label">
+                        Dimensiones
+                    </div>
+
+                    <div class="wall-mosaic-value">
+
+                        {{ number_format($selectedMosaic->width) }}
+                        ×
+                        {{ number_format($selectedMosaic->height) }}
+                        px
+
+                    </div>
+
+                </div>
+
+
+                <div class="wall-mosaic-item">
+
+                    <div class="wall-mosaic-label">
+                        GSD nativo
+                    </div>
+
+                    <div class="wall-mosaic-value">
+
+                        @if($selectedMosaic->gsd_cm)
+
+                            {{
+                                number_format(
+                                    (float) $selectedMosaic->gsd_cm,
+                                    4
+                                )
+                            }}
+                            cm/px
+
+                        @else
+
+                            —
+
+                        @endif
+
+                    </div>
+
+                </div>
+
+
+                <div class="wall-mosaic-item">
+
+                    <div class="wall-mosaic-label">
+                        CRS
+                    </div>
+
+                    <div class="wall-mosaic-value">
+                        {{ $selectedMosaic->crs ?? '—' }}
+                    </div>
+
+                </div>
+
+
+                <div class="wall-mosaic-item">
+
+                    <div class="wall-mosaic-label">
+                        Estado
+                    </div>
+
+                    <div class="wall-mosaic-value">
+                        {{ strtoupper($selectedMosaic->status) }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="wall-frozen-config">
+
+                <strong>
+                    Configuración científica congelada:
+                </strong>
+
+                YOLO-Seg 0.25
+                ·
+                Mask R-CNN 0.40
+                ·
+                máscara 0.50
+                ·
+                normalización 2144 → 1024 px
+                ·
+                solape de salida 256 px
+                ·
+                IoU intramodelo 0.50
+                ·
+                IoU intermodelo 0.50.
+
+                Estos parámetros no se reciben desde el navegador.
+
+            </div>
+
+
+            <form
+                method="POST"
+                action="{{
+                    route(
+                        'analysis.wall-to-wall.run',
+                        [
+                            'mosaic' =>
+                                $selectedMosaic->uuid,
+                        ]
+                    )
+                }}"
+                id="wallToWallForm"
+            >
+
+                @csrf
+
+                <button
+                    id="wallToWallSubmit"
+                    class="button wall-run-button"
+                    type="submit"
+                    @if(
+                        ($apiStatus['status'] ?? 'offline')
+                        !== 'ok'
+                    )
+                        disabled
+                    @endif
+                >
+
+                    <span id="wallToWallButtonText">
+
+                        @if(
+                            ($apiStatus['status'] ?? 'offline')
+                            === 'ok'
+                        )
+
+                            Ejecutar análisis wall-to-wall
+
+                        @else
+
+                            FastAPI no disponible
+
+                        @endif
+
+                    </span>
+
+                </button>
+
+            </form>
+
+
+            @if(
+                ($apiStatus['status'] ?? 'offline')
+                !== 'ok'
+            )
+
+                <div class="helper">
+                    Activa el servicio FastAPI antes de ejecutar
+                    el análisis del ortomosaico.
+                </div>
+
+            @endif
+
+        @endif
+
+    @else
+
+        <div class="wall-empty">
+
+            No hay ortomosaicos con estado
+            <strong>ready</strong>
+            asociados a tus proyectos.
+
+        </div>
+
+    @endif
+
+</section>
+
+
+{{-- ==========================================================
      ANÁLISIS WALL-TO-WALL PERSISTENTE
      ========================================================== --}}
 
@@ -2859,9 +3384,9 @@
 
                     {{
                         $wallParameters[
-                            'analysis_version'
+                            'pipeline_version'
                         ]
-                        ?? '—'
+                        ?? 'V0.7E'
                     }}
 
                 </h2>
@@ -2873,6 +3398,19 @@
                     el ortomosaico completo.
 
                     <br>
+
+                    Método científico:
+
+                    <strong>
+                        {{
+                            $wallParameters[
+                                'scientific_method_version'
+                            ]
+                            ?? 'V0.6G'
+                        }}
+                    </strong>
+
+                    ·
 
                     Geometría primaria:
 
@@ -3614,6 +4152,49 @@
                 'Procesando modelos...';
         }
     );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Loading wall-to-wall
+    |--------------------------------------------------------------------------
+    */
+
+    const wallToWallForm =
+        document.getElementById(
+            'wallToWallForm'
+        );
+
+    const wallToWallSubmit =
+        document.getElementById(
+            'wallToWallSubmit'
+        );
+
+    const wallToWallButtonText =
+        document.getElementById(
+            'wallToWallButtonText'
+        );
+
+
+    wallToWallForm
+        ?.addEventListener(
+            'submit',
+            function () {
+
+                if (wallToWallSubmit) {
+
+                    wallToWallSubmit.disabled =
+                        true;
+                }
+
+
+                if (wallToWallButtonText) {
+
+                    wallToWallButtonText.textContent =
+                        'Procesando ortomosaico...';
+                }
+            }
+        );
 
 
 @if($result)

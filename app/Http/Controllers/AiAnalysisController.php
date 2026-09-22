@@ -1,11 +1,12 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\Mosaic;
-use App\Services\WallToWallAnalysisService;
+
 use App\Models\AnalysisArtifact;
 use App\Models\AnalysisJob;
+use App\Models\Mosaic;
 use App\Services\AiService;
+use App\Services\WallToWallAnalysisService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -133,121 +134,133 @@ class AiAnalysisController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Último análisis wall-to-wall persistente
+        | Mosaicos disponibles para wall-to-wall
         |--------------------------------------------------------------------------
         */
 
+        $availableMosaics = (
+            Mosaic::query()
+
+                ->with(
+                    'project'
+                )
+
+                ->where(
+                    'status',
+                    'ready'
+                )
+
+                ->whereHas(
+                    'project',
+                    function ($query) use ($request) {
+
+                        $query->where(
+                            'user_id',
+                            $request->user()->id
+                        );
+                    }
+                )
+
+                ->orderByDesc(
+                    'id'
+                )
+
+                ->get()
+        );
+
+
         /*
-|--------------------------------------------------------------------------
-| Último análisis wall-to-wall persistente autorizado
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | Mosaico seleccionado
+        |--------------------------------------------------------------------------
+        */
 
-$selectedMosaicUuid = (
-    $request->query(
-        'mosaic'
-    )
-);
+        $selectedMosaicUuid = (
+            $request->query(
+                'mosaic'
+            )
+        );
 
 
-$wallToWallQuery = (
-    AnalysisJob::query()
+        $selectedMosaic = null;
 
-        ->with([
-            'artifacts',
-            'mosaic.project',
-        ])
 
-        ->where(
-            'analysis_type',
-            'wall_to_wall_tree_crown'
-        )
+        if ($selectedMosaicUuid) {
 
-        ->where(
-            'status',
-            'completed'
-        )
+            $selectedMosaic = (
+                $availableMosaics
+                    ->firstWhere(
+                        'uuid',
+                        $selectedMosaicUuid
+                    )
+            );
 
-        ->whereHas(
-            'mosaic.project',
-            function ($query) use ($request) {
 
-                $query->where(
-                    'user_id',
-                    $request->user()->id
+            if (!$selectedMosaic) {
+
+                abort(
+                    404,
+                    'El ortomosaico solicitado no está disponible.'
                 );
             }
-        )
-);
+
+        } elseif ($availableMosaics->isNotEmpty()) {
+
+            $selectedMosaic = (
+                $availableMosaics->first()
+            );
 
 
-if ($selectedMosaicUuid) {
-
-    $wallToWallQuery->whereHas(
-        'mosaic',
-        function ($query) use (
-            $selectedMosaicUuid
-        ) {
-
-            $query->where(
-                'uuid',
-                $selectedMosaicUuid
+            $selectedMosaicUuid = (
+                $selectedMosaic->uuid
             );
         }
-    );
-}
 
 
-$wallToWallAnalysis = (
-    $wallToWallQuery
+        /*
+        |--------------------------------------------------------------------------
+        | Último análisis wall-to-wall del mosaico seleccionado
+        |--------------------------------------------------------------------------
+        */
 
-        ->orderByDesc(
-            'completed_at'
-        )
-
-        ->orderByDesc(
-            'id'
-        )
-
-        ->first()
-);
+        $wallToWallAnalysis = null;
 
 
-/*
-|--------------------------------------------------------------------------
-| Mosaicos disponibles para wall-to-wall
-|--------------------------------------------------------------------------
-*/
+        if ($selectedMosaic) {
 
-$availableMosaics = (
-    Mosaic::query()
+            $wallToWallAnalysis = (
+                AnalysisJob::query()
 
-        ->with(
-            'project'
-        )
+                    ->with(
+                        'artifacts'
+                    )
 
-        ->where(
-            'status',
-            'ready'
-        )
+                    ->where(
+                        'mosaic_id',
+                        $selectedMosaic->id
+                    )
 
-        ->whereHas(
-            'project',
-            function ($query) use ($request) {
+                    ->where(
+                        'analysis_type',
+                        'wall_to_wall_tree_crown'
+                    )
 
-                $query->where(
-                    'user_id',
-                    $request->user()->id
-                );
-            }
-        )
+                    ->where(
+                        'status',
+                        'completed'
+                    )
 
-        ->orderByDesc(
-            'id'
-        )
+                    ->orderByDesc(
+                        'completed_at'
+                    )
 
-        ->get()
-);
+                    ->orderByDesc(
+                        'id'
+                    )
+
+                    ->first()
+            );
+        }
 
 
         return view(
@@ -260,7 +273,8 @@ $availableMosaics = (
                 'analysisId',
                 'wallToWallAnalysis',
                 'availableMosaics',
-                'selectedMosaicUuid'
+                'selectedMosaicUuid',
+                'selectedMosaic'
             )
         );
     }
