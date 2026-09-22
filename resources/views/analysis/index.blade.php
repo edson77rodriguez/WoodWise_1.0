@@ -1708,6 +1708,50 @@
 
 @php
 
+    /*
+    |--------------------------------------------------------------------------
+    | Variables defensivas para la vista
+    |--------------------------------------------------------------------------
+    | El controlador debe suministrar estas variables. Este bloque evita
+    | errores de renderizado si todavía no existe selección explícita.
+    */
+
+    $availableMosaics =
+        $availableMosaics ?? collect();
+
+    $selectedMosaicUuid =
+        $selectedMosaicUuid
+        ?? request()->query('mosaic');
+
+    $selectedMosaic =
+        $selectedMosaic ?? null;
+
+    if (
+        !$selectedMosaic
+        &&
+        $selectedMosaicUuid
+    ) {
+
+        $selectedMosaic =
+            $availableMosaics->firstWhere(
+                'uuid',
+                $selectedMosaicUuid
+            );
+    }
+
+    if (
+        !$selectedMosaic
+        &&
+        $availableMosaics->isNotEmpty()
+    ) {
+
+        $selectedMosaic =
+            $availableMosaics->first();
+
+        $selectedMosaicUuid =
+            $selectedMosaic->uuid;
+    }
+
     $isCompare =
         $analysisMode === 'both';
 
@@ -3093,6 +3137,12 @@
 
                         {{ $mosaic->original_name }}
 
+                        @if($mosaic->project)
+
+                            · {{ $mosaic->project->name }}
+
+                        @endif
+
                         ·
 
                         {{ number_format($mosaic->width) }}
@@ -3301,7 +3351,7 @@
 
             No hay ortomosaicos con estado
             <strong>ready</strong>
-            asociados a tus proyectos.
+            disponibles para análisis.
 
         </div>
 
