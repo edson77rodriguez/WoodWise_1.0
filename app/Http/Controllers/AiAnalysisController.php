@@ -912,6 +912,533 @@ public function downloadArtifact(
 }
 
 /**
+ * Vista cartográfica de un análisis wall-to-wall completado.
+ *
+ * IMPORTANTE:
+ * - La capa GeoJSON es un derivado de visualización.
+ * - Las métricas forestales permanecen referidas al producto científico.
+ */
+public function mapJob(
+    Request $request,
+    string $analysisUuid
+) {
+
+    $job = (
+        AnalysisJob::query()
+
+            ->where(
+                'uuid',
+                $analysisUuid
+            )
+
+            ->with([
+                'artifacts',
+                'mosaic.project',
+            ])
+
+            ->firstOrFail()
+    );
+
+
+    if (
+        $job->analysis_type
+        !==
+        'wall_to_wall_tree_crown'
+    ) {
+
+        abort(
+            404,
+            'El análisis solicitado no corresponde a wall-to-wall.'
+        );
+    }
+
+
+    if (
+        $job->status
+        !==
+        'completed'
+    ) {
+
+        abort(
+            409,
+            'El análisis todavía no está completado.'
+        );
+    }
+
+
+    $mosaic = $job->mosaic;
+
+
+    if (!$mosaic) {
+
+        abort(
+            404,
+            'El análisis no tiene mosaico asociado.'
+        );
+    }
+
+
+    $geojsonArtifact = (
+        $job->artifacts
+            ->firstWhere(
+                'type',
+                'geojson'
+            )
+    );
+
+
+    if (!$geojsonArtifact) {
+
+        abort(
+            404,
+            'Este análisis no dispone del artifact GeoJSON de visualización.'
+        );
+    }
+
+
+    if (
+        empty($job->result_prefix)
+        ||
+        !str_starts_with(
+            $geojsonArtifact->object_key,
+            $job->result_prefix
+        )
+    ) {
+
+        abort(
+            403,
+            'El GeoJSON no pertenece al análisis solicitado.'
+        );
+    }
+
+
+    if (
+        !Storage::disk('r2')
+            ->exists(
+                $geojsonArtifact->object_key
+            )
+    ) {
+
+        abort(
+            404,
+            'El GeoJSON del análisis no existe en R2.'
+        );
+    }
+
+
+    $bounds = (
+        is_array($mosaic->bounds)
+            ? $mosaic->bounds
+            : []
+    );
+
+
+    foreach (
+        [
+            'left',
+            'bottom',
+            'right',
+            'top',
+        ]
+        as
+        $boundKey
+    ) {
+
+        if (
+            !array_key_exists(
+                $boundKey,
+                $bounds
+            )
+            ||
+            !is_numeric(
+                $bounds[$boundKey]
+            )
+        ) {
+
+            abort(
+                422,
+                'El mosaico no contiene bounds geoespaciales válidos.'
+            );
+        }
+    }
+
+
+    if (
+        empty($mosaic->crs)
+    ) {
+
+        abort(
+            422,
+            'El mosaico no contiene CRS geoespacial.'
+        );
+    }
+
+
+    $previewAvailable = false;
+
+
+    if (
+        !empty(
+            $mosaic->preview_object_key
+        )
+    ) {
+
+        $projectUuid = (
+            $mosaic->project->uuid
+            ?? null
+        );
+
+
+        if ($projectUuid) {
+
+            $previewPrefix = (
+                "projects/{$projectUuid}/"
+                . "mosaics/{$mosaic->uuid}/"
+            );
+
+
+            $previewAvailable = (
+                str_starts_with(
+                    $mosaic->preview_object_key,
+                    $previewPrefix
+                )
+                &&
+                Storage::disk('r2')
+                    ->exists(
+                        $mosaic->preview_object_key
+                    )
+            );
+        }
+    }
+
+
+    return view(
+        'analysis.map',
+        [
+            'job' =>
+                $job,
+
+            'mosaic' =>
+                $mosaic,
+
+            'geojsonArtifact' =>
+                $geojsonArtifact,
+
+            'previewAvailable' =>
+                $previewAvailable,
+
+            'mapBounds' => [
+                (float) $bounds['left'],
+                (float) $bounds['bottom'],
+                (float) $bounds['right'],
+                (float) $bounds['top'],
+            ],
+        ]
+    );
+}
+
+
+/**
+ * Servir el GeoJSON web del análisis desde R2 privado.
+ *
+ * Se sirve por el mismo origen Laravel para evitar exponer object_key
+ * y para no depender de CORS de R2.
+ */
+public function mapGeoJson(
+    Request $request,
+    string $analysisUuid
+) {
+
+    $job = (
+        AnalysisJob::query()
+
+            ->where(
+                'uuid',
+                $analysisUuid
+            )
+
+            ->firstOrFail()
+    );
+
+
+    $artifact = (
+        AnalysisArtifact::query()
+
+            ->where(
+                'analysis_job_id',
+                $job->id
+            )
+
+            ->where(
+                'type',
+                'geojson'
+            )
+
+            ->firstOrFail()
+    );
+
+
+    if (
+        empty($job->result_prefix)
+        ||
+        !str_starts_with(
+            $artifact->object_key,
+            $job->result_prefix
+        )
+    ) {
+
+        abort(
+            403,
+            'El GeoJSON no pertenece al análisis solicitado.'
+        );
+    }
+
+
+    $disk = Storage::disk('r2');
+
+
+    if (
+        !$disk->exists(
+            $artifact->object_key
+        )
+    ) {
+
+        abort(
+            404,
+            'El GeoJSON del análisis no existe en R2.'
+        );
+    }
+
+
+    $stream = $disk->readStream(
+        $artifact->object_key
+    );
+
+
+    if ($stream === false) {
+
+        abort(
+            500,
+            'No fue posible abrir el GeoJSON desde R2.'
+        );
+    }
+
+
+    $headers = [
+        'Content-Type' =>
+            'application/geo+json; charset=utf-8',
+
+        'Content-Disposition' =>
+            'inline; filename="primary_objects_V07E.geojson"',
+
+        'Cache-Control' =>
+            'private, max-age=300',
+
+        'X-Content-Type-Options' =>
+            'nosniff',
+    ];
+
+
+    if (
+        !empty(
+            $artifact->size_bytes
+        )
+    ) {
+
+        $headers['Content-Length'] =
+            (string) $artifact->size_bytes;
+    }
+
+
+    return response()->stream(
+        function () use ($stream) {
+
+            fpassthru(
+                $stream
+            );
+
+
+            if (
+                is_resource($stream)
+            ) {
+
+                fclose(
+                    $stream
+                );
+            }
+        },
+        200,
+        $headers
+    );
+}
+
+
+/**
+ * Servir el preview del ortomosaico desde R2 privado.
+ */
+public function mapPreview(
+    Request $request,
+    string $analysisUuid
+) {
+
+    $job = (
+        AnalysisJob::query()
+
+            ->where(
+                'uuid',
+                $analysisUuid
+            )
+
+            ->with(
+                'mosaic.project'
+            )
+
+            ->firstOrFail()
+    );
+
+
+    $mosaic = $job->mosaic;
+
+
+    if (
+        !$mosaic
+        ||
+        empty(
+            $mosaic->preview_object_key
+        )
+    ) {
+
+        abort(
+            404,
+            'El mosaico no dispone de preview web.'
+        );
+    }
+
+
+    $projectUuid = (
+        $mosaic->project->uuid
+        ?? null
+    );
+
+
+    if (!$projectUuid) {
+
+        abort(
+            404,
+            'El mosaico no tiene proyecto asociado.'
+        );
+    }
+
+
+    $expectedPrefix = (
+        "projects/{$projectUuid}/"
+        . "mosaics/{$mosaic->uuid}/"
+    );
+
+
+    if (
+        !str_starts_with(
+            $mosaic->preview_object_key,
+            $expectedPrefix
+        )
+    ) {
+
+        abort(
+            403,
+            'El preview no pertenece al mosaico solicitado.'
+        );
+    }
+
+
+    $disk = Storage::disk('r2');
+
+
+    if (
+        !$disk->exists(
+            $mosaic->preview_object_key
+        )
+    ) {
+
+        abort(
+            404,
+            'El preview del mosaico no existe en R2.'
+        );
+    }
+
+
+    $stream = $disk->readStream(
+        $mosaic->preview_object_key
+    );
+
+
+    if ($stream === false) {
+
+        abort(
+            500,
+            'No fue posible abrir el preview desde R2.'
+        );
+    }
+
+
+    $extension = strtolower(
+        pathinfo(
+            $mosaic->preview_object_key,
+            PATHINFO_EXTENSION
+        )
+    );
+
+
+    $contentType = match ($extension) {
+        'png' =>
+            'image/png',
+
+        'jpg', 'jpeg' =>
+            'image/jpeg',
+
+        'webp' =>
+            'image/webp',
+
+        default =>
+            'application/octet-stream',
+    };
+
+
+    return response()->stream(
+        function () use ($stream) {
+
+            fpassthru(
+                $stream
+            );
+
+
+            if (
+                is_resource($stream)
+            ) {
+
+                fclose(
+                    $stream
+                );
+            }
+        },
+        200,
+        [
+            'Content-Type' =>
+                $contentType,
+
+            'Content-Disposition' =>
+                'inline',
+
+            'Cache-Control' =>
+                'private, max-age=300',
+
+            'X-Content-Type-Options' =>
+                'nosniff',
+        ]
+    );
+}
+
+
+/**
  * Ejecutar análisis wall-to-wall persistente V0.7E.
  */
 public function runWallToWall(

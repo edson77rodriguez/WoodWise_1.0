@@ -150,6 +150,27 @@ Route::get(
     [MosaicController::class, 'tilingPreview']
 )->name('mosaics.tiling.preview');
 
+// ============================================================
+// V0.7E.11C - VISUALIZACIÓN CARTOGRÁFICA WALL-TO-WALL
+// Estas rutas deben quedar DENTRO del grupo existente:
+// Route::middleware(['auth', 'role:Administrador'])->group(...)
+// ============================================================
+
+Route::get(
+    '/analisis-uav/jobs/{analysisUuid}/mapa',
+    [AiAnalysisController::class, 'mapJob']
+)->name('analysis.map');
+
+Route::get(
+    '/analisis-uav/jobs/{analysisUuid}/mapa/geojson',
+    [AiAnalysisController::class, 'mapGeoJson']
+)->name('analysis.map.geojson');
+
+Route::get(
+    '/analisis-uav/jobs/{analysisUuid}/mapa/preview',
+    [AiAnalysisController::class, 'mapPreview']
+)->name('analysis.map.preview');
+
 /*
 |--------------------------------------------------------------------------
 | Análisis UAV persistentes

@@ -3399,6 +3399,15 @@
                 );
 
 
+        $geojsonArtifact =
+            $wallToWallAnalysis
+                ->artifacts
+                ->firstWhere(
+                    'type',
+                    'geojson'
+                );
+
+
         $structuralConflictObjects =
             (
                 $wallSummary[
@@ -3830,6 +3839,31 @@
 
 
         <div class="artifact-actions">
+
+
+            @if($geojsonArtifact)
+
+                <a
+                    class="
+                        artifact-button
+                        artifact-button-primary
+                    "
+                    href="{{
+                        route(
+                            'analysis.map',
+                            [
+                                'analysisUuid' =>
+                                    $wallToWallAnalysis->uuid,
+                            ]
+                        )
+                    }}"
+                >
+
+                    Visualizar mapa
+
+                </a>
+
+            @endif
 
 
             @if($gpkgArtifact)
