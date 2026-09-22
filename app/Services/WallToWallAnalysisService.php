@@ -21,11 +21,11 @@ class WallToWallAnalysisService
 
     /**
      * Ejecuta el pipeline wall-to-wall V0.7E
-     * para un mosaico ya autorizado por la capa superior.
+     * para un mosaico previamente autorizado.
      *
      * IMPORTANTE:
      * Este servicio NO decide permisos de usuario.
-     * Eso corresponderá al controlador/policy.
+     * La autorización corresponde al controlador/policy.
      */
     public function run(
         Mosaic $mosaic
@@ -133,7 +133,7 @@ class WallToWallAnalysisService
 
 
         // ====================================================
-        // 3. CREAR JOB ANTES DE LLAMAR A FASTAPI
+        // 3. CREAR JOB ANTES DE FASTAPI
         // ====================================================
 
         $job = AnalysisJob::create([
@@ -153,11 +153,9 @@ class WallToWallAnalysisService
             'progress' =>
                 0,
 
-            // Por ahora FastAPI no devuelve el número de
-            // ventanas como campo HTTP independiente.
-            // No lo inventamos.
+            // Antes de conocer el plan dinámico.
             'total_tiles' =>
-                null,
+                0,
 
             'processed_tiles' =>
                 0,
@@ -210,7 +208,7 @@ class WallToWallAnalysisService
 
 
             // =================================================
-            // 5. VALIDAR IDENTIDAD DE LA RESPUESTA
+            // 5. VALIDAR IDENTIDAD
             // =================================================
 
             if (
@@ -264,8 +262,56 @@ class WallToWallAnalysisService
             }
 
 
+            if (
+                ($result['scientific_method_version'] ?? null)
+                !==
+                'V0.6G'
+            ) {
+
+                throw new RuntimeException(
+                    'La versión del método científico '
+                    . 'no corresponde a V0.6G.'
+                );
+            }
+
+
+            if (
+                ($result['pipeline_version'] ?? null)
+                !==
+                'V0.7E'
+            ) {
+
+                throw new RuntimeException(
+                    'La versión del pipeline '
+                    . 'no corresponde a V0.7E.'
+                );
+            }
+
+
             // =================================================
-            // 6. VALIDAR SUMMARY
+            // 6. VALIDAR TOTAL DE TILES
+            // =================================================
+
+            $totalTiles = (int) (
+                data_get(
+                    $result,
+                    'total_tiles',
+                    0
+                )
+            );
+
+
+            if ($totalTiles <= 0) {
+
+                throw new RuntimeException(
+                    'FastAPI no devolvió un '
+                    . 'total_tiles válido.'
+                );
+            }
+
+
+            // =================================================
+            // 7. VALIDAR SUMMARY
             // =================================================
 
             $summary = (
@@ -325,7 +371,7 @@ class WallToWallAnalysisService
 
 
             // =================================================
-            // 7. VALIDAR ARTIFACTS
+            // 8. VALIDAR ARTIFACTS
             // =================================================
 
             $artifacts = (
@@ -453,11 +499,39 @@ class WallToWallAnalysisService
                         );
                     }
                 }
+
+
+                if (
+                    (int) $artifact['size_bytes']
+                    <= 0
+                ) {
+
+                    throw new RuntimeException(
+                        "El artifact {$type} "
+                        . "tiene un tamaño inválido."
+                    );
+                }
+            }
+
+
+            if (
+                !isset(
+                    $artifactTypes['geopackage']
+                )
+                ||
+                !isset(
+                    $artifactTypes['manifest']
+                )
+            ) {
+
+                throw new RuntimeException(
+                    'No se recibieron ambos artifacts requeridos.'
+                );
             }
 
 
             // =================================================
-            // 8. VALIDAR PREFIX R2
+            // 9. VALIDAR PREFIX R2
             // =================================================
 
             $resultPrefix = (
@@ -495,7 +569,33 @@ class WallToWallAnalysisService
 
 
             // =================================================
-            // 9. PERSISTENCIA ATÓMICA
+            // 10. VALIDAR OBJECT KEYS DE ARTIFACTS
+            // =================================================
+
+            foreach (
+                $artifacts
+                as
+                $artifact
+            ) {
+
+                if (
+                    !str_starts_with(
+                        $artifact['object_key'],
+                        $resultPrefix . '/'
+                    )
+                ) {
+
+                    throw new RuntimeException(
+                        'El object_key del artifact '
+                        . $artifact['type']
+                        . ' no pertenece al result_prefix.'
+                    );
+                }
+            }
+
+
+            // =================================================
+            // 11. PERSISTENCIA ATÓMICA
             // =================================================
 
             DB::transaction(
@@ -504,7 +604,8 @@ class WallToWallAnalysisService
                     $result,
                     $summary,
                     $artifacts,
-                    $resultPrefix
+                    $resultPrefix,
+                    $totalTiles
                 ) {
 
                     foreach (
@@ -572,22 +673,6 @@ class WallToWallAnalysisService
                     }
 
 
-                    // -----------------------------------------
-                    // total_tiles:
-                    //
-                    // Dejamos compatibilidad para cuando
-                    // FastAPI lo devuelva en el futuro.
-                    // Actualmente será NULL.
-                    // -----------------------------------------
-
-                    $totalTiles = (
-                        data_get(
-                            $result,
-                            'total_tiles'
-                        )
-                    );
-
-
                     $job->update([
 
                         'status' =>
@@ -622,7 +707,7 @@ class WallToWallAnalysisService
 
 
             // =================================================
-            // 10. DEVOLVER JOB ACTUALIZADO
+            // 12. DEVOLVER JOB ACTUALIZADO
             // =================================================
 
             return (
