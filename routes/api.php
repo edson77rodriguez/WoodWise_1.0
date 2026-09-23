@@ -11,6 +11,7 @@ use App\Http\Controllers\API\MobileEspecieController;
 use App\Http\Controllers\API\MobileTipoEstimacionController;
 use App\Http\Controllers\API\MobileCatalogoController;
 use App\Http\Controllers\API\MobileFormulaController;
+use App\Http\Controllers\API\MobileEstimacionTrozaController;
 
 Route::prefix('v1/bot')
     ->middleware(['botkey', 'verify.hmac'])
@@ -123,4 +124,17 @@ Route::middleware([
     MobileFormulaController::class,
     'index'
 ]);
+
+
+Route::middleware([
+    'auth:sanctum',
+    'api.role:Tecnico'
+])->post(
+    '/parcelas/{idParcela}/trozas/{idTroza}/estimaciones',
+    [
+        MobileEstimacionTrozaController::class,
+        'store'
+    ]
+);
+
 });
