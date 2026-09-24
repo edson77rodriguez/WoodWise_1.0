@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Mapa profesional · {{ $job->uuid }}</title>
+    <title>Mapa de resultados | UAV Forest AI</title>
 
     <link
         rel="stylesheet"
@@ -14,33 +14,53 @@
 
     <style>
         :root {
-            --bg: #0b1220;
-            --bg-soft: #121b2e;
-            --panel: rgba(15, 23, 42, 0.88);
-            --panel-strong: rgba(10, 16, 30, 0.94);
-            --panel-light: #f8fafc;
-            --text: #e5edf8;
-            --text-dark: #0f172a;
-            --muted: #9cafc8;
-            --line: rgba(148, 163, 184, 0.18);
-            --line-strong: rgba(148, 163, 184, 0.28);
-            --accent: #4f46e5;
-            --accent-soft: rgba(79, 70, 229, 0.16);
-            --mrcnn: #22c55e;
-            --mrcnn-soft: rgba(34, 197, 94, 0.18);
-            --yolo: #a855f7;
-            --yolo-soft: rgba(168, 85, 247, 0.18);
-            --review: #f59e0b;
-            --review-soft: rgba(245, 158, 11, 0.18);
-            --danger: #ef4444;
-            --danger-soft: rgba(239, 68, 68, 0.16);
-            --white: #ffffff;
-            --shadow-xl: 0 22px 60px rgba(0, 0, 0, 0.28);
-            --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.20);
-            --radius-xl: 24px;
-            --radius-lg: 18px;
-            --radius-md: 14px;
-            --radius-sm: 10px;
+            --bg: #0b110e;
+            --surface: #111a16;
+            --surface-2: #16221c;
+            --surface-3: #1b2922;
+            --surface-hover: #203129;
+            --panel: rgba(17, 26, 22, .97);
+            --panel-soft: rgba(22, 34, 28, .94);
+
+            --text: #f2f7f4;
+            --text-soft: #c3d0c8;
+            --muted: #8fa299;
+            --faint: #697b72;
+
+            --border: rgba(207, 226, 215, .11);
+            --border-strong: rgba(207, 226, 215, .19);
+
+            --forest: #2f9d6a;
+            --forest-strong: #49bd83;
+            --forest-soft: rgba(47, 157, 106, .14);
+
+            --mrcnn: #35c77b;
+            --mrcnn-soft: rgba(53, 199, 123, .16);
+
+            --yolo: #a56bf4;
+            --yolo-soft: rgba(165, 107, 244, .16);
+
+            --review: #f2ad3d;
+            --review-soft: rgba(242, 173, 61, .15);
+
+            --danger: #ef6a62;
+            --danger-soft: rgba(239, 106, 98, .13);
+
+            --info: #69a7f2;
+            --info-soft: rgba(105, 167, 242, .13);
+
+            --neutral-model: #9fb0a7;
+
+            --topbar-h: 66px;
+            --left-w: 304px;
+            --right-w: 372px;
+
+            --radius-xl: 18px;
+            --radius-lg: 14px;
+            --radius-md: 11px;
+            --radius-sm: 8px;
+
+            --shadow-panel: 0 18px 46px rgba(0, 0, 0, .24);
         }
 
         * {
@@ -50,7 +70,10 @@
         html,
         body {
             margin: 0;
+            width: 100%;
             min-height: 100%;
+            background: var(--bg);
+            color: var(--text);
             font-family:
                 Inter,
                 ui-sans-serif,
@@ -58,739 +81,723 @@
                 -apple-system,
                 BlinkMacSystemFont,
                 "Segoe UI",
-                Roboto,
-                Arial,
                 sans-serif;
-            background:
-                radial-gradient(circle at top left, rgba(79, 70, 229, 0.18), transparent 28%),
-                radial-gradient(circle at top right, rgba(34, 197, 94, 0.10), transparent 25%),
-                linear-gradient(180deg, #0a1020 0%, #0b1220 100%);
-            color: var(--text);
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        button,
+        a {
+            -webkit-tap-highlight-color: transparent;
         }
 
         a {
             color: inherit;
         }
 
-        .shell {
-            max-width: 1880px;
-            margin: 0 auto;
-            padding: 20px;
+        [hidden] {
+            display: none !important;
         }
 
-        .hero {
-            background:
-                linear-gradient(135deg, rgba(79, 70, 229, 0.28), rgba(10, 16, 30, 0.85) 42%),
-                linear-gradient(135deg, rgba(34, 197, 94, 0.12), transparent 65%);
-            border: 1px solid var(--line);
-            border-radius: 26px;
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
-            margin-bottom: 18px;
-        }
+        /* =========================================================
+           TOPBAR
+        ========================================================= */
 
-        .hero-inner {
-            display: grid;
-            grid-template-columns: minmax(0, 1.65fr) minmax(340px, 0.95fr);
-            gap: 18px;
-            padding: 22px;
-        }
-
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 7px 12px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #dbe6f5;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: .02em;
-        }
-
-        .hero-title {
-            margin: 14px 0 8px;
-            font-size: clamp(28px, 4vw, 40px);
-            line-height: 1.04;
-            letter-spacing: -.02em;
-            font-weight: 850;
-        }
-
-        .hero-text {
-            margin: 0;
-            max-width: 920px;
-            color: #c7d4e8;
-            font-size: 14px;
-            line-height: 1.72;
-        }
-
-        .hero-actions {
+        .topbar {
+            height: var(--topbar-h);
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 18px;
-        }
-
-        .btn {
-            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            border: 1px solid transparent;
-            border-radius: 12px;
-            padding: 11px 16px;
-            font-size: 13px;
-            font-weight: 700;
-            text-decoration: none;
-            cursor: pointer;
-            transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
-        }
-
-        .btn:hover {
-            transform: translateY(-1px);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #635bff, #4f46e5);
-            color: white;
-            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.30);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.12);
-            color: #e5edf8;
-        }
-
-        .hero-meta {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            align-content: start;
-        }
-
-        .meta-card {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.10);
-            border-radius: 18px;
-            padding: 14px;
-            min-height: 104px;
-        }
-
-        .meta-label {
-            color: #a9bad3;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-        }
-
-        .meta-value {
-            margin-top: 7px;
-            font-size: 22px;
-            font-weight: 820;
-            letter-spacing: -.02em;
-        }
-
-        .meta-subvalue {
-            margin-top: 6px;
-            color: #cbd8ea;
-            font-size: 12px;
-            line-height: 1.5;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 400px;
+            justify-content: space-between;
             gap: 18px;
-            align-items: start;
-        }
-
-        .glass-card {
-            background: var(--panel);
-            backdrop-filter: blur(14px);
-            border: 1px solid var(--line);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-xl);
-            overflow: hidden;
-        }
-
-        .map-card {
+            padding: 0 18px;
+            background: #0d1511;
+            border-bottom: 1px solid var(--border);
             position: relative;
-            min-height: 780px;
+            z-index: 150;
         }
 
-        .map-header {
+        .topbar-left,
+        .topbar-right {
+            min-width: 0;
             display: flex;
-            justify-content: space-between;
-            gap: 14px;
-            padding: 16px 18px;
-            border-bottom: 1px solid var(--line);
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .map-title-block h2 {
-            margin: 0;
-            font-size: 17px;
-            font-weight: 800;
-            letter-spacing: -.02em;
-        }
-
-        .map-title-block p {
-            margin: 4px 0 0;
-            font-size: 12px;
-            line-height: 1.55;
-            color: var(--muted);
-        }
-
-        .status-pills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: flex-end;
-        }
-
-        .pill {
-            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 11px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 750;
-            white-space: nowrap;
-            border: 1px solid transparent;
-        }
-
-        .pill-neutral {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.10);
-            color: #e6eef9;
-        }
-
-        .pill-success {
-            background: var(--mrcnn-soft);
-            border-color: rgba(34, 197, 94, 0.30);
-            color: #c6f6d5;
-        }
-
-        .pill-yolo {
-            background: var(--yolo-soft);
-            border-color: rgba(168, 85, 247, 0.28);
-            color: #ead7ff;
-        }
-
-        .pill-warning {
-            background: var(--review-soft);
-            border-color: rgba(245, 158, 11, 0.34);
-            color: #fde7b1;
-        }
-
-        .map-toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            gap: 16px;
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--line);
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .control-group {
-            display: flex;
-            flex-wrap: wrap;
             gap: 12px;
-            align-items: center;
         }
 
-        .toggle-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 14px;
-            border: 1px solid var(--line);
-            background: rgba(255, 255, 255, 0.04);
-            color: #e6eef9;
-            font-size: 12px;
-            font-weight: 700;
+        .brand-mark {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            border-radius: 11px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(145deg, #1a533d, #123427);
+            border: 1px solid rgba(105, 207, 154, .22);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
         }
 
-        .toggle-chip input {
-            accent-color: var(--accent);
-            width: 16px;
-            height: 16px;
-            margin: 0;
+        .brand-mark svg {
+            width: 22px;
+            height: 22px;
         }
 
-        .dot {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 999px;
+        .brand-copy {
             flex: 0 0 auto;
         }
 
-        .dot-preview { background: #e5edf8; }
-        .dot-mrcnn { background: var(--mrcnn); }
-        .dot-yolo { background: var(--yolo); }
-        .dot-review { background: var(--review); }
-
-        .range-wrap {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 14px;
-            border: 1px solid var(--line);
-            background: rgba(255, 255, 255, 0.04);
-            min-width: 230px;
+        .brand-name {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: -.01em;
         }
 
-        .range-wrap label {
-            font-size: 11px;
+        .brand-mode {
+            margin-top: 2px;
             color: var(--muted);
+            font-size: 10px;
+        }
+
+        .breadcrumb-divider {
+            width: 1px;
+            height: 30px;
+            background: var(--border);
+            margin: 0 2px;
+        }
+
+        .context-path {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--muted);
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .context-path strong {
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-soft);
+            font-weight: 700;
+        }
+
+        .context-chevron {
+            color: var(--faint);
+        }
+
+        .top-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 32px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.035);
+            color: var(--text-soft);
+            font-size: 10px;
             font-weight: 700;
             white-space: nowrap;
         }
 
-        .range-wrap input[type="range"] {
-            width: 100%;
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--forest-strong);
+            box-shadow: 0 0 0 3px rgba(73, 189, 131, .11);
         }
 
-        .range-value {
-            min-width: 34px;
-            text-align: right;
-            font-size: 11px;
-            font-weight: 800;
-            color: #f8fbff;
-        }
-
-        .toolbar-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .ghost-btn {
+        .top-action {
+            height: 34px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            gap: 7px;
+            padding: 0 11px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: rgba(255,255,255,.035);
+            color: var(--text-soft);
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 750;
+            cursor: pointer;
+            transition: background .15s ease, border-color .15s ease;
+        }
+
+        .top-action:hover {
+            background: rgba(255,255,255,.07);
+            border-color: var(--border-strong);
+        }
+
+        .top-action svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        /* =========================================================
+           WORKSPACE
+        ========================================================= */
+
+        .workspace {
+            height: calc(100vh - var(--topbar-h));
+            display: grid;
+            grid-template-columns: var(--left-w) minmax(0, 1fr) var(--right-w);
+            min-height: 0;
+            background: var(--bg);
+        }
+
+        .side-panel {
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--surface);
+            position: relative;
+            z-index: 60;
+        }
+
+        .left-panel {
+            border-right: 1px solid var(--border);
+        }
+
+        .right-panel {
+            border-left: 1px solid var(--border);
+        }
+
+        .panel-heading {
+            flex: 0 0 auto;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-heading-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .panel-kicker {
+            color: var(--forest-strong);
+            font-size: 9px;
+            font-weight: 850;
+            letter-spacing: .11em;
+            text-transform: uppercase;
+        }
+
+        .panel-title {
+            margin: 4px 0 0;
+            font-size: 16px;
+            line-height: 1.2;
+            font-weight: 800;
+            letter-spacing: -.015em;
+        }
+
+        .panel-description {
+            margin: 7px 0 0;
+            color: var(--muted);
+            font-size: 10.5px;
+            line-height: 1.55;
+        }
+
+        .panel-count {
+            min-width: 30px;
+            height: 26px;
+            padding: 0 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: var(--forest-soft);
+            color: #bde9d1;
+            border: 1px solid rgba(73, 189, 131, .18);
+            font-size: 10px;
+            font-weight: 850;
+        }
+
+        /* =========================================================
+           EXPLORER
+        ========================================================= */
+
+        .explorer-controls {
+            flex: 0 0 auto;
+            padding: 13px 14px 12px;
+            border-bottom: 1px solid var(--border);
+            display: grid;
+            gap: 10px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            color: var(--muted);
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #0e1713;
+            color: var(--text);
+            padding: 0 11px 0 34px;
+            font-size: 11px;
+            outline: none;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+
+        .search-input:focus {
+            border-color: rgba(73, 189, 131, .55);
+            box-shadow: 0 0 0 3px rgba(73, 189, 131, .08);
+        }
+
+        .search-input::placeholder {
+            color: #677a70;
+        }
+
+        .quick-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .filter-chip {
+            min-height: 29px;
+            padding: 5px 9px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.025);
+            color: var(--muted);
+            font-size: 9.5px;
+            font-weight: 750;
+            cursor: pointer;
+            transition: background .15s ease, color .15s ease, border-color .15s ease;
+        }
+
+        .filter-chip:hover {
+            color: var(--text-soft);
+            border-color: var(--border-strong);
+        }
+
+        .filter-chip.active {
+            color: #d8f4e5;
+            border-color: rgba(73, 189, 131, .28);
+            background: var(--forest-soft);
+        }
+
+        .advanced-filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+        }
+
+        .compact-select {
+            width: 100%;
+            height: 34px;
+            padding: 0 26px 0 9px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: #0e1713;
+            color: var(--text-soft);
+            font-size: 9.5px;
+            outline: none;
+        }
+
+        .filter-feedback {
+            min-height: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             gap: 8px;
-            padding: 10px 14px;
-            border-radius: 12px;
-            border: 1px solid var(--line-strong);
-            background: rgba(255, 255, 255, 0.04);
-            color: #eef5ff;
-            font-size: 12px;
-            font-weight: 700;
+            color: var(--muted);
+            font-size: 9.5px;
+        }
+
+        .filter-reset {
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #9fdab9;
+            font-size: 9.5px;
+            font-weight: 750;
             cursor: pointer;
         }
 
-        .map-stage {
+        .object-list {
+            min-height: 0;
+            flex: 1 1 auto;
+            overflow: auto;
+            padding: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: #31453a transparent;
+        }
+
+        .object-list-empty {
+            margin: 12px;
+            padding: 20px 14px;
+            border: 1px dashed var(--border-strong);
+            border-radius: 12px;
+            color: var(--muted);
+            font-size: 10.5px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .object-row {
+            width: 100%;
+            display: block;
+            border: 1px solid transparent;
+            border-radius: 11px;
+            background: transparent;
+            color: inherit;
+            text-align: left;
+            padding: 10px;
+            margin: 0 0 4px;
+            cursor: pointer;
+            transition: background .12s ease, border-color .12s ease;
+        }
+
+        .object-row:hover {
+            background: var(--surface-2);
+        }
+
+        .object-row.selected {
+            background: rgba(73, 189, 131, .09);
+            border-color: rgba(73, 189, 131, .24);
+        }
+
+        .object-row-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .object-id {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 11px;
+            font-weight: 820;
+            color: #f0f7f3;
+        }
+
+        .model-mark {
+            flex: 0 0 auto;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .model-mark.mrcnn { background: var(--mrcnn); }
+        .model-mark.yolo { background: var(--yolo); }
+        .model-mark.unknown { background: var(--neutral-model); }
+
+        .object-row-meta {
+            margin-top: 7px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 5px 8px;
+            color: var(--muted);
+            font-size: 9.5px;
+        }
+
+        .mini-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .mini-status::before {
+            content: "";
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--forest-strong);
+        }
+
+        .mini-status.review::before {
+            background: var(--review);
+        }
+
+        .explorer-footer {
+            flex: 0 0 auto;
+            padding: 10px 14px 12px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 9.5px;
+            line-height: 1.5;
+        }
+
+        /* =========================================================
+           MAP PANE
+        ========================================================= */
+
+        .map-pane {
+            min-width: 0;
+            min-height: 0;
             position: relative;
-            padding: 14px;
+            overflow: hidden;
+            background: #101914;
         }
 
         #map {
-            width: 100%;
-            height: calc(100vh - 290px);
-            min-height: 690px;
-            border-radius: 20px;
-            overflow: hidden;
+            position: absolute;
+            inset: 0 0 32px;
             background:
-                linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%),
-                linear-gradient(-45deg, rgba(255,255,255,0.03) 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.03) 75%),
-                linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.03) 75%),
-                linear-gradient(180deg, #13203a 0%, #0f172a 100%);
-            background-size: 30px 30px;
-            background-position: 0 0, 0 15px, 15px -15px, -15px 0;
-            border: 1px solid rgba(255, 255, 255, 0.06);
+                linear-gradient(45deg, rgba(255,255,255,.018) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,.018) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255,255,255,.018) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.018) 75%),
+                #111b16;
+            background-size: 28px 28px;
+            background-position: 0 0, 0 14px, 14px -14px, -14px 0;
         }
 
-        .floating-summary {
+        .map-toolbar {
             position: absolute;
-            top: 28px;
-            left: 28px;
-            z-index: 20;
-            display: grid;
-            grid-template-columns: repeat(4, minmax(118px, 1fr));
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            z-index: 40;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
             gap: 10px;
             pointer-events: none;
         }
 
-        .floating-item {
-            background: rgba(10, 16, 30, 0.82);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 16px;
-            padding: 11px 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.22);
-        }
-
-        .floating-item .label {
-            color: #9db1cd;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-        }
-
-        .floating-item .value {
-            margin-top: 6px;
-            font-size: 21px;
-            font-weight: 850;
-            color: white;
-        }
-
-        .floating-item .sub {
-            margin-top: 4px;
-            font-size: 10px;
-            color: #bfd0e7;
-        }
-
-        .map-footer {
+        .toolbar-left,
+        .toolbar-right {
             display: flex;
-            justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
-            padding: 12px 18px 18px;
+            gap: 7px;
+            pointer-events: auto;
         }
 
-        .legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .legend-item {
+        .tool-group {
+            min-height: 38px;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--line);
-            color: #d9e7f8;
-            font-size: 11px;
-            font-weight: 700;
+            gap: 6px;
+            padding: 5px;
+            border-radius: 11px;
+            border: 1px solid rgba(222, 239, 229, .12);
+            background: rgba(13, 21, 17, .90);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 22px rgba(0,0,0,.18);
         }
 
-        .legend-swatch {
-            width: 14px;
-            height: 14px;
-            border-radius: 4px;
-            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.20);
-        }
-
-        .swatch-mrcnn {
-            background: rgba(34, 197, 94, 0.32);
-            border: 2px solid rgba(34, 197, 94, 0.95);
-        }
-
-        .swatch-yolo {
-            background: rgba(168, 85, 247, 0.28);
-            border: 2px solid rgba(168, 85, 247, 0.96);
-        }
-
-        .swatch-review {
-            background: rgba(245, 158, 11, 0.20);
-            border: 2px dashed rgba(245, 158, 11, 0.96);
-        }
-
-        .legend-note {
-            color: var(--muted);
-            font-size: 11px;
-            line-height: 1.5;
-        }
-
-        .side-stack {
-            display: grid;
-            gap: 18px;
-        }
-
-        .panel {
-            background: var(--panel);
-            backdrop-filter: blur(14px);
-            border: 1px solid var(--line);
-            border-radius: 22px;
-            box-shadow: var(--shadow-xl);
-            overflow: hidden;
-        }
-
-        .panel-head {
-            padding: 16px 18px 12px;
-            border-bottom: 1px solid var(--line);
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .panel-head h3 {
-            margin: 0;
-            font-size: 15px;
-            font-weight: 800;
-        }
-
-        .panel-head p {
-            margin: 6px 0 0;
-            color: var(--muted);
-            font-size: 11px;
-            line-height: 1.55;
-        }
-
-        .panel-body {
-            padding: 16px 18px 18px;
-        }
-
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .kpi {
-            padding: 14px;
-            border-radius: 16px;
-            border: 1px solid var(--line);
-            background: rgba(255, 255, 255, 0.04);
-        }
-
-        .kpi-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-            color: var(--muted);
-            font-weight: 800;
-        }
-
-        .kpi-value {
-            margin-top: 7px;
-            font-size: 22px;
-            font-weight: 850;
-            color: white;
-        }
-
-        .kpi-sub {
-            margin-top: 5px;
-            font-size: 11px;
-            color: #c7d5e9;
-        }
-
-        .mini-list {
-            display: grid;
-            gap: 10px;
-        }
-
-        .mini-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 11px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .mini-row:last-child {
-            border-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .mini-key {
-            color: var(--muted);
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .mini-value {
-            font-size: 12px;
-            font-weight: 800;
-            color: #f8fbff;
-            text-align: right;
-        }
-
-        .object-empty {
-            color: var(--muted);
-            font-size: 12px;
-            line-height: 1.65;
-        }
-
-        .selected-title {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 14px;
-        }
-
-        .selected-id {
-            font-size: 18px;
-            font-weight: 850;
-            letter-spacing: -.02em;
-            color: #f8fbff;
-        }
-
-        .badge {
+        .map-tool {
+            height: 28px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 7px 10px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 800;
+            gap: 6px;
+            padding: 0 8px;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: var(--text-soft);
+            font-size: 9.5px;
+            font-weight: 750;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background .12s ease, color .12s ease;
         }
 
-        .badge-success {
-            background: var(--mrcnn-soft);
-            color: #ccf4d9;
-            border: 1px solid rgba(34, 197, 94, 0.25);
+        .map-tool:hover {
+            background: rgba(255,255,255,.07);
+            color: var(--text);
         }
 
-        .badge-yolo {
-            background: var(--yolo-soft);
-            color: #ecd7ff;
-            border: 1px solid rgba(168, 85, 247, 0.25);
+        .map-tool.active {
+            background: var(--forest-soft);
+            color: #c7f0da;
         }
 
-        .badge-warning {
+        .map-tool.review-active {
             background: var(--review-soft);
-            color: #fde7b1;
-            border: 1px solid rgba(245, 158, 11, 0.28);
+            color: #ffe2ac;
         }
 
-        .feature-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 14px;
+        .map-tool svg {
+            width: 14px;
+            height: 14px;
         }
 
-        .feature-box {
-            border-radius: 14px;
+        .layer-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        .layer-dot.preview { background: #f1f4f2; }
+        .layer-dot.mrcnn { background: var(--mrcnn); }
+        .layer-dot.yolo { background: var(--yolo); }
+        .layer-dot.review { background: var(--review); }
+
+        .opacity-popover {
+            position: relative;
+        }
+
+        .opacity-panel {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 236px;
             padding: 12px;
-            border: 1px solid var(--line);
-            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            border: 1px solid var(--border-strong);
+            background: rgba(13, 21, 17, .97);
+            box-shadow: var(--shadow-panel);
+            display: none;
         }
 
-        .feature-box .name {
-            color: var(--muted);
-            font-size: 10px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-        }
-
-        .feature-box .value {
-            margin-top: 6px;
-            font-size: 17px;
-            font-weight: 850;
-            color: white;
-        }
-
-        .property-list {
+        .opacity-popover.open .opacity-panel {
             display: grid;
-            gap: 10px;
+            gap: 12px;
         }
 
-        .property-row {
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+        .opacity-row {
+            display: grid;
+            gap: 6px;
         }
 
-        .property-row:last-child {
-            border-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .property-key {
+        .opacity-row-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
             color: var(--muted);
-            font-size: 10px;
+            font-size: 9.5px;
+            font-weight: 700;
+        }
+
+        .opacity-row-head strong {
+            color: var(--text-soft);
+        }
+
+        .opacity-row input[type="range"] {
+            width: 100%;
+            accent-color: var(--forest-strong);
+        }
+
+        .map-summary {
+            position: absolute;
+            left: 12px;
+            bottom: 44px;
+            z-index: 35;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px;
+            border-radius: 11px;
+            border: 1px solid rgba(222, 239, 229, .11);
+            background: rgba(13, 21, 17, .88);
+            backdrop-filter: blur(9px);
+            box-shadow: 0 8px 22px rgba(0,0,0,.17);
+            pointer-events: none;
+        }
+
+        .summary-item {
+            min-width: 68px;
+            padding: 5px 8px;
+            border-right: 1px solid var(--border);
+        }
+
+        .summary-item:last-child {
+            border-right: 0;
+        }
+
+        .summary-label {
+            color: var(--muted);
+            font-size: 8px;
             text-transform: uppercase;
             letter-spacing: .06em;
-            font-weight: 800;
+            font-weight: 750;
         }
 
-        .property-value {
-            margin-top: 5px;
+        .summary-value {
+            margin-top: 2px;
             font-size: 13px;
-            line-height: 1.55;
-            color: #f8fbff;
-            font-weight: 700;
-            overflow-wrap: anywhere;
+            font-weight: 850;
         }
 
-        .info-note {
+        .map-statusbar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 32px;
+            z-index: 45;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            overflow-x: auto;
+            border-top: 1px solid var(--border);
+            background: #0d1511;
             color: var(--muted);
-            font-size: 11px;
-            line-height: 1.7;
+            scrollbar-width: none;
         }
 
-        .warn-box {
-            padding: 13px 14px;
-            border-radius: 16px;
-            background: rgba(245, 158, 11, 0.12);
-            border: 1px solid rgba(245, 158, 11, 0.26);
-            color: #fde7b1;
-            font-size: 11px;
-            line-height: 1.6;
+        .map-statusbar::-webkit-scrollbar {
+            display: none;
         }
 
-        .tip-box {
-            padding: 13px 14px;
-            border-radius: 16px;
-            background: rgba(79, 70, 229, 0.12);
-            border: 1px solid rgba(79, 70, 229, 0.25);
-            color: #d9dcff;
-            font-size: 11px;
-            line-height: 1.6;
+        .statusbar-item {
+            min-height: 31px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 11px;
+            border-right: 1px solid var(--border);
+            font-size: 9.5px;
+            white-space: nowrap;
         }
 
-        .ol-control button {
-            background: rgba(15, 23, 42, 0.88) !important;
-            border-radius: 10px !important;
-            color: white !important;
-        }
-
-        .ol-zoom {
-            top: 18px !important;
-            left: auto !important;
-            right: 18px !important;
-            border-radius: 12px !important;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.08);
-            backdrop-filter: blur(8px);
-        }
-
-        .ol-scale-line {
-            background: rgba(15, 23, 42, 0.76) !important;
-            border-radius: 10px;
-            padding: 4px 6px;
-            bottom: 18px !important;
-            left: 18px !important;
-        }
-
-        .ol-attribution {
-            background: rgba(15, 23, 42, 0.76) !important;
-            color: white;
-            border-radius: 10px 0 0 0;
+        .statusbar-item strong {
+            color: var(--text-soft);
+            font-weight: 750;
         }
 
         .map-tooltip {
             position: absolute;
-            z-index: 50;
-            transform: translate(-50%, calc(-100% - 14px));
-            padding: 10px 12px;
-            min-width: 190px;
+            z-index: 80;
+            transform: translate(-50%, calc(-100% - 13px));
             pointer-events: none;
-            background: rgba(10, 16, 30, 0.94);
-            border: 1px solid rgba(255, 255, 255, 0.10);
-            border-radius: 14px;
-            box-shadow: 0 14px 34px rgba(0,0,0,0.30);
-            color: #f8fbff;
+            min-width: 190px;
+            max-width: 260px;
+            padding: 10px 11px;
+            border-radius: 11px;
+            border: 1px solid rgba(222, 239, 229, .14);
+            background: rgba(10, 17, 13, .96);
+            box-shadow: 0 15px 35px rgba(0,0,0,.28);
             opacity: 0;
-            transition: opacity .12s ease;
+            transition: opacity .1s ease;
         }
 
         .map-tooltip.active {
@@ -798,394 +805,1101 @@
         }
 
         .tooltip-title {
+            font-size: 11px;
+            font-weight: 820;
+        }
+
+        .tooltip-meta {
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 9.5px;
+            line-height: 1.5;
+        }
+
+        .tooltip-status {
+            margin-top: 7px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            background: var(--review-soft);
+            color: #fbd698;
+            font-size: 8.5px;
+            font-weight: 800;
+        }
+
+        .map-loading,
+        .map-error {
+            position: absolute;
+            inset: 0 0 32px;
+            z-index: 70;
+            display: grid;
+            place-items: center;
+            background: rgba(8, 14, 11, .54);
+            backdrop-filter: blur(3px);
+        }
+
+        .map-error {
+            background: rgba(8, 14, 11, .72);
+        }
+
+        .loading-card,
+        .error-card {
+            width: min(380px, calc(100% - 40px));
+            padding: 20px;
+            border: 1px solid var(--border-strong);
+            border-radius: 15px;
+            background: rgba(17, 26, 22, .97);
+            box-shadow: var(--shadow-panel);
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            margin: 0 auto 10px;
+            border: 2px solid rgba(255,255,255,.10);
+            border-top-color: var(--forest-strong);
+            border-radius: 50%;
+            animation: spin .75s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-title,
+        .error-title {
             font-size: 12px;
             font-weight: 800;
         }
 
-        .tooltip-sub {
-            margin-top: 4px;
-            color: #c9d7ea;
-            font-size: 11px;
+        .loading-text,
+        .error-text {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 10px;
             line-height: 1.55;
         }
 
-        .tooltip-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 8px;
-            padding: 5px 8px;
-            border-radius: 999px;
+        .error-action {
+            margin-top: 13px;
+            min-height: 32px;
+            padding: 0 12px;
+            border: 1px solid rgba(73, 189, 131, .22);
+            border-radius: 8px;
+            background: var(--forest-soft);
+            color: #c8efdc;
             font-size: 10px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        /* =========================================================
+           OPENLAYERS
+        ========================================================= */
+
+        .ol-control button {
+            background: rgba(13, 21, 17, .92) !important;
+            color: white !important;
+            border-radius: 7px !important;
+        }
+
+        .ol-control button:hover {
+            background: rgba(31, 49, 40, .96) !important;
+        }
+
+        .ol-zoom {
+            top: 62px !important;
+            left: auto !important;
+            right: 12px !important;
+            border-radius: 9px !important;
+            overflow: hidden;
+            border: 1px solid rgba(222,239,229,.12);
+            background: transparent !important;
+        }
+
+        .ol-scale-line {
+            left: auto !important;
+            right: 12px !important;
+            bottom: 44px !important;
+            border-radius: 8px;
+            background: rgba(13, 21, 17, .84) !important;
+            border: 1px solid rgba(222,239,229,.10);
+        }
+
+        .ol-attribution {
+            right: 6px !important;
+            bottom: 36px !important;
+            background: rgba(13, 21, 17, .78) !important;
+            color: white !important;
+            border-radius: 7px !important;
+        }
+
+        /* =========================================================
+           INSPECTOR
+        ========================================================= */
+
+        .inspector-tabs {
+            flex: 0 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            padding: 7px;
+            border-bottom: 1px solid var(--border);
+            background: #0f1814;
+        }
+
+        .inspector-tab {
+            min-height: 32px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .inspector-tab.active {
+            background: var(--surface-3);
+            color: var(--text);
+        }
+
+        .inspector-body {
+            min-height: 0;
+            flex: 1 1 auto;
+            overflow-y: auto;
+            padding: 14px;
+            scrollbar-width: thin;
+            scrollbar-color: #31453a transparent;
+        }
+
+        .inspector-empty {
+            padding: 18px 14px;
+            border: 1px dashed var(--border-strong);
+            border-radius: 12px;
+            color: var(--muted);
+            font-size: 10.5px;
+            line-height: 1.65;
+        }
+
+        .selected-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 13px;
+        }
+
+        .selected-kicker {
+            color: var(--muted);
+            font-size: 8.5px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
             font-weight: 800;
         }
 
-        @media (max-width: 1480px) {
-            .layout {
-                grid-template-columns: 1fr 360px;
+        .selected-id {
+            margin-top: 3px;
+            font-size: 18px;
+            line-height: 1.15;
+            font-weight: 850;
+            letter-spacing: -.02em;
+            overflow-wrap: anywhere;
+        }
+
+        .badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 13px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 7px;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            font-size: 8.5px;
+            font-weight: 800;
+        }
+
+        .badge-mrcnn {
+            color: #c6f2d9;
+            border-color: rgba(53,199,123,.22);
+            background: var(--mrcnn-soft);
+        }
+
+        .badge-yolo {
+            color: #eadbff;
+            border-color: rgba(165,107,244,.22);
+            background: var(--yolo-soft);
+        }
+
+        .badge-neutral {
+            color: #d8e2dc;
+            background: rgba(159,176,167,.10);
+        }
+
+        .badge-review {
+            color: #f9dda9;
+            border-color: rgba(242,173,61,.24);
+            background: var(--review-soft);
+        }
+
+        .badge-ok {
+            color: #c5edd6;
+            border-color: rgba(73,189,131,.18);
+            background: var(--forest-soft);
+        }
+
+        .inspector-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .small-action {
+            min-height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 0 9px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.025);
+            color: var(--text-soft);
+            font-size: 9px;
+            font-weight: 750;
+            cursor: pointer;
+        }
+
+        .small-action:hover {
+            background: var(--surface-3);
+        }
+
+        .small-action:disabled {
+            opacity: .4;
+            cursor: default;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+            margin-bottom: 14px;
+        }
+
+        .metric-box {
+            min-width: 0;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.025);
+        }
+
+        .metric-label {
+            color: var(--muted);
+            font-size: 8px;
+            font-weight: 800;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            margin-top: 5px;
+            color: var(--text);
+            font-size: 15px;
+            font-weight: 850;
+            overflow-wrap: anywhere;
+        }
+
+        .section-block {
+            margin-top: 14px;
+        }
+
+        .section-block:first-child {
+            margin-top: 0;
+        }
+
+        .section-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: #b8c9bf;
+            font-size: 9px;
+            font-weight: 850;
+            text-transform: uppercase;
+            letter-spacing: .09em;
+        }
+
+        .section-help {
+            text-transform: none;
+            letter-spacing: 0;
+            color: var(--faint);
+            font-size: 8px;
+            font-weight: 650;
+        }
+
+        .property-list {
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            overflow: hidden;
+        }
+
+        .property-row {
+            display: grid;
+            grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+            gap: 10px;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,.018);
+        }
+
+        .property-row:last-child {
+            border-bottom: 0;
+        }
+
+        .property-key {
+            color: var(--muted);
+            font-size: 9px;
+            line-height: 1.4;
+        }
+
+        .property-value {
+            color: var(--text-soft);
+            font-size: 9.5px;
+            font-weight: 720;
+            line-height: 1.4;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+        .method-note,
+        .warning-note,
+        .info-note {
+            padding: 11px;
+            border-radius: 10px;
+            font-size: 9.5px;
+            line-height: 1.58;
+        }
+
+        .method-note {
+            color: #c8d7cf;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.025);
+        }
+
+        .warning-note {
+            color: #f7dca9;
+            border: 1px solid rgba(242,173,61,.20);
+            background: var(--review-soft);
+        }
+
+        .info-note {
+            color: #c7d9f1;
+            border: 1px solid rgba(105,167,242,.18);
+            background: var(--info-soft);
+        }
+
+        .analysis-flow {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin: 8px 0 14px;
+        }
+
+        .flow-step {
+            min-width: 0;
+            padding: 9px 6px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: rgba(255,255,255,.022);
+            text-align: center;
+            position: relative;
+        }
+
+        .flow-step:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            right: -5px;
+            top: 50%;
+            width: 5px;
+            border-top: 1px solid var(--border-strong);
+        }
+
+        .flow-value {
+            font-size: 15px;
+            font-weight: 850;
+        }
+
+        .flow-label {
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 7.5px;
+            line-height: 1.25;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .analysis-kpis {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+        }
+
+        .analysis-kpi {
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.022);
+        }
+
+        .analysis-kpi-label {
+            color: var(--muted);
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            font-weight: 800;
+        }
+
+        .analysis-kpi-value {
+            margin-top: 4px;
+            font-size: 17px;
+            font-weight: 850;
+        }
+
+        /* =========================================================
+           MOBILE CONTROLS
+        ========================================================= */
+
+        .mobile-panel-button {
+            display: none;
+        }
+
+        .panel-close {
+            display: none;
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(255,255,255,.03);
+            color: var(--text-soft);
+            cursor: pointer;
+        }
+
+        .drawer-backdrop {
+            display: none;
+        }
+
+        /* =========================================================
+           FULLSCREEN
+        ========================================================= */
+
+        .workspace:fullscreen {
+            height: 100vh;
+        }
+
+        .workspace:fullscreen .map-pane {
+            background: #0b110e;
+        }
+
+        /* =========================================================
+           RESPONSIVE
+        ========================================================= */
+
+        @media (max-width: 1380px) {
+            :root {
+                --left-w: 276px;
+                --right-w: 344px;
             }
 
-            .hero-inner {
-                grid-template-columns: 1fr;
+            .context-path strong {
+                max-width: 150px;
             }
 
-            .hero-meta {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+            .top-pill.version-pill {
+                display: none;
             }
         }
 
-        @media (max-width: 1180px) {
-            .layout {
-                grid-template-columns: 1fr;
+        @media (max-width: 1080px) {
+            body {
+                overflow: hidden;
             }
 
-            #map {
-                height: 70vh;
-                min-height: 560px;
+            .workspace {
+                grid-template-columns: 1fr;
+                position: relative;
+            }
+
+            .side-panel {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: min(360px, calc(100vw - 28px));
+                z-index: 120;
+                box-shadow: var(--shadow-panel);
+                transition: transform .2s ease;
+            }
+
+            .left-panel {
+                left: 0;
+                transform: translateX(-105%);
+            }
+
+            .right-panel {
+                right: 0;
+                transform: translateX(105%);
+            }
+
+            .left-panel.open,
+            .right-panel.open {
+                transform: translateX(0);
+            }
+
+            .drawer-backdrop {
+                position: absolute;
+                inset: 0;
+                z-index: 110;
+                background: rgba(0,0,0,.42);
+            }
+
+            .drawer-backdrop.active {
+                display: block;
+            }
+
+            .panel-close {
+                display: inline-grid;
+                place-items: center;
+            }
+
+            .mobile-panel-button {
+                display: inline-flex;
+            }
+
+            .context-path {
+                display: none;
+            }
+
+            .breadcrumb-divider {
+                display: none;
             }
         }
 
-        @media (max-width: 900px) {
-            .floating-summary {
-                grid-template-columns: repeat(2, minmax(118px, 1fr));
-                top: 26px;
-                left: 26px;
-                right: 26px;
+        @media (max-width: 760px) {
+            :root {
+                --topbar-h: 58px;
             }
 
-            .feature-grid,
-            .kpi-grid,
-            .hero-meta {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        @media (max-width: 700px) {
-            .shell {
-                padding: 12px;
+            .topbar {
+                padding: 0 10px;
             }
 
-            .feature-grid,
-            .kpi-grid,
-            .hero-meta,
-            .floating-summary {
-                grid-template-columns: 1fr;
+            .brand-mark {
+                width: 34px;
+                height: 34px;
+                flex-basis: 34px;
             }
 
-            .map-header,
+            .brand-mode,
+            .top-pill,
+            .json-action {
+                display: none;
+            }
+
+            .top-action {
+                padding: 0 9px;
+            }
+
+            .top-action .action-text {
+                display: none;
+            }
+
             .map-toolbar {
-                flex-direction: column;
-                align-items: stretch;
+                top: 8px;
+                left: 8px;
+                right: 8px;
+                align-items: flex-start;
             }
 
-            #map {
-                height: 68vh;
-                min-height: 480px;
+            .map-tool .tool-label {
+                display: none;
+            }
+
+            .map-summary {
+                left: 8px;
+                bottom: 40px;
+                max-width: calc(100% - 16px);
+                overflow-x: auto;
+                pointer-events: auto;
+            }
+
+            .summary-item {
+                min-width: 62px;
+            }
+
+            .ol-scale-line {
+                display: none;
             }
         }
     </style>
 </head>
+
 <body>
-<div class="shell">
 
-    <section class="hero">
-        <div class="hero-inner">
-            <div>
-                <span class="eyebrow">UAV Forest AI · Visor cartográfico profesional</span>
+@php
+    $summary = $job->summary ?? [];
+    $models = $job->models ?? [];
+    $parameters = $job->parameters ?? [];
 
-                <h1 class="hero-title">
-                    Visualización avanzada del ortomosaico y segmentaciones de copa
-                </h1>
+    $pipelineVersion =
+        data_get($parameters, 'pipeline_version')
+        ?? data_get($models, 'pipeline_version')
+        ?? 'V0.7E';
 
-                <p class="hero-text">
-                    Explora el ortomosaico con una interfaz más profesional, diferenciando claramente las geometrías
-                    consolidadas con <strong>Mask R-CNN</strong> y los <strong>fallbacks de YOLO-Seg</strong>. También puedes
-                    inspeccionar únicamente los objetos que requieren revisión, ajustar opacidades y consultar el detalle
-                    técnico de cada copa segmentada.
-                </p>
+    $scientificMethodVersion =
+        data_get($parameters, 'scientific_method_version')
+        ?? data_get($models, 'scientific_method_version')
+        ?? 'V0.6G';
 
-                <div class="hero-actions">
-                    <a
-                        class="btn btn-primary"
-                        href="{{ route('analysis.index', ['mosaic' => $mosaic->uuid]) }}"
-                    >
-                        ← Volver al análisis
-                    </a>
+    $statusLabel = match($job->status) {
+        'completed' => 'Completado',
+        'processing' => 'Procesando',
+        'queued' => 'En cola',
+        'failed' => 'Incidencia',
+        default => ucfirst((string) $job->status),
+    };
+@endphp
 
-                    <a
-                        class="btn btn-secondary"
-                        href="{{ route('analysis.jobs.show', ['analysisUuid' => $job->uuid]) }}"
-                    >
-                        Ver JSON técnico
-                    </a>
+<header class="topbar">
+    <div class="topbar-left">
+        <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 2.5 6.2 8h3.1L5 12.2h4L4.8 17h5.7v4.5h3V17h5.7L15 12.2h4L14.7 8h3.1L12 2.5Z" fill="#BDE8D0"/>
+                <path d="M3 18.5h18" stroke="#68C997" stroke-width="1.4" stroke-linecap="round" opacity=".9"/>
+            </svg>
+        </div>
+
+        <div class="brand-copy">
+            <div class="brand-name">UAV Forest AI</div>
+            <div class="brand-mode">Visor GIS de resultados</div>
+        </div>
+
+        <span class="breadcrumb-divider"></span>
+
+        <nav class="context-path" aria-label="Ruta de navegación">
+            <strong>{{ $mosaic->project->name ?? 'Proyecto' }}</strong>
+            <span class="context-chevron">›</span>
+            <strong>{{ $mosaic->original_name ?? $mosaic->uuid }}</strong>
+            <span class="context-chevron">›</span>
+            <span>Análisis</span>
+            <span class="context-chevron">›</span>
+            <span>Mapa</span>
+        </nav>
+    </div>
+
+    <div class="topbar-right">
+        <span class="top-pill version-pill">
+            Método {{ $scientificMethodVersion }} · Pipeline {{ $pipelineVersion }}
+        </span>
+
+        <span class="top-pill">
+            <span class="status-dot"></span>
+            {{ $statusLabel }}
+        </span>
+
+        <button
+            id="open-explorer-mobile"
+            class="top-action mobile-panel-button"
+            type="button"
+            title="Abrir explorador de objetos"
+        >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/>
+            </svg>
+            <span class="action-text">Objetos</span>
+        </button>
+
+        <button
+            id="open-inspector-mobile"
+            class="top-action mobile-panel-button"
+            type="button"
+            title="Abrir inspector"
+        >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 10v6M12 7h.01" stroke-linecap="round"/>
+            </svg>
+            <span class="action-text">Inspector</span>
+        </button>
+
+        <a
+            class="top-action json-action"
+            href="{{ route('analysis.jobs.show', ['analysisUuid' => $job->uuid]) }}"
+        >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            JSON técnico
+        </a>
+
+        <a
+            class="top-action"
+            href="{{ route('analysis.index', ['mosaic' => $mosaic->uuid]) }}"
+        >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M15 18 9 12l6-6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="action-text">Volver al análisis</span>
+        </a>
+    </div>
+</header>
+
+<div id="workspace" class="workspace">
+
+    <div id="drawer-backdrop" class="drawer-backdrop"></div>
+
+    {{-- =========================================================
+         EXPLORADOR DE OBJETOS
+    ========================================================== --}}
+
+    <aside id="left-panel" class="side-panel left-panel">
+        <div class="panel-heading">
+            <div class="panel-heading-row">
+                <div>
+                    <div class="panel-kicker">Explorador</div>
+                    <h2 class="panel-title">Objetos operativos</h2>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:7px;">
+                    <span id="explorer-count" class="panel-count">0</span>
+                    <button id="close-explorer-mobile" class="panel-close" type="button">×</button>
                 </div>
             </div>
 
-            <div class="hero-meta">
-                <div class="meta-card">
-                    <div class="meta-label">Analysis UUID</div>
-                    <div class="meta-value">{{ $job->uuid }}</div>
-                    <div class="meta-subvalue">
-                        Método científico: {{ $job->models['scientific_method_version'] ?? 'V0.6G' }}<br>
-                        Pipeline: {{ $job->models['pipeline_version'] ?? 'V0.7E' }}
+            <p class="panel-description">
+                Busca y filtra geometrías consolidadas sin alterar el resultado científico del análisis.
+            </p>
+        </div>
+
+        <div class="explorer-controls">
+            <div class="search-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="m20 20-3.4-3.4" stroke-linecap="round"/>
+                </svg>
+                <input
+                    id="object-search"
+                    class="search-input"
+                    type="search"
+                    placeholder="Buscar Operational ID..."
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="quick-filters" role="group" aria-label="Filtros rápidos">
+                <button class="filter-chip active" type="button" data-filter="all">Todos</button>
+                <button class="filter-chip" type="button" data-filter="mrcnn">Mask R-CNN</button>
+                <button class="filter-chip" type="button" data-filter="yolo">YOLO</button>
+                <button class="filter-chip" type="button" data-filter="review">Revisión</button>
+                <button class="filter-chip" type="button" data-filter="no-review">Sin revisión</button>
+            </div>
+
+            <div class="advanced-filters">
+                <select id="evidence-filter" class="compact-select" aria-label="Filtrar por evidencia">
+                    <option value="">Toda evidencia</option>
+                </select>
+
+                <select id="conflict-filter" class="compact-select" aria-label="Filtrar por conflicto">
+                    <option value="">Todo conflicto</option>
+                </select>
+            </div>
+
+            <div class="filter-feedback">
+                <span id="filter-feedback">Cargando objetos...</span>
+                <button id="reset-filters" class="filter-reset" type="button">Restablecer</button>
+            </div>
+        </div>
+
+        <div id="object-list" class="object-list">
+            <div class="object-list-empty">Cargando catálogo espacial...</div>
+        </div>
+
+        <div class="explorer-footer">
+            Los filtros afectan únicamente la visualización y exploración web. No modifican el GeoJSON ni el resultado persistente del pipeline.
+        </div>
+    </aside>
+
+    {{-- =========================================================
+         MAPA
+    ========================================================== --}}
+
+    <main class="map-pane">
+        <div id="map"></div>
+
+        <div class="map-toolbar">
+            <div class="toolbar-left">
+                <div class="tool-group">
+                    @if($previewAvailable)
+                        <button id="toggle-preview" class="map-tool active" type="button" aria-pressed="true">
+                            <span class="layer-dot preview"></span>
+                            <span class="tool-label">Ortomosaico</span>
+                        </button>
+                    @endif
+
+                    <button id="toggle-mrcnn" class="map-tool active" type="button" aria-pressed="true">
+                        <span class="layer-dot mrcnn"></span>
+                        <span class="tool-label">Mask R-CNN</span>
+                    </button>
+
+                    <button id="toggle-yolo" class="map-tool active" type="button" aria-pressed="true">
+                        <span class="layer-dot yolo"></span>
+                        <span class="tool-label">YOLO fallback</span>
+                    </button>
+
+                    <button id="toggle-review-highlight" class="map-tool review-active" type="button" aria-pressed="true">
+                        <span class="layer-dot review"></span>
+                        <span class="tool-label">Resaltar revisión</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="toolbar-right">
+                <div id="opacity-popover" class="tool-group opacity-popover">
+                    <button id="opacity-toggle" class="map-tool" type="button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M12 3s6 6.2 6 11a6 6 0 1 1-12 0c0-4.8 6-11 6-11Z"/>
+                        </svg>
+                        <span class="tool-label">Opacidad</span>
+                    </button>
+
+                    <div class="opacity-panel">
+                        @if($previewAvailable)
+                            <div class="opacity-row">
+                                <div class="opacity-row-head">
+                                    <span>Ortomosaico</span>
+                                    <strong id="preview-opacity-value">100%</strong>
+                                </div>
+                                <input id="preview-opacity" type="range" min="0" max="100" value="100">
+                            </div>
+                        @endif
+
+                        <div class="opacity-row">
+                            <div class="opacity-row-head">
+                                <span>Segmentaciones</span>
+                                <strong id="seg-opacity-value">82%</strong>
+                            </div>
+                            <input id="seg-opacity" type="range" min="15" max="100" value="82">
+                        </div>
                     </div>
                 </div>
 
-                <div class="meta-card">
-                    <div class="meta-label">Proyecto / mosaico</div>
-                    <div class="meta-value">{{ $mosaic->project->name ?? '—' }}</div>
-                    <div class="meta-subvalue">
-                        {{ $mosaic->original_name ?? $mosaic->uuid }}<br>
-                        CRS: {{ $mosaic->crs ?? '—' }}
-                    </div>
-                </div>
+                <div class="tool-group">
+                    <button id="fit-extent" class="map-tool" type="button" title="Ajustar al ortomosaico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="tool-label">Extensión</span>
+                    </button>
 
-                <div class="meta-card">
-                    <div class="meta-label">Objetos operativos</div>
-                    <div class="meta-value">{{ $job->summary['primary_objects'] ?? 0 }}</div>
-                    <div class="meta-subvalue">
-                        Mask R-CNN: {{ $job->summary['primary_maskrcnn'] ?? 0 }} · YOLO fallback: {{ $job->summary['primary_yolo_fallback'] ?? 0 }}
-                    </div>
-                </div>
+                    <button id="clear-selection" class="map-tool" type="button" title="Limpiar selección">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="m6 6 12 12M18 6 6 18" stroke-linecap="round"/>
+                        </svg>
+                        <span class="tool-label">Limpiar</span>
+                    </button>
 
-                <div class="meta-card">
-                    <div class="meta-label">Control de calidad</div>
-                    <div class="meta-value">{{ $job->summary['requires_review'] ?? 0 }}</div>
-                    <div class="meta-subvalue">
-                        Requieren revisión operativa · Sin revisión: {{ $job->summary['no_review'] ?? 0 }}
-                    </div>
+                    <button id="fullscreen-map" class="map-tool" type="button" title="Pantalla completa">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="tool-label">Pantalla completa</span>
+                    </button>
                 </div>
             </div>
         </div>
-    </section>
 
-    <div class="layout">
-        <section class="glass-card map-card">
-            <div class="map-header">
-                <div class="map-title-block">
-                    <h2>Mapa de segmentaciones</h2>
-                    <p>
-                        Capas activables por modelo primario. El ortomosaico se visualiza como imagen estática georreferenciada,
-                        mientras que las geometrías del análisis se reproyectan para interoperabilidad web.
-                    </p>
+        <div class="map-summary" aria-label="Resumen de objetos visibles">
+            <div class="summary-item">
+                <div class="summary-label">Visibles</div>
+                <div id="visible-count" class="summary-value">0</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Mask</div>
+                <div id="visible-mrcnn-count" class="summary-value">0</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">YOLO</div>
+                <div id="visible-yolo-count" class="summary-value">0</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Revisión</div>
+                <div id="visible-review-count" class="summary-value">0</div>
+            </div>
+        </div>
+
+        <div id="map-tooltip" class="map-tooltip"></div>
+
+        <div id="map-loading" class="map-loading">
+            <div class="loading-card">
+                <div class="loading-spinner"></div>
+                <div class="loading-title">Cargando resultados espaciales</div>
+                <div class="loading-text">Preparando las geometrías operativas del análisis para visualización.</div>
+            </div>
+        </div>
+
+        <div id="map-error" class="map-error" hidden>
+            <div class="error-card">
+                <div class="error-title">No fue posible cargar la capa de objetos</div>
+                <div id="map-error-text" class="error-text">
+                    El ortomosaico puede seguir disponible, pero la capa GeoJSON no pudo cargarse.
+                </div>
+                <button id="retry-geojson" class="error-action" type="button">Reintentar carga</button>
+            </div>
+        </div>
+
+        <div class="map-statusbar">
+            <span class="statusbar-item"><strong>CRS</strong> {{ $mosaic->crs ?? '—' }}</span>
+            <span class="statusbar-item"><strong>X</strong> <span id="coord-x">—</span></span>
+            <span class="statusbar-item"><strong>Y</strong> <span id="coord-y">—</span></span>
+            <span class="statusbar-item"><strong>Escala aprox.</strong> <span id="map-scale">—</span></span>
+            <span class="statusbar-item"><strong>Resolución</strong> <span id="map-resolution">—</span></span>
+            <span class="statusbar-item"><strong>Objetos visibles</strong> <span id="status-visible-count">0</span></span>
+        </div>
+    </main>
+
+    {{-- =========================================================
+         INSPECTOR
+    ========================================================== --}}
+
+    <aside id="right-panel" class="side-panel right-panel">
+        <div class="panel-heading">
+            <div class="panel-heading-row">
+                <div>
+                    <div class="panel-kicker">Inspector</div>
+                    <h2 class="panel-title">Lectura científica</h2>
                 </div>
 
-                <div class="status-pills">
-                    <span class="pill pill-neutral">Estado: {{ strtoupper($job->status) }}</span>
-                    <span class="pill pill-success">Mask R-CNN: {{ $job->summary['primary_maskrcnn'] ?? 0 }}</span>
-                    <span class="pill pill-yolo">YOLO fallback: {{ $job->summary['primary_yolo_fallback'] ?? 0 }}</span>
-                    <span class="pill pill-warning">Revisión: {{ $job->summary['requires_review'] ?? 0 }}</span>
+                <button id="close-inspector-mobile" class="panel-close" type="button">×</button>
+            </div>
+
+            <p class="panel-description">
+                Examina geometría, evidencia intermodelo, estabilidad y diagnóstico operativo del objeto seleccionado.
+            </p>
+        </div>
+
+        <div class="inspector-tabs">
+            <button class="inspector-tab active" type="button" data-inspector-tab="object">Objeto</button>
+            <button class="inspector-tab" type="button" data-inspector-tab="analysis">Análisis</button>
+        </div>
+
+        <div id="inspector-object" class="inspector-body">
+            <div class="inspector-empty">
+                <strong style="color:var(--text-soft);">Ningún objeto seleccionado.</strong><br><br>
+                Haz clic sobre una geometría del mapa o selecciona un registro del explorador. La ficha mostrará atributos del objeto operativo; no implica confirmación contra verdad de campo.
+            </div>
+        </div>
+
+        <div id="inspector-analysis" class="inspector-body" hidden>
+            <div class="section-block">
+                <div class="section-label">Trazabilidad del pipeline</div>
+
+                <div class="analysis-flow">
+                    <div class="flow-step">
+                        <div class="flow-value">{{ data_get($summary, 'raw_predictions', 0) }}</div>
+                        <div class="flow-label">Predicciones RAW</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-value">{{ data_get($summary, 'unique_predictions', 0) }}</div>
+                        <div class="flow-label">Candidatos únicos</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-value">{{ data_get($summary, 'catalog_groups', 0) }}</div>
+                        <div class="flow-label">Grupos evidencia</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-value">{{ data_get($summary, 'primary_objects', 0) }}</div>
+                        <div class="flow-label">Objetos operativos</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="map-toolbar">
-                <div class="control-group">
-                    @if($previewAvailable)
-                        <label class="toggle-chip">
-                            <input id="toggle-preview" type="checkbox" checked>
-                            <span class="dot dot-preview"></span>
-                            Ortomosaico
-                        </label>
-                    @endif
-
-                    <label class="toggle-chip">
-                        <input id="toggle-mrcnn" type="checkbox" checked>
-                        <span class="dot dot-mrcnn"></span>
-                        Mask R-CNN primario
-                    </label>
-
-                    <label class="toggle-chip">
-                        <input id="toggle-yolo" type="checkbox" checked>
-                        <span class="dot dot-yolo"></span>
-                        YOLO fallback
-                    </label>
-
-                    <label class="toggle-chip">
-                        <input id="toggle-review" type="checkbox" checked>
-                        <span class="dot dot-review"></span>
-                        Resaltar revisión
-                    </label>
-                </div>
-
-                <div class="control-group">
-                    <div class="range-wrap">
-                        <label for="preview-opacity">Opacidad ortomosaico</label>
-                        <input id="preview-opacity" type="range" min="0" max="100" value="100">
-                        <span id="preview-opacity-value" class="range-value">100%</span>
+            <div class="section-block">
+                <div class="section-label">Composición operacional</div>
+                <div class="analysis-kpis">
+                    <div class="analysis-kpi">
+                        <div class="analysis-kpi-label">Mask R-CNN primario</div>
+                        <div class="analysis-kpi-value" style="color:#aeeac8;">{{ data_get($summary, 'primary_maskrcnn', 0) }}</div>
                     </div>
-
-                    <div class="range-wrap">
-                        <label for="seg-opacity">Opacidad segmentación</label>
-                        <input id="seg-opacity" type="range" min="15" max="100" value="82">
-                        <span id="seg-opacity-value" class="range-value">82%</span>
+                    <div class="analysis-kpi">
+                        <div class="analysis-kpi-label">YOLO fallback</div>
+                        <div class="analysis-kpi-value" style="color:#ddc3ff;">{{ data_get($summary, 'primary_yolo_fallback', 0) }}</div>
                     </div>
-                </div>
-
-                <div class="toolbar-buttons">
-                    <button id="fit-extent" type="button" class="ghost-btn">Ajustar extensión</button>
-                    <button id="clear-selection" type="button" class="ghost-btn">Limpiar selección</button>
+                    <div class="analysis-kpi">
+                        <div class="analysis-kpi-label">Requieren revisión</div>
+                        <div class="analysis-kpi-value" style="color:#f7cf8c;">{{ data_get($summary, 'requires_review', 0) }}</div>
+                    </div>
+                    <div class="analysis-kpi">
+                        <div class="analysis-kpi-label">Matches primarios</div>
+                        <div class="analysis-kpi-value">{{ data_get($summary, 'primary_matches', 0) }}</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="map-stage">
-                <div class="floating-summary">
-                    <div class="floating-item">
-                        <div class="label">Objetos visibles</div>
-                        <div id="visible-count" class="value">0</div>
-                        <div class="sub">Según filtros activos</div>
+            <div class="section-block">
+                <div class="section-label">Contexto técnico</div>
+                <div class="property-list">
+                    <div class="property-row">
+                        <div class="property-key">Proyecto</div>
+                        <div class="property-value">{{ $mosaic->project->name ?? '—' }}</div>
                     </div>
-
-                    <div class="floating-item">
-                        <div class="label">Mask visibles</div>
-                        <div id="visible-mrcnn-count" class="value">0</div>
-                        <div class="sub">Primarios de Mask R-CNN</div>
+                    <div class="property-row">
+                        <div class="property-key">Ortomosaico</div>
+                        <div class="property-value">{{ $mosaic->original_name ?? $mosaic->uuid }}</div>
                     </div>
-
-                    <div class="floating-item">
-                        <div class="label">YOLO visibles</div>
-                        <div id="visible-yolo-count" class="value">0</div>
-                        <div class="sub">Fallback conservado</div>
+                    <div class="property-row">
+                        <div class="property-key">CRS</div>
+                        <div class="property-value">{{ $mosaic->crs ?? '—' }}</div>
                     </div>
-
-                    <div class="floating-item">
-                        <div class="label">Revisión visible</div>
-                        <div id="visible-review-count" class="value">0</div>
-                        <div class="sub">Objetos marcados</div>
+                    <div class="property-row">
+                        <div class="property-key">Método científico</div>
+                        <div class="property-value">{{ $scientificMethodVersion }}</div>
+                    </div>
+                    <div class="property-row">
+                        <div class="property-key">Pipeline</div>
+                        <div class="property-value">{{ $pipelineVersion }}</div>
+                    </div>
+                    <div class="property-row">
+                        <div class="property-key">Analysis UUID</div>
+                        <div class="property-value">{{ $job->uuid }}</div>
                     </div>
                 </div>
-
-                <div id="map"></div>
-                <div id="map-tooltip" class="map-tooltip"></div>
             </div>
 
-            <div class="map-footer">
-                <div class="legend">
-                    <span class="legend-item">
-                        <span class="legend-swatch swatch-mrcnn"></span>
-                        Mask R-CNN primario
-                    </span>
-
-                    <span class="legend-item">
-                        <span class="legend-swatch swatch-yolo"></span>
-                        YOLO-Seg fallback
-                    </span>
-
-                    <span class="legend-item">
-                        <span class="legend-swatch swatch-review"></span>
-                        Contorno de revisión
-                    </span>
-                </div>
-
-                <div class="legend-note">
-                    Haz clic en una copa para inspeccionarla. Usa los toggles superiores para comparar rápidamente la distribución
-                    de Mask R-CNN frente a YOLO-Seg.
+            <div class="section-block">
+                <div class="section-label">Alcance del visor</div>
+                <div class="info-note">
+                    Esta pantalla es una herramienta de inspección espacial y QA/QC. Los objetos mostrados son geometrías operativas producidas por el pipeline y todavía no constituyen un conteo validado de individuos arbóreos mediante verdad de campo.
                 </div>
             </div>
-        </section>
 
-        <aside class="side-stack">
-            <section class="panel">
-                <div class="panel-head">
-                    <h3>Resumen ejecutivo</h3>
-                    <p>Indicadores principales del resultado consolidado.</p>
+            <div class="section-block">
+                <div class="section-label">Interpretación metodológica</div>
+                <div class="method-note">
+                    Mask R-CNN se representa como fuente geométrica primaria provisional cuando el pipeline la conserva. YOLO-Seg aparece como evidencia secundaria o fallback de acuerdo con la regla de consolidación ya ejecutada. El visor no modifica esas decisiones.
                 </div>
-
-                <div class="panel-body">
-                    <div class="kpi-grid">
-                        <div class="kpi">
-                            <div class="kpi-label">Objetos</div>
-                            <div class="kpi-value">{{ $job->summary['primary_objects'] ?? 0 }}</div>
-                            <div class="kpi-sub">Total de objetos operativos</div>
-                        </div>
-
-                        <div class="kpi">
-                            <div class="kpi-label">Grupos catálogo</div>
-                            <div class="kpi-value">{{ $job->summary['catalog_groups'] ?? 0 }}</div>
-                            <div class="kpi-sub">Componentes intermodelo</div>
-                        </div>
-
-                        <div class="kpi">
-                            <div class="kpi-label">Mask R-CNN</div>
-                            <div class="kpi-value">{{ $job->summary['primary_maskrcnn'] ?? 0 }}</div>
-                            <div class="kpi-sub">Geometrías primarias</div>
-                        </div>
-
-                        <div class="kpi">
-                            <div class="kpi-label">YOLO fallback</div>
-                            <div class="kpi-value">{{ $job->summary['primary_yolo_fallback'] ?? 0 }}</div>
-                            <div class="kpi-sub">Conservadas por fallback</div>
-                        </div>
-                    </div>
-
-                    <div style="height:16px"></div>
-
-                    <div class="mini-list">
-                        <div class="mini-row">
-                            <div class="mini-key">Requieren revisión</div>
-                            <div class="mini-value">{{ $job->summary['requires_review'] ?? 0 }}</div>
-                        </div>
-
-                        <div class="mini-row">
-                            <div class="mini-key">Sin revisión operativa</div>
-                            <div class="mini-value">{{ $job->summary['no_review'] ?? 0 }}</div>
-                        </div>
-
-                        <div class="mini-row">
-                            <div class="mini-key">Relaciones intermodelo</div>
-                            <div class="mini-value">{{ $job->summary['intermodel_relations'] ?? 0 }}</div>
-                        </div>
-
-                        <div class="mini-row">
-                            <div class="mini-key">Matches primarios</div>
-                            <div class="mini-value">{{ $job->summary['primary_matches'] ?? 0 }}</div>
-                        </div>
-                    </div>
-
-                    @unless($previewAvailable)
-                        <div style="height:14px"></div>
-                        <div class="warn-box">
-                            Este mosaico aún no tiene un preview web disponible. Las segmentaciones se visualizarán sobre un fondo neutro.
-                        </div>
-                    @endunless
-                </div>
-            </section>
-
-            <section class="panel">
-                <div class="panel-head">
-                    <h3>Objeto seleccionado</h3>
-                    <p>Haz clic sobre una segmentación para ver sus métricas y su evidencia.</p>
-                </div>
-
-                <div id="object-details" class="panel-body">
-                    <div class="object-empty">
-                        No hay ninguna copa seleccionada. Haz clic sobre una geometría en el mapa para abrir su ficha detallada.
-                    </div>
-                </div>
-            </section>
-
-            <section class="panel">
-                <div class="panel-head">
-                    <h3>Interpretación metodológica</h3>
-                    <p>Lectura correcta de la visualización.</p>
-                </div>
-
-                <div class="panel-body">
-                    <div class="tip-box">
-                        <strong>Mask R-CNN</strong> representa la geometría primaria priorizada por tu criterio científico.
-                        <strong>YOLO-Seg</strong> aparece solamente cuando fue preservado como fallback operativo.
-                    </div>
-
-                    <div style="height:12px"></div>
-
-                    <div class="info-note">
-                        Las áreas, diámetros equivalentes y distancias se calcularon sobre el flujo métrico original en UTM.
-                        El GeoJSON mostrado aquí es una capa derivada para visualización web, útil para revisión espacial y auditoría,
-                        pero no sustituye la validación final contra verdad de campo.
-                    </div>
-                </div>
-            </section>
-        </aside>
-    </div>
+            </div>
+        </div>
+    </aside>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/proj4@2.15.0/dist/proj4.js"></script>
@@ -1198,38 +1912,92 @@
     const mapBounds = @json($mapBounds);
     const mosaicProjection = @json($mosaic->crs);
     const previewAvailable = @json($previewAvailable);
-    const geojsonUrl = @json(route('analysis.map.geojson', ['analysisUuid' => $job->uuid]));
+
+    const geojsonUrl = @json(
+        route('analysis.map.geojson', ['analysisUuid' => $job->uuid])
+    );
+
     const previewUrl = previewAvailable
         ? @json(route('analysis.map.preview', ['analysisUuid' => $job->uuid]))
         : null;
 
     const summaryExpected = {
-        total: Number(@json($job->summary['primary_objects'] ?? 0)),
-        mrcnn: Number(@json($job->summary['primary_maskrcnn'] ?? 0)),
-        yolo: Number(@json($job->summary['primary_yolo_fallback'] ?? 0)),
-        review: Number(@json($job->summary['requires_review'] ?? 0)),
+        total: Number(@json(data_get($summary, 'primary_objects', 0))),
+        mrcnn: Number(@json(data_get($summary, 'primary_maskrcnn', 0))),
+        yolo: Number(@json(data_get($summary, 'primary_yolo_fallback', 0))),
+        review: Number(@json(data_get($summary, 'requires_review', 0))),
     };
 
     const els = {
+        workspace: document.getElementById('workspace'),
+        leftPanel: document.getElementById('left-panel'),
+        rightPanel: document.getElementById('right-panel'),
+        drawerBackdrop: document.getElementById('drawer-backdrop'),
+        openExplorerMobile: document.getElementById('open-explorer-mobile'),
+        openInspectorMobile: document.getElementById('open-inspector-mobile'),
+        closeExplorerMobile: document.getElementById('close-explorer-mobile'),
+        closeInspectorMobile: document.getElementById('close-inspector-mobile'),
+
+        search: document.getElementById('object-search'),
+        quickFilters: Array.from(document.querySelectorAll('.filter-chip')),
+        evidenceFilter: document.getElementById('evidence-filter'),
+        conflictFilter: document.getElementById('conflict-filter'),
+        resetFilters: document.getElementById('reset-filters'),
+        filterFeedback: document.getElementById('filter-feedback'),
+        objectList: document.getElementById('object-list'),
+        explorerCount: document.getElementById('explorer-count'),
+
         togglePreview: document.getElementById('toggle-preview'),
         toggleMrcnn: document.getElementById('toggle-mrcnn'),
         toggleYolo: document.getElementById('toggle-yolo'),
-        toggleReview: document.getElementById('toggle-review'),
+        toggleReviewHighlight: document.getElementById('toggle-review-highlight'),
+        opacityPopover: document.getElementById('opacity-popover'),
+        opacityToggle: document.getElementById('opacity-toggle'),
         previewOpacity: document.getElementById('preview-opacity'),
         previewOpacityValue: document.getElementById('preview-opacity-value'),
         segOpacity: document.getElementById('seg-opacity'),
         segOpacityValue: document.getElementById('seg-opacity-value'),
         fitExtent: document.getElementById('fit-extent'),
         clearSelection: document.getElementById('clear-selection'),
-        objectDetails: document.getElementById('object-details'),
+        fullscreenMap: document.getElementById('fullscreen-map'),
+
         visibleCount: document.getElementById('visible-count'),
         visibleMrcnnCount: document.getElementById('visible-mrcnn-count'),
         visibleYoloCount: document.getElementById('visible-yolo-count'),
         visibleReviewCount: document.getElementById('visible-review-count'),
+        statusVisibleCount: document.getElementById('status-visible-count'),
+
+        coordX: document.getElementById('coord-x'),
+        coordY: document.getElementById('coord-y'),
+        mapScale: document.getElementById('map-scale'),
+        mapResolution: document.getElementById('map-resolution'),
         tooltip: document.getElementById('map-tooltip'),
+
+        mapLoading: document.getElementById('map-loading'),
+        mapError: document.getElementById('map-error'),
+        mapErrorText: document.getElementById('map-error-text'),
+        retryGeojson: document.getElementById('retry-geojson'),
+
+        inspectorTabs: Array.from(document.querySelectorAll('.inspector-tab')),
+        inspectorObject: document.getElementById('inspector-object'),
+        inspectorAnalysis: document.getElementById('inspector-analysis'),
     };
 
-    const utmMatch = /^EPSG:(326|327)(\d{2})$/.exec(mosaicProjection);
+    let allFeatures = [];
+    let filteredFeatures = [];
+    let activeQuickFilter = 'all';
+    let currentSegOpacity = Number(els.segOpacity?.value || 82) / 100;
+    let highlightReview = true;
+    let showMrcnn = true;
+    let showYolo = true;
+    let selectedFeature = null;
+    let selectedFilteredIndex = -1;
+
+    /* =========================================================
+       PROYECCIÓN
+    ========================================================= */
+
+    const utmMatch = /^EPSG:(326|327)(\d{2})$/.exec(mosaicProjection || '');
 
     if (utmMatch) {
         const hemisphereCode = utmMatch[1];
@@ -1250,23 +2018,9 @@
         throw new Error(`OpenLayers no pudo resolver ${mosaicProjection}.`);
     }
 
-    let currentSegOpacity = Number(els.segOpacity?.value || 82) / 100;
-    let hoveredFeature = null;
-
-    const previewLayer = previewAvailable
-        ? new ol.layer.Image({
-            source: new ol.source.ImageStatic({
-                url: previewUrl,
-                imageExtent: mapBounds,
-                projection: mapProjection,
-                interpolate: true,
-            }),
-            opacity: 1,
-            zIndex: 1,
-        })
-        : null;
-
-    const vectorSource = new ol.source.Vector();
+    /* =========================================================
+       HELPERS DE DATOS
+    ========================================================= */
 
     function toBool(value) {
         return (
@@ -1277,8 +2031,16 @@
         );
     }
 
+    function cleanText(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        return String(value).trim();
+    }
+
     function getPrimaryModel(feature) {
-        return String(feature.get('primary_model') || '').trim();
+        return cleanText(feature.get('primary_model'));
     }
 
     function isMrcnn(feature) {
@@ -1293,148 +2055,17 @@
         return toBool(feature.get('requires_review'));
     }
 
-    function shouldShowFeature(feature) {
-        if (isMrcnn(feature) && !els.toggleMrcnn.checked) {
-            return false;
-        }
-
-        if (isYolo(feature) && !els.toggleYolo.checked) {
-            return false;
-        }
-
-        return true;
+    function getOperationalId(feature) {
+        return cleanText(feature.get('operational_id')) || 'Objeto operativo';
     }
 
-    function createStroke(color, width, lineDash = null) {
-        return new ol.style.Stroke({
-            color,
-            width,
-            lineDash,
-            lineJoin: 'round',
-            lineCap: 'round',
-        });
+    function getEvidenceStatus(feature) {
+        return cleanText(feature.get('evidence_status'));
     }
 
-    function createFill(color) {
-        return new ol.style.Fill({ color });
+    function getConflictRole(feature) {
+        return cleanText(feature.get('conflict_role'));
     }
-
-    function getFeatureStyle(feature) {
-        if (!shouldShowFeature(feature)) {
-            return null;
-        }
-
-        const review = requiresReview(feature);
-        const showReview = els.toggleReview.checked;
-
-        if (isMrcnn(feature)) {
-            return [
-                new ol.style.Style({
-                    stroke: createStroke(
-                        review && showReview
-                            ? 'rgba(245, 158, 11, 0.98)'
-                            : 'rgba(34, 197, 94, 0.98)',
-                        review && showReview ? 3.0 : 2.3,
-                        review && showReview ? [10, 6] : null,
-                    ),
-                    fill: createFill(
-                        review && showReview
-                            ? `rgba(245, 158, 11, ${Math.max(currentSegOpacity * 0.18, 0.10)})`
-                            : `rgba(34, 197, 94, ${Math.max(currentSegOpacity * 0.28, 0.10)})`
-                    ),
-                }),
-                ...(review && showReview ? [
-                    new ol.style.Style({
-                        stroke: createStroke('rgba(255, 238, 204, 0.92)', 1.2, [2, 6]),
-                    }),
-                ] : []),
-            ];
-        }
-
-        return [
-            new ol.style.Style({
-                stroke: createStroke(
-                    review && showReview
-                        ? 'rgba(245, 158, 11, 0.98)'
-                        : 'rgba(168, 85, 247, 0.98)',
-                    review && showReview ? 3.0 : 2.3,
-                    review && showReview ? [10, 6] : null,
-                ),
-                fill: createFill(
-                    review && showReview
-                        ? `rgba(245, 158, 11, ${Math.max(currentSegOpacity * 0.17, 0.10)})`
-                        : `rgba(168, 85, 247, ${Math.max(currentSegOpacity * 0.24, 0.10)})`
-                ),
-            }),
-            ...(review && showReview ? [
-                new ol.style.Style({
-                    stroke: createStroke('rgba(255, 243, 214, 0.96)', 1.2, [2, 6]),
-                }),
-            ] : []),
-        ];
-    }
-
-    const vectorLayer = new ol.layer.Vector({
-        source: vectorSource,
-        style: getFeatureStyle,
-        zIndex: 10,
-        declutter: true,
-    });
-
-    const selectedStyle = [
-        new ol.style.Style({
-            stroke: createStroke('rgba(255, 255, 255, 1)', 4.4),
-            fill: createFill('rgba(255, 255, 255, 0.05)'),
-        }),
-        new ol.style.Style({
-            stroke: createStroke('rgba(239, 68, 68, 1)', 2.8),
-            fill: createFill('rgba(239, 68, 68, 0.10)'),
-        }),
-    ];
-
-    const map = new ol.Map({
-        target: 'map',
-        layers: [
-            ...(previewLayer ? [previewLayer] : []),
-            vectorLayer,
-        ],
-        view: new ol.View({
-            projection: mapProjection,
-            center: ol.extent.getCenter(mapBounds),
-            zoom: 19,
-        }),
-        controls: ol.control.defaults.defaults().extend([
-            new ol.control.ScaleLine({
-                units: 'metric',
-                bar: true,
-                steps: 4,
-                text: true,
-                minWidth: 120,
-            }),
-        ]),
-    });
-
-    function fitMap() {
-        map.getView().fit(mapBounds, {
-            padding: [40, 40, 40, 40],
-            duration: 280,
-            maxZoom: 24,
-        });
-    }
-
-    fitMap();
-
-    const selected = new ol.Collection();
-
-    const selectInteraction = new ol.interaction.Select({
-        layers: [vectorLayer],
-        features: selected,
-        style: selectedStyle,
-        hitTolerance: 6,
-        filter: (feature) => shouldShowFeature(feature),
-    });
-
-    map.addInteraction(selectInteraction);
 
     function escapeHtml(value) {
         if (value === null || value === undefined || value === '') {
@@ -1462,77 +2093,367 @@
         });
     }
 
-    function renderSelected(feature) {
-        if (!feature) {
-            els.objectDetails.innerHTML = `
-                <div class="object-empty">
-                    No hay ninguna copa seleccionada. Haz clic sobre una geometría en el mapa para abrir su ficha detallada.
+    function formatMetric(value, unit = '', digits = 3) {
+        const formatted = formatNumber(value, digits);
+        return formatted === '—' ? '—' : `${formatted}${unit ? ` ${unit}` : ''}`;
+    }
+
+    function readableValue(value) {
+        const text = cleanText(value);
+        return text || '—';
+    }
+
+    function modelClass(feature) {
+        if (isMrcnn(feature)) return 'mrcnn';
+        if (isYolo(feature)) return 'yolo';
+        return 'unknown';
+    }
+
+    function modelLabel(feature) {
+        return getPrimaryModel(feature) || 'Modelo no identificado';
+    }
+
+    /* =========================================================
+       FILTROS
+    ========================================================= */
+
+    function passesQuickFilter(feature) {
+        switch (activeQuickFilter) {
+            case 'mrcnn':
+                return isMrcnn(feature);
+            case 'yolo':
+                return isYolo(feature);
+            case 'review':
+                return requiresReview(feature);
+            case 'no-review':
+                return !requiresReview(feature);
+            default:
+                return true;
+        }
+    }
+
+    function passesAdvancedFilters(feature) {
+        const evidence = els.evidenceFilter?.value || '';
+        const conflict = els.conflictFilter?.value || '';
+
+        if (evidence && getEvidenceStatus(feature) !== evidence) {
+            return false;
+        }
+
+        if (conflict && getConflictRole(feature) !== conflict) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function passesSearch(feature) {
+        const query = cleanText(els.search?.value).toLowerCase();
+
+        if (!query) {
+            return true;
+        }
+
+        const haystack = [
+            feature.get('operational_id'),
+            feature.get('candidate_id'),
+            feature.get('source_cluster'),
+            feature.get('candidate_type'),
+        ]
+            .map(value => cleanText(value).toLowerCase())
+            .join(' ');
+
+        return haystack.includes(query);
+    }
+
+    function passesLayerVisibility(feature) {
+        if (isMrcnn(feature) && !showMrcnn) {
+            return false;
+        }
+
+        if (isYolo(feature) && !showYolo) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function isFeatureVisible(feature) {
+        return (
+            passesLayerVisibility(feature)
+            && passesQuickFilter(feature)
+            && passesAdvancedFilters(feature)
+            && passesSearch(feature)
+        );
+    }
+
+    function populateSelect(select, values, placeholder) {
+        const current = select.value;
+        select.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>`;
+
+        values.forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            select.appendChild(option);
+        });
+
+        if (values.includes(current)) {
+            select.value = current;
+        }
+    }
+
+    function populateAttributeFilters() {
+        const evidenceValues = [...new Set(
+            allFeatures
+                .map(getEvidenceStatus)
+                .filter(Boolean)
+        )].sort((a, b) => a.localeCompare(b, 'es'));
+
+        const conflictValues = [...new Set(
+            allFeatures
+                .map(getConflictRole)
+                .filter(Boolean)
+        )].sort((a, b) => a.localeCompare(b, 'es'));
+
+        populateSelect(els.evidenceFilter, evidenceValues, 'Toda evidencia');
+        populateSelect(els.conflictFilter, conflictValues, 'Todo conflicto');
+    }
+
+    function applyFilters() {
+        filteredFeatures = allFeatures.filter(isFeatureVisible);
+
+        if (selectedFeature && !isFeatureVisible(selectedFeature)) {
+            clearSelection();
+        }
+
+        renderObjectList();
+        vectorLayer.changed();
+        updateVisibleCounters();
+    }
+
+    function resetFilters() {
+        activeQuickFilter = 'all';
+
+        els.quickFilters.forEach(button => {
+            button.classList.toggle('active', button.dataset.filter === 'all');
+        });
+
+        if (els.search) els.search.value = '';
+        if (els.evidenceFilter) els.evidenceFilter.value = '';
+        if (els.conflictFilter) els.conflictFilter.value = '';
+
+        applyFilters();
+    }
+
+    /* =========================================================
+       CAPAS Y ESTILOS
+    ========================================================= */
+
+    const previewLayer = previewAvailable
+        ? new ol.layer.Image({
+            source: new ol.source.ImageStatic({
+                url: previewUrl,
+                imageExtent: mapBounds,
+                projection: mapProjection,
+                interpolate: true,
+            }),
+            opacity: 1,
+            zIndex: 1,
+        })
+        : null;
+
+    const vectorSource = new ol.source.Vector();
+
+    function createStroke(color, width, lineDash = null) {
+        return new ol.style.Stroke({
+            color,
+            width,
+            lineDash,
+            lineJoin: 'round',
+            lineCap: 'round',
+        });
+    }
+
+    function createFill(color) {
+        return new ol.style.Fill({ color });
+    }
+
+    function getFeatureStyle(feature) {
+        if (!isFeatureVisible(feature)) {
+            return null;
+        }
+
+        const review = requiresReview(feature);
+        const useReviewStyle = review && highlightReview;
+
+        let strokeColor = 'rgba(159, 176, 167, .98)';
+        let fillColor = `rgba(159, 176, 167, ${Math.max(currentSegOpacity * .20, .08)})`;
+
+        if (isMrcnn(feature)) {
+            strokeColor = 'rgba(53, 199, 123, .98)';
+            fillColor = `rgba(53, 199, 123, ${Math.max(currentSegOpacity * .27, .09)})`;
+        } else if (isYolo(feature)) {
+            strokeColor = 'rgba(165, 107, 244, .98)';
+            fillColor = `rgba(165, 107, 244, ${Math.max(currentSegOpacity * .24, .09)})`;
+        }
+
+        if (useReviewStyle) {
+            strokeColor = 'rgba(242, 173, 61, .98)';
+            fillColor = `rgba(242, 173, 61, ${Math.max(currentSegOpacity * .17, .08)})`;
+        }
+
+        const baseStyle = new ol.style.Style({
+            stroke: createStroke(
+                strokeColor,
+                useReviewStyle ? 3 : 2.2,
+                useReviewStyle ? [9, 6] : null
+            ),
+            fill: createFill(fillColor),
+        });
+
+        if (!useReviewStyle) {
+            return baseStyle;
+        }
+
+        return [
+            baseStyle,
+            new ol.style.Style({
+                stroke: createStroke('rgba(255, 241, 214, .9)', 1, [2, 6]),
+            }),
+        ];
+    }
+
+    const vectorLayer = new ol.layer.Vector({
+        source: vectorSource,
+        style: getFeatureStyle,
+        zIndex: 10,
+        declutter: true,
+    });
+
+    const selectedStyle = [
+        new ol.style.Style({
+            stroke: createStroke('rgba(255,255,255,1)', 4.4),
+            fill: createFill('rgba(255,255,255,.035)'),
+        }),
+        new ol.style.Style({
+            stroke: createStroke('rgba(239,106,98,1)', 2.4),
+            fill: createFill('rgba(239,106,98,.09)'),
+        }),
+    ];
+
+    /* =========================================================
+       MAPA
+    ========================================================= */
+
+    const map = new ol.Map({
+        target: 'map',
+        layers: [
+            ...(previewLayer ? [previewLayer] : []),
+            vectorLayer,
+        ],
+        view: new ol.View({
+            projection: mapProjection,
+            center: ol.extent.getCenter(mapBounds),
+            zoom: 19,
+        }),
+        controls: ol.control.defaults.defaults().extend([
+            new ol.control.ScaleLine({
+                units: 'metric',
+                bar: true,
+                steps: 4,
+                text: true,
+                minWidth: 110,
+            }),
+        ]),
+    });
+
+    function fitMap() {
+        map.getView().fit(mapBounds, {
+            padding: [74, 48, 72, 48],
+            duration: 260,
+            maxZoom: 24,
+        });
+    }
+
+    fitMap();
+
+    const selected = new ol.Collection();
+
+    const selectInteraction = new ol.interaction.Select({
+        layers: [vectorLayer],
+        features: selected,
+        style: selectedStyle,
+        hitTolerance: 6,
+        filter: feature => isFeatureVisible(feature),
+    });
+
+    map.addInteraction(selectInteraction);
+
+    /* =========================================================
+       LISTA DE OBJETOS
+    ========================================================= */
+
+    function renderObjectList() {
+        els.explorerCount.textContent = filteredFeatures.length;
+        els.filterFeedback.textContent = `${filteredFeatures.length} de ${allFeatures.length} objetos visibles`;
+
+        if (!filteredFeatures.length) {
+            els.objectList.innerHTML = `
+                <div class="object-list-empty">
+                    No hay objetos que coincidan con los filtros actuales.
                 </div>
             `;
             return;
         }
 
-        const review = requiresReview(feature);
-        const model = getPrimaryModel(feature);
-        const modelBadge = model === 'Mask R-CNN'
-            ? '<span class="badge badge-success">Mask R-CNN</span>'
-            : '<span class="badge badge-yolo">YOLO-Seg</span>';
-        const reviewBadge = review
-            ? '<span class="badge badge-warning">Requiere revisión</span>'
-            : '<span class="badge badge-success">Sin revisión operativa</span>';
+        const fragment = document.createDocumentFragment();
 
-        els.objectDetails.innerHTML = `
-            <div class="selected-title">
-                <div class="selected-id">${escapeHtml(feature.get('operational_id') || 'Objeto')}</div>
-                <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-                    ${modelBadge}
-                    ${reviewBadge}
+        filteredFeatures.forEach((feature, index) => {
+            const row = document.createElement('button');
+            row.type = 'button';
+            row.className = `object-row${selectedFeature === feature ? ' selected' : ''}`;
+            row.dataset.featureIndex = String(index);
+
+            const review = requiresReview(feature);
+            const area = formatMetric(feature.get('area_m2'), 'm²', 2);
+            const evidence = getEvidenceStatus(feature);
+
+            row.innerHTML = `
+                <div class="object-row-top">
+                    <div class="object-id">${escapeHtml(getOperationalId(feature))}</div>
+                    <span class="model-mark ${modelClass(feature)}" title="${escapeHtml(modelLabel(feature))}"></span>
                 </div>
-            </div>
-
-            <div class="feature-grid">
-                <div class="feature-box">
-                    <div class="name">Área de copa</div>
-                    <div class="value">${formatNumber(feature.get('area_m2'), 3)} m²</div>
+                <div class="object-row-meta">
+                    <span>${escapeHtml(modelLabel(feature))}</span>
+                    <span>Área ${escapeHtml(area)}</span>
+                    <span class="mini-status${review ? ' review' : ''}">${review ? 'Revisión' : 'Sin revisión'}</span>
+                    ${evidence ? `<span>${escapeHtml(evidence)}</span>` : ''}
                 </div>
+            `;
 
-                <div class="feature-box">
-                    <div class="name">Diámetro equivalente</div>
-                    <div class="value">${formatNumber(feature.get('eq_crown_d_m'), 3)} m</div>
-                </div>
+            row.addEventListener('click', () => selectFeature(feature, true));
+            fragment.appendChild(row);
+        });
 
-                <div class="feature-box">
-                    <div class="name">Score representativo</div>
-                    <div class="value">${formatNumber(feature.get('representative_score'), 4)}</div>
-                </div>
-
-                <div class="feature-box">
-                    <div class="name">Observaciones</div>
-                    <div class="value">${escapeHtml(feature.get('n_observations'))}</div>
-                </div>
-            </div>
-
-            <div class="property-list">
-                ${propertyRow('Candidate ID', feature.get('candidate_id'))}
-                ${propertyRow('Tipo de candidato', feature.get('candidate_type'))}
-                ${propertyRow('Modelo primario', feature.get('primary_model'))}
-                ${propertyRow('Cluster origen', feature.get('source_cluster'))}
-                ${propertyRow('Estado geométrico', feature.get('geometry_status'))}
-                ${propertyRow('Estado de evidencia', feature.get('evidence_status'))}
-                ${propertyRow('Rol de conflicto', feature.get('conflict_role'))}
-                ${propertyRow('IoU intermodelo máximo', formatNumber(feature.get('max_intermodel_iou'), 4))}
-                ${propertyRow('Overlap mínimo máximo', formatNumber(feature.get('max_overlap_min'), 4))}
-                ${propertyRow('Distancia mínima entre centroides', `${formatNumber(feature.get('min_centroid_distance_m'), 3)} m`)}
-                ${propertyRow('CV de área', formatNumber(feature.get('area_cv_pct'), 3))}
-                ${propertyRow('Pair IoU mean', formatNumber(feature.get('pair_iou_mean'), 4))}
-                ${propertyRow('Pair IoU min', formatNumber(feature.get('pair_iou_min'), 4))}
-                ${propertyRow('Distancia máxima centroides', `${formatNumber(feature.get('centroid_dist_max_m'), 3)} m`)}
-                ${propertyRow('Observaciones de borde', feature.get('edge_observations'))}
-                ${propertyRow('Máscara válida representativa', formatNumber(feature.get('representative_mask_valid'), 4))}
-                ${propertyRow('Regla de decisión', feature.get('decision_rule'))}
-            </div>
-        `;
+        els.objectList.replaceChildren(fragment);
     }
+
+    function syncSelectedRow() {
+        els.objectList.querySelectorAll('.object-row').forEach((row, index) => {
+            row.classList.toggle('selected', filteredFeatures[index] === selectedFeature);
+        });
+
+        if (selectedFeature) {
+            selectedFilteredIndex = filteredFeatures.indexOf(selectedFeature);
+        } else {
+            selectedFilteredIndex = -1;
+        }
+    }
+
+    /* =========================================================
+       INSPECTOR
+    ========================================================= */
 
     function propertyRow(label, value) {
         return `
@@ -1543,134 +2464,383 @@
         `;
     }
 
+    function activateInspectorTab(tabName) {
+        els.inspectorTabs.forEach(button => {
+            button.classList.toggle('active', button.dataset.inspectorTab === tabName);
+        });
+
+        els.inspectorObject.hidden = tabName !== 'object';
+        els.inspectorAnalysis.hidden = tabName !== 'analysis';
+    }
+
+    function renderSelected(feature) {
+        if (!feature) {
+            els.inspectorObject.innerHTML = `
+                <div class="inspector-empty">
+                    <strong style="color:var(--text-soft);">Ningún objeto seleccionado.</strong><br><br>
+                    Haz clic sobre una geometría del mapa o selecciona un registro del explorador. La ficha mostrará atributos del objeto operativo; no implica confirmación contra verdad de campo.
+                </div>
+            `;
+            return;
+        }
+
+        const review = requiresReview(feature);
+        const model = modelLabel(feature);
+        const evidence = readableValue(feature.get('evidence_status'));
+        const conflict = readableValue(feature.get('conflict_role'));
+        const operationalId = getOperationalId(feature);
+        const score = formatNumber(feature.get('representative_score'), 4);
+
+        const modelBadge = isMrcnn(feature)
+            ? '<span class="badge badge-mrcnn">Mask R-CNN · geometría primaria</span>'
+            : isYolo(feature)
+                ? '<span class="badge badge-yolo">YOLO-Seg · fallback</span>'
+                : `<span class="badge badge-neutral">${escapeHtml(model)}</span>`;
+
+        const reviewBadge = review
+            ? '<span class="badge badge-review">Requiere revisión</span>'
+            : '<span class="badge badge-ok">Sin revisión operativa</span>';
+
+        const conflictAlert = (
+            conflict !== '—'
+            && !['none', 'null', 'no_conflict', 'sin conflicto'].includes(conflict.toLowerCase())
+        )
+            ? `
+                <div class="section-block">
+                    <div class="warning-note">
+                        <strong>Condición estructural registrada:</strong> ${escapeHtml(conflict)}.<br>
+                        Esta marca orienta la revisión QA/QC y no debe interpretarse automáticamente como error confirmado.
+                    </div>
+                </div>
+            `
+            : '';
+
+        els.inspectorObject.innerHTML = `
+            <div class="selected-header">
+                <div>
+                    <div class="selected-kicker">Objeto operativo</div>
+                    <div class="selected-id">${escapeHtml(operationalId)}</div>
+                </div>
+            </div>
+
+            <div class="badges">
+                ${modelBadge}
+                ${reviewBadge}
+            </div>
+
+            <div class="inspector-actions">
+                <button id="previous-object" class="small-action" type="button" ${selectedFilteredIndex <= 0 ? 'disabled' : ''}>← Anterior</button>
+                <button id="next-object" class="small-action" type="button" ${selectedFilteredIndex < 0 || selectedFilteredIndex >= filteredFeatures.length - 1 ? 'disabled' : ''}>Siguiente →</button>
+                <button id="zoom-selected" class="small-action" type="button">Centrar</button>
+                <button id="copy-object-id" class="small-action" type="button">Copiar ID</button>
+            </div>
+
+            <div class="section-block">
+                <div class="section-label">Geometría</div>
+                <div class="metric-grid">
+                    <div class="metric-box">
+                        <div class="metric-label">Área segmentada</div>
+                        <div class="metric-value">${escapeHtml(formatMetric(feature.get('area_m2'), 'm²', 3))}</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Diámetro equivalente</div>
+                        <div class="metric-value">${escapeHtml(formatMetric(feature.get('eq_crown_d_m'), 'm', 3))}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-block">
+                <div class="section-label">Evidencia IA</div>
+                <div class="property-list">
+                    ${propertyRow('Modelo primario', model)}
+                    ${propertyRow('Estado de evidencia', evidence)}
+                    ${propertyRow('IoU intermodelo máximo', formatNumber(feature.get('max_intermodel_iou'), 4))}
+                    ${propertyRow('Overlap mínimo máximo', formatNumber(feature.get('max_overlap_min'), 4))}
+                    ${propertyRow('Distancia mínima centroides', formatMetric(feature.get('min_centroid_distance_m'), 'm', 3))}
+                    ${propertyRow('Score representativo', score)}
+                </div>
+                <div class="method-note" style="margin-top:8px;">
+                    El score representativo es un valor interno del modelo asociado a la observación representativa. No equivale a probabilidad de corrección ni a validación frente a campo.
+                </div>
+            </div>
+
+            <div class="section-block">
+                <div class="section-label">Estabilidad espacial</div>
+                <div class="property-list">
+                    ${propertyRow('Observaciones', readableValue(feature.get('n_observations')))}
+                    ${propertyRow('CV de área', formatMetric(feature.get('area_cv_pct'), '%', 3))}
+                    ${propertyRow('Pair IoU mean', formatNumber(feature.get('pair_iou_mean'), 4))}
+                    ${propertyRow('Pair IoU min', formatNumber(feature.get('pair_iou_min'), 4))}
+                    ${propertyRow('Distancia máxima centroides', formatMetric(feature.get('centroid_dist_max_m'), 'm', 3))}
+                    ${propertyRow('Observaciones de borde', readableValue(feature.get('edge_observations')))}
+                    ${propertyRow('Máscara representativa válida', formatNumber(feature.get('representative_mask_valid'), 4))}
+                </div>
+            </div>
+
+            <div class="section-block">
+                <div class="section-label">Diagnóstico operativo</div>
+                <div class="property-list">
+                    ${propertyRow('Candidate ID', readableValue(feature.get('candidate_id')))}
+                    ${propertyRow('Tipo de candidato', readableValue(feature.get('candidate_type')))}
+                    ${propertyRow('Cluster origen', readableValue(feature.get('source_cluster')))}
+                    ${propertyRow('Estado geométrico', readableValue(feature.get('geometry_status')))}
+                    ${propertyRow('Rol de conflicto', conflict)}
+                    ${propertyRow('Regla de decisión', readableValue(feature.get('decision_rule')))}
+                </div>
+            </div>
+
+            ${conflictAlert}
+
+            <div class="section-block">
+                <div class="info-note">
+                    Esta ficha describe un objeto operativo de copa. La correspondencia con un árbol individual requiere la fase posterior de contraste con verdad de campo.
+                </div>
+            </div>
+        `;
+
+        document.getElementById('previous-object')?.addEventListener('click', () => navigateSelection(-1));
+        document.getElementById('next-object')?.addEventListener('click', () => navigateSelection(1));
+        document.getElementById('zoom-selected')?.addEventListener('click', () => zoomToFeature(feature));
+        document.getElementById('copy-object-id')?.addEventListener('click', async event => {
+            try {
+                await navigator.clipboard.writeText(operationalId);
+                event.currentTarget.textContent = 'ID copiado';
+                setTimeout(() => {
+                    event.currentTarget.textContent = 'Copiar ID';
+                }, 1200);
+            } catch (error) {
+                console.warn('No fue posible copiar el ID.', error);
+            }
+        });
+    }
+
+    function navigateSelection(direction) {
+        if (!filteredFeatures.length || selectedFilteredIndex < 0) {
+            return;
+        }
+
+        const nextIndex = selectedFilteredIndex + direction;
+
+        if (nextIndex < 0 || nextIndex >= filteredFeatures.length) {
+            return;
+        }
+
+        selectFeature(filteredFeatures[nextIndex], true);
+    }
+
+    function zoomToFeature(feature) {
+        const geometry = feature?.getGeometry();
+
+        if (!geometry) {
+            return;
+        }
+
+        map.getView().fit(geometry.getExtent(), {
+            padding: [100, 100, 100, 100],
+            duration: 260,
+            maxZoom: 23,
+        });
+    }
+
+    function selectFeature(feature, zoom = false) {
+        if (!feature || !isFeatureVisible(feature)) {
+            return;
+        }
+
+        selected.clear();
+        selected.push(feature);
+        selectedFeature = feature;
+        selectedFilteredIndex = filteredFeatures.indexOf(feature);
+
+        renderSelected(feature);
+        activateInspectorTab('object');
+        syncSelectedRow();
+
+        if (zoom) {
+            zoomToFeature(feature);
+        }
+
+        if (window.innerWidth <= 1080) {
+            closeDrawers();
+        }
+    }
+
+    function clearSelection() {
+        selected.clear();
+        selectedFeature = null;
+        selectedFilteredIndex = -1;
+        renderSelected(null);
+        syncSelectedRow();
+    }
+
+    /* =========================================================
+       CONTADORES Y ESTADO GIS
+    ========================================================= */
+
     function updateVisibleCounters() {
-        const features = vectorSource.getFeatures();
-        let total = 0;
+        const visible = allFeatures.filter(isFeatureVisible);
+
         let mrcnn = 0;
         let yolo = 0;
         let review = 0;
 
-        for (const feature of features) {
-            if (!shouldShowFeature(feature)) {
-                continue;
-            }
+        visible.forEach(feature => {
+            if (isMrcnn(feature)) mrcnn += 1;
+            if (isYolo(feature)) yolo += 1;
+            if (requiresReview(feature)) review += 1;
+        });
 
-            total += 1;
-
-            if (isMrcnn(feature)) {
-                mrcnn += 1;
-            }
-
-            if (isYolo(feature)) {
-                yolo += 1;
-            }
-
-            if (requiresReview(feature)) {
-                review += 1;
-            }
-        }
-
-        els.visibleCount.textContent = total;
+        els.visibleCount.textContent = visible.length;
         els.visibleMrcnnCount.textContent = mrcnn;
         els.visibleYoloCount.textContent = yolo;
         els.visibleReviewCount.textContent = review;
+        els.statusVisibleCount.textContent = visible.length;
     }
 
-    function refreshVectorLayer() {
-        vectorLayer.changed();
+    function updateViewStatus() {
+        const view = map.getView();
+        const resolution = view.getResolution();
+        const center = view.getCenter();
 
-        if (selected.getLength() > 0) {
-            const chosen = selected.item(0);
-            if (!shouldShowFeature(chosen)) {
-                selected.clear();
-                renderSelected(null);
-            }
+        if (!Number.isFinite(resolution) || !center) {
+            return;
         }
 
-        updateVisibleCounters();
+        let metersPerPixel = resolution;
+
+        try {
+            metersPerPixel = ol.proj.getPointResolution(
+                mapProjection,
+                resolution,
+                center,
+                'm'
+            );
+        } catch (error) {
+            console.warn('No fue posible calcular resolución métrica.', error);
+        }
+
+        const scaleDenominator = metersPerPixel * 96 * 39.3700787402;
+
+        els.mapResolution.textContent = `${formatNumber(metersPerPixel, 3)} m/px`;
+        els.mapScale.textContent = Number.isFinite(scaleDenominator)
+            ? `1:${Math.max(1, Math.round(scaleDenominator)).toLocaleString('es-MX')}`
+            : '—';
     }
 
-    function updatePreviewOpacityLabel() {
-        if (els.previewOpacityValue) {
-            els.previewOpacityValue.textContent = `${els.previewOpacity.value}%`;
-        }
-    }
-
-    function updateSegOpacityLabel() {
-        if (els.segOpacityValue) {
-            els.segOpacityValue.textContent = `${els.segOpacity.value}%`;
-        }
-    }
+    /* =========================================================
+       GEOJSON
+    ========================================================= */
 
     async function loadGeoJson() {
-        const response = await fetch(geojsonUrl, {
-            headers: {
-                'Accept': 'application/geo+json, application/json',
-            },
-            credentials: 'same-origin',
-        });
+        els.mapLoading.hidden = false;
+        els.mapError.hidden = true;
 
-        if (!response.ok) {
-            throw new Error(`No fue posible cargar el GeoJSON. HTTP ${response.status}`);
-        }
-
-        const json = await response.json();
-
-        const features = new ol.format.GeoJSON().readFeatures(json, {
-            dataProjection: 'EPSG:4326',
-            featureProjection: mapProjection,
-        });
-
-        vectorSource.clear(true);
-        vectorSource.addFeatures(features);
-
-        if (features.length !== summaryExpected.total) {
-            console.warn('Conteo visual distinto al summary:', {
-                expected: summaryExpected.total,
-                actual: features.length,
+        try {
+            const response = await fetch(geojsonUrl, {
+                headers: {
+                    'Accept': 'application/geo+json, application/json',
+                },
+                credentials: 'same-origin',
             });
-        }
 
-        updateVisibleCounters();
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const json = await response.json();
+
+            const features = new ol.format.GeoJSON().readFeatures(json, {
+                dataProjection: 'EPSG:4326',
+                featureProjection: mapProjection,
+            });
+
+            vectorSource.clear(true);
+            vectorSource.addFeatures(features);
+
+            allFeatures = features;
+
+            if (features.length !== summaryExpected.total) {
+                console.warn('Conteo visual distinto al summary:', {
+                    expected: summaryExpected.total,
+                    actual: features.length,
+                });
+            }
+
+            populateAttributeFilters();
+            applyFilters();
+            clearSelection();
+        } catch (error) {
+            console.error(error);
+
+            els.mapErrorText.textContent =
+                `La capa GeoJSON no pudo cargarse (${error.message}). `
+                + 'El ortomosaico puede seguir visible, pero los objetos operativos no están disponibles.';
+
+            els.mapError.hidden = false;
+            els.objectList.innerHTML = `
+                <div class="object-list-empty">
+                    No fue posible cargar el catálogo espacial del análisis.
+                </div>
+            `;
+        } finally {
+            els.mapLoading.hidden = true;
+        }
     }
 
-    selectInteraction.on('select', (event) => {
+    /* =========================================================
+       INTERACCIÓN MAPA
+    ========================================================= */
+
+    selectInteraction.on('select', event => {
         const feature = event.selected[0] || null;
+
+        selectedFeature = feature;
+        selectedFilteredIndex = feature ? filteredFeatures.indexOf(feature) : -1;
         renderSelected(feature);
+        syncSelectedRow();
+
+        if (feature) {
+            activateInspectorTab('object');
+        }
     });
 
-    map.on('pointermove', (event) => {
+    map.on('pointermove', event => {
+        if (event.coordinate) {
+            els.coordX.textContent = formatNumber(event.coordinate[0], 2);
+            els.coordY.textContent = formatNumber(event.coordinate[1], 2);
+        }
+
         if (event.dragging) {
             els.tooltip.classList.remove('active');
-            hoveredFeature = null;
             return;
         }
 
         const feature = map.forEachFeatureAtPixel(
             event.pixel,
-            (candidate) => shouldShowFeature(candidate) ? candidate : null,
-            { layerFilter: (layer) => layer === vectorLayer, hitTolerance: 5 }
+            candidate => isFeatureVisible(candidate) ? candidate : null,
+            {
+                layerFilter: layer => layer === vectorLayer,
+                hitTolerance: 5,
+            }
         );
 
+        map.getTargetElement().style.cursor = feature ? 'pointer' : '';
+
         if (!feature) {
-            hoveredFeature = null;
             els.tooltip.classList.remove('active');
             return;
         }
 
-        hoveredFeature = feature;
-
-        const model = getPrimaryModel(feature);
-        const badgeClass = model === 'Mask R-CNN' ? 'badge-success' : 'badge-yolo';
+        const review = requiresReview(feature);
 
         els.tooltip.innerHTML = `
-            <div class="tooltip-title">${escapeHtml(feature.get('operational_id') || 'Objeto')}</div>
-            <div class="tooltip-sub">
-                ${escapeHtml(model)} · Área ${formatNumber(feature.get('area_m2'), 2)} m²
+            <div class="tooltip-title">${escapeHtml(getOperationalId(feature))}</div>
+            <div class="tooltip-meta">
+                ${escapeHtml(modelLabel(feature))}<br>
+                Área: ${escapeHtml(formatMetric(feature.get('area_m2'), 'm²', 2))}<br>
+                Evidencia: ${escapeHtml(readableValue(feature.get('evidence_status')))}
             </div>
-            <div class="tooltip-badge ${badgeClass}">
-                ${escapeHtml(requiresReview(feature) ? 'Revisión requerida' : 'Sin revisión operativa')}
-            </div>
+            ${review ? '<div class="tooltip-status">Requiere revisión operativa</div>' : ''}
         `;
 
         els.tooltip.style.left = `${event.pixel[0]}px`;
@@ -1679,54 +2849,168 @@
     });
 
     map.getViewport().addEventListener('mouseleave', () => {
-        hoveredFeature = null;
         els.tooltip.classList.remove('active');
+        map.getTargetElement().style.cursor = '';
     });
 
-    if (els.togglePreview && previewLayer) {
-        els.togglePreview.addEventListener('change', () => {
-            previewLayer.setVisible(els.togglePreview.checked);
-        });
+    map.getView().on('change:resolution', updateViewStatus);
+    map.getView().on('change:center', updateViewStatus);
+
+    /* =========================================================
+       TOOLBAR
+    ========================================================= */
+
+    function setToolActive(button, active, reviewStyle = false) {
+        if (!button) return;
+
+        button.classList.toggle('active', active && !reviewStyle);
+        button.classList.toggle('review-active', active && reviewStyle);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
     }
 
-    els.toggleMrcnn.addEventListener('change', refreshVectorLayer);
-    els.toggleYolo.addEventListener('change', refreshVectorLayer);
-    els.toggleReview.addEventListener('change', refreshVectorLayer);
+    els.togglePreview?.addEventListener('click', () => {
+        if (!previewLayer) return;
 
-    if (els.previewOpacity && previewLayer) {
-        updatePreviewOpacityLabel();
-        els.previewOpacity.addEventListener('input', () => {
-            const opacity = Number(els.previewOpacity.value) / 100;
-            previewLayer.setOpacity(opacity);
-            updatePreviewOpacityLabel();
-        });
-    }
+        const next = !previewLayer.getVisible();
+        previewLayer.setVisible(next);
+        setToolActive(els.togglePreview, next);
+    });
 
-    updateSegOpacityLabel();
+    els.toggleMrcnn.addEventListener('click', () => {
+        showMrcnn = !showMrcnn;
+        setToolActive(els.toggleMrcnn, showMrcnn);
+        applyFilters();
+    });
+
+    els.toggleYolo.addEventListener('click', () => {
+        showYolo = !showYolo;
+        setToolActive(els.toggleYolo, showYolo);
+        applyFilters();
+    });
+
+    els.toggleReviewHighlight.addEventListener('click', () => {
+        highlightReview = !highlightReview;
+        setToolActive(els.toggleReviewHighlight, highlightReview, true);
+        vectorLayer.changed();
+    });
+
+    els.opacityToggle.addEventListener('click', event => {
+        event.stopPropagation();
+        els.opacityPopover.classList.toggle('open');
+    });
+
+    els.opacityPopover.addEventListener('click', event => {
+        event.stopPropagation();
+    });
+
+    document.addEventListener('click', () => {
+        els.opacityPopover.classList.remove('open');
+    });
+
+    els.previewOpacity?.addEventListener('input', () => {
+        if (!previewLayer) return;
+
+        const opacity = Number(els.previewOpacity.value) / 100;
+        previewLayer.setOpacity(opacity);
+        els.previewOpacityValue.textContent = `${els.previewOpacity.value}%`;
+    });
+
     els.segOpacity.addEventListener('input', () => {
         currentSegOpacity = Number(els.segOpacity.value) / 100;
-        updateSegOpacityLabel();
+        els.segOpacityValue.textContent = `${els.segOpacity.value}%`;
         vectorLayer.changed();
     });
 
     els.fitExtent.addEventListener('click', fitMap);
+    els.clearSelection.addEventListener('click', clearSelection);
 
-    els.clearSelection.addEventListener('click', () => {
-        selected.clear();
-        renderSelected(null);
+    els.fullscreenMap.addEventListener('click', async () => {
+        try {
+            if (!document.fullscreenElement) {
+                await els.workspace.requestFullscreen();
+            } else {
+                await document.exitFullscreen();
+            }
+        } catch (error) {
+            console.warn('No fue posible activar pantalla completa.', error);
+        }
     });
 
-    loadGeoJson().catch((error) => {
-        console.error(error);
-
-        els.objectDetails.innerHTML = `
-            <div class="warn-box">
-                No fue posible cargar la capa GeoJSON del análisis. Revisa la consola del navegador y confirma que el artifact
-                <strong>geojson</strong> exista y sea accesible desde Laravel.
-            </div>
-        `;
+    document.addEventListener('fullscreenchange', () => {
+        setTimeout(() => map.updateSize(), 80);
     });
+
+    /* =========================================================
+       FILTROS / BUSCADOR
+    ========================================================= */
+
+    els.quickFilters.forEach(button => {
+        button.addEventListener('click', () => {
+            activeQuickFilter = button.dataset.filter || 'all';
+
+            els.quickFilters.forEach(item => {
+                item.classList.toggle('active', item === button);
+            });
+
+            applyFilters();
+        });
+    });
+
+    els.search.addEventListener('input', applyFilters);
+    els.evidenceFilter.addEventListener('change', applyFilters);
+    els.conflictFilter.addEventListener('change', applyFilters);
+    els.resetFilters.addEventListener('click', resetFilters);
+
+    /* =========================================================
+       TABS INSPECTOR
+    ========================================================= */
+
+    els.inspectorTabs.forEach(button => {
+        button.addEventListener('click', () => {
+            activateInspectorTab(button.dataset.inspectorTab || 'object');
+        });
+    });
+
+    /* =========================================================
+       DRAWERS MÓVILES
+    ========================================================= */
+
+    function closeDrawers() {
+        els.leftPanel.classList.remove('open');
+        els.rightPanel.classList.remove('open');
+        els.drawerBackdrop.classList.remove('active');
+    }
+
+    function openDrawer(panel) {
+        closeDrawers();
+        panel.classList.add('open');
+        els.drawerBackdrop.classList.add('active');
+    }
+
+    els.openExplorerMobile?.addEventListener('click', () => openDrawer(els.leftPanel));
+    els.openInspectorMobile?.addEventListener('click', () => openDrawer(els.rightPanel));
+    els.closeExplorerMobile?.addEventListener('click', closeDrawers);
+    els.closeInspectorMobile?.addEventListener('click', closeDrawers);
+    els.drawerBackdrop.addEventListener('click', closeDrawers);
+
+    window.addEventListener('resize', () => {
+        map.updateSize();
+
+        if (window.innerWidth > 1080) {
+            closeDrawers();
+        }
+    });
+
+    /* =========================================================
+       INICIO
+    ========================================================= */
+
+    els.retryGeojson.addEventListener('click', loadGeoJson);
+
+    updateViewStatus();
+    loadGeoJson();
 })();
 </script>
+
 </body>
 </html>
