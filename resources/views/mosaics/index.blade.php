@@ -676,7 +676,10 @@
                                     <div class="preview-box">
                                         <div class="preview-empty">
                                             Sin vista previa
-                                            @if($mosaic->status === 'ready')<br>Disponible desde acciones@endif
+                                            @if($mosaic->status === 'ready')
+                                                <br>
+                                                Disponible desde acciones
+                                            @endif
                                         </div>
                                     </div>
                                 @endif
@@ -687,8 +690,12 @@
                                 <div class="mosaic-project">{{ $mosaic->project?->name ?? 'Sin proyecto' }}</div>
                                 <div class="mosaic-filemeta">
                                     <span class="micro-tag">{{ strtoupper($mosaic->extension ?? 'tif') }}</span>
-                                    @if($mosaic->dtype)<span class="micro-tag">{{ $mosaic->dtype }}</span>@endif
-                                    @if($mosaic->bands)<span class="micro-tag">{{ $mosaic->bands }} banda{{ $mosaic->bands == 1 ? '' : 's' }}</span>@endif
+                                    @if($mosaic->dtype)
+                                        <span class="micro-tag">{{ $mosaic->dtype }}</span>
+                                    @endif
+                                    @if($mosaic->bands)
+                                        <span class="micro-tag">{{ $mosaic->bands }} banda{{ $mosaic->bands == 1 ? '' : 's' }}</span>
+                                    @endif
                                     @if($mosaic->size_bytes)
                                         <span class="micro-tag">{{ number_format($mosaic->size_bytes / 1024 / 1024, 2) }} MiB</span>
                                     @endif
@@ -709,7 +716,9 @@
                                     <div class="spec-value">
                                         @if($mosaic->width && $mosaic->height)
                                             {{ number_format($mosaic->width) }} × {{ number_format($mosaic->height) }} px
-                                        @else — @endif
+                                        @else
+                                            —
+                                        @endif
                                     </div>
                                 </div>
                                 <div>
@@ -717,7 +726,9 @@
                                     <div class="spec-value">
                                         @if($hasTilingPreview)
                                             {{ data_get($tilingPreviewMetadata, 'grid.columns') ?? '—' }} × {{ data_get($tilingPreviewMetadata, 'grid.rows') ?? '—' }}
-                                        @else — @endif
+                                        @else
+                                            —
+                                        @endif
                                     </div>
                                 </div>
                             </div>
