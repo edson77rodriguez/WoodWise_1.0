@@ -16,9 +16,7 @@
         content="{{ csrf_token() }}"
     >
 
-    <title>
-        UAV Forest AI
-    </title>
+    <title>UAV Forest AI · Centro de análisis IA</title>
 
 
     <style>
@@ -1632,6 +1630,481 @@
             }
         }
 
+
+
+        /* ======================================================================
+         * UAV FOREST AI — SCIENTIFIC WORKSPACE REDESIGN
+         * Visual-only layer. Keeps the existing backend and scientific logic.
+         * ====================================================================== */
+
+        :root {
+            --ink: #102019;
+            --ink-soft: #244137;
+            --canvas: #eef3f0;
+            --panel: rgba(255,255,255,.94);
+            --panel-strong: #ffffff;
+            --line: #d9e4de;
+            --line-strong: #c7d6ce;
+            --forest-950: #082d21;
+            --forest-900: #0d3d2d;
+            --forest-800: #11523b;
+            --forest-700: #176b4d;
+            --forest-100: #e8f4ee;
+            --forest-50: #f3f8f5;
+            --violet: #7651b8;
+            --violet-soft: #f2eef9;
+            --amber: #a76712;
+            --amber-soft: #fff6e7;
+            --blue: #2a6fc4;
+            --blue-soft: #edf5fd;
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 26px;
+            --shadow-soft: 0 8px 28px rgba(12, 45, 32, .055);
+            --shadow-float: 0 18px 45px rgba(8, 45, 33, .12);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background:
+                radial-gradient(circle at 10% -10%, rgba(23,107,77,.08), transparent 30%),
+                radial-gradient(circle at 92% 0%, rgba(118,81,184,.045), transparent 24%),
+                var(--canvas);
+            color: var(--ink);
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 0;
+            background: rgba(8,45,33,.96);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            box-shadow: 0 8px 30px rgba(6,28,20,.16);
+        }
+
+        .topbar-inner {
+            min-height: 72px;
+            padding: 0 30px;
+        }
+
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.12);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+        }
+
+        .brand-logo svg { width: 25px; height: 25px; display:block; }
+        .brand-name { font-size: 17px; letter-spacing: -.01em; }
+        .brand-subtitle { font-size: 11px; color: rgba(255,255,255,.66); opacity: 1; }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .system-status-copy {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            line-height: 1.2;
+        }
+
+        .system-status-label { font-size: 11px; font-weight: 700; }
+        .system-status-detail { margin-top: 3px; color: rgba(255,255,255,.58); font-size: 9px; }
+
+        .api-status {
+            padding: 8px 11px;
+            background: rgba(255,255,255,.07);
+            border: 1px solid rgba(255,255,255,.09);
+        }
+
+        main { max-width: 1500px; padding: 34px 32px 56px; }
+
+        .page-hero {
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 22px;
+            padding: 28px 30px;
+            border: 1px solid rgba(23,107,77,.14);
+            border-radius: var(--radius-xl);
+            background:
+                linear-gradient(115deg, rgba(255,255,255,.98), rgba(247,251,249,.95)),
+                white;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .page-hero::after {
+            content: '';
+            position: absolute;
+            right: -90px;
+            top: -120px;
+            width: 290px;
+            height: 290px;
+            border-radius: 50%;
+            border: 46px solid rgba(23,107,77,.045);
+            pointer-events: none;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 10px;
+            color: var(--forest-700);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        .hero-kicker-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--forest-700); }
+        .page-hero h1 { margin: 0; font-size: clamp(26px, 3vw, 38px); letter-spacing: -.035em; }
+        .page-hero p { max-width: 980px; margin: 10px 0 0; color: #5c6f66; font-size: 14px; line-height: 1.65; }
+
+        .scope-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 11px;
+            margin-top: 18px;
+            max-width: 1000px;
+            padding: 12px 14px;
+            border: 1px solid #d7e5de;
+            border-radius: 12px;
+            background: #f5faf7;
+            color: #486258;
+            font-size: 11px;
+            line-height: 1.55;
+        }
+
+        .scope-note-icon {
+            flex: 0 0 auto;
+            width: 23px;
+            height: 23px;
+            display: grid;
+            place-items: center;
+            border-radius: 7px;
+            background: var(--forest-100);
+            color: var(--forest-700);
+            font-weight: 800;
+        }
+
+        .mode-switcher {
+            display: grid;
+            grid-template-columns: repeat(2,minmax(0,1fr));
+            gap: 10px;
+            margin-bottom: 24px;
+            padding: 7px;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: rgba(255,255,255,.76);
+            box-shadow: 0 4px 16px rgba(18,49,36,.035);
+        }
+
+        .mode-tab {
+            appearance: none;
+            border: 1px solid transparent;
+            border-radius: 11px;
+            padding: 13px 16px;
+            background: transparent;
+            color: #5d6d65;
+            cursor: pointer;
+            text-align: left;
+            transition: .18s ease;
+        }
+
+        .mode-tab strong { display: block; color: inherit; font-size: 13px; }
+        .mode-tab span { display: block; margin-top: 3px; font-size: 10px; opacity: .78; }
+        .mode-tab:hover { background: #f6f9f7; color: var(--forest-800); }
+        .mode-tab.is-active {
+            background: var(--forest-950);
+            color: white;
+            box-shadow: 0 8px 18px rgba(8,45,33,.14);
+        }
+
+        .analysis-mode-panel { display: none; }
+        .analysis-mode-panel.is-active { display: block; animation: workspaceIn .22s ease; }
+        @keyframes workspaceIn { from { opacity:0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .analysis-grid { grid-template-columns: 365px minmax(0,1fr); gap: 20px; }
+        .settings { top: 92px; padding: 22px; }
+
+        .section-eyebrow,
+        .workspace-eyebrow {
+            margin-bottom: 7px;
+            color: var(--forest-700);
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: .11em;
+            text-transform: uppercase;
+        }
+
+        .section-title { font-size: 16px; letter-spacing: -.015em; }
+        .section-description { margin: 6px 0 20px; font-size: 11px; line-height: 1.6; }
+
+        .upload {
+            padding: 18px;
+            border-width: 1px;
+            border-style: dashed;
+            background: #f7faf8;
+        }
+        .upload:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(20,70,45,.05); }
+        .upload-icon { display:none; }
+
+        .upload-symbol {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 10px;
+            display: grid;
+            place-items:center;
+            border-radius: 12px;
+            background: var(--forest-100);
+            color: var(--forest-700);
+        }
+        .upload-symbol svg { width: 21px; height: 21px; }
+        .upload-name { margin-top: 0; }
+
+        .model-choice-label { margin-bottom: 9px; }
+        .model-select-native { position:absolute !important; width:1px !important; height:1px !important; opacity:0 !important; pointer-events:none !important; }
+
+        .model-cards { display: grid; gap: 8px; }
+        .model-card {
+            width: 100%;
+            padding: 12px 13px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #fff;
+            cursor: pointer;
+            text-align: left;
+            transition: .18s ease;
+        }
+        .model-card:hover { border-color: #b9cec3; background: #fbfdfc; }
+        .model-card.is-active {
+            border-color: rgba(23,107,77,.46);
+            background: var(--forest-50);
+            box-shadow: 0 0 0 3px rgba(23,107,77,.06);
+        }
+        .model-card-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+        .model-card-name { font-size: 12px; font-weight: 800; color: var(--ink); }
+        .model-card-code { padding: 3px 6px; border-radius:6px; background:#f0f4f2; color:#65766d; font-size:8px; font-weight:800; }
+        .model-card-desc { margin-top: 4px; color:#6f7e76; font-size:9px; line-height:1.45; }
+        .model-card-meta { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
+        .mini-chip { padding:4px 7px; border-radius:999px; background:#f0f5f2; color:#587066; font-size:8px; font-weight:700; }
+
+        .protocol-chip {
+            display:inline-flex;
+            align-items:center;
+            gap:5px;
+            margin-top:7px;
+            color: var(--forest-700);
+            font-size:9px;
+            font-weight:700;
+        }
+
+        .compare-options {
+            padding: 14px;
+            border-color: #ded5ec;
+            background: #faf8fd;
+        }
+
+        .button {
+            min-height: 44px;
+            border-radius: 11px;
+            background: var(--forest-950);
+            box-shadow: 0 8px 18px rgba(8,45,33,.13);
+        }
+        .button:hover { background: var(--forest-800); box-shadow: 0 11px 22px rgba(8,45,33,.16); }
+
+        .science-note {
+            padding: 13px 14px;
+            border: 1px solid #d8e5df;
+            background: #f5faf7;
+            color: #4c6459;
+        }
+
+        .science-note-title { display:flex; align-items:center; gap:7px; margin-bottom:6px; color:var(--forest-800); font-weight:800; }
+
+        .workspace { border-radius: var(--radius-lg); }
+        .workspace-header { min-height: 72px; padding: 16px 18px; background: #fbfdfc; }
+        .workspace-title { font-size: 14px; }
+        .workspace-description { font-size: 10px; }
+
+        .viewer {
+            min-height: 560px;
+            background:
+                linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+                #101815;
+            background-size: 32px 32px;
+        }
+
+        .viewer-placeholder { color:rgba(255,255,255,.58); }
+        .placeholder-icon { display:none; }
+        .viewer-empty-symbol {
+            width:62px; height:62px; margin:0 auto 16px; display:grid; place-items:center;
+            border:1px solid rgba(255,255,255,.12); border-radius:18px; background:rgba(255,255,255,.045);
+        }
+        .viewer-empty-symbol svg { width:29px; height:29px; opacity:.75; }
+
+        .viewer-controls { gap: 7px; }
+        .viewer-controls label {
+            gap:6px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:white; font-size:9px;
+        }
+
+        .legend { align-items:center; padding: 10px 18px; font-size: 10px; }
+        .legend-title { margin-right:4px; color:#819087; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+
+        .metrics { grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; padding: 14px 18px; }
+        .metric { padding: 11px 12px; border-radius: 10px; box-shadow:none; }
+        .metric-name { font-size: 9px; }
+        .metric-value { font-size: 18px; }
+
+        .detail-card { padding: 20px; }
+        table { font-size: 11px; }
+        th { background:#fafcfb; font-size:9px; }
+
+        .wall-execution,
+        .wall-analysis { margin-top: 0; }
+
+        .wall-execution { padding: 0; overflow:hidden; }
+        .wall-execution-header { margin:0; padding:22px 24px 18px; border-bottom:1px solid var(--line); background:#fbfdfc; }
+        .wall-execution-title,
+        .wall-analysis-title { font-size:18px; letter-spacing:-.02em; }
+        .wall-execution-subtitle,
+        .wall-analysis-subtitle { font-size:11px; }
+
+        .orthomosaic-workspace { padding: 22px 24px 24px; }
+        .wall-selector { margin-bottom: 16px; }
+        .wall-mosaic-info { gap:8px; }
+        .wall-mosaic-item { padding:12px; border-radius:10px; background:#fafcfb; }
+        .wall-mosaic-label { font-size:8px; }
+        .wall-mosaic-value { font-size:12px; }
+
+        .protocol-panel {
+            margin: 18px 0;
+            overflow:hidden;
+            border:1px solid #d4e3db;
+            border-radius:14px;
+            background:#f7fbf8;
+        }
+        .protocol-panel-head {
+            display:flex; align-items:flex-start; justify-content:space-between; gap:15px;
+            padding:14px 16px; border-bottom:1px solid #dfebe5;
+        }
+        .protocol-panel-title { font-size:12px; font-weight:800; }
+        .protocol-panel-copy { margin-top:3px; color:#6b7d74; font-size:9px; }
+        .lock-badge { display:inline-flex; align-items:center; gap:5px; padding:5px 8px; border-radius:999px; background:#e6f3ec; color:#2f684f; font-size:8px; font-weight:800; white-space:nowrap; }
+        .protocol-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+        .protocol-item { padding:12px 14px; border-right:1px solid #e3ebe7; border-bottom:1px solid #e3ebe7; }
+        .protocol-item:nth-child(4n) { border-right:0; }
+        .protocol-key { color:#77877f; font-size:8px; text-transform:uppercase; letter-spacing:.05em; }
+        .protocol-value { margin-top:4px; color:#203b30; font-size:11px; font-weight:800; }
+
+        .run-zone {
+            display:flex; align-items:center; justify-content:space-between; gap:18px; margin-top:18px;
+            padding:15px 16px; border:1px solid var(--line); border-radius:14px; background:#fff;
+        }
+        .run-zone-copy strong { display:block; font-size:11px; }
+        .run-zone-copy span { display:block; margin-top:4px; color:#75847c; font-size:9px; line-height:1.45; }
+        .run-zone form { flex:0 0 330px; }
+
+        .wall-analysis-header { padding:22px 24px; background:#fbfdfc; }
+
+        .pipeline-trace { padding: 22px 24px 10px; }
+        .trace-header { display:flex; align-items:end; justify-content:space-between; gap:15px; margin-bottom:15px; }
+        .trace-title { font-size:13px; font-weight:800; }
+        .trace-copy { margin-top:4px; color:#718078; font-size:9px; }
+        .trace-flow { display:grid; grid-template-columns:1fr 34px 1fr 34px 1fr 34px 1fr; align-items:center; }
+        .trace-node { min-height:104px; padding:15px; border:1px solid var(--line); border-radius:13px; background:#fff; }
+        .trace-node.final { border-color:#bdd8ca; background:#f4faf6; }
+        .trace-value { font-size:27px; font-weight:800; letter-spacing:-.04em; color:var(--ink); }
+        .trace-node.final .trace-value { color:var(--forest-700); }
+        .trace-label { margin-top:4px; font-size:10px; font-weight:800; }
+        .trace-desc { margin-top:5px; color:#78877f; font-size:8px; line-height:1.4; }
+        .trace-arrow { text-align:center; color:#9eaaa4; font-size:17px; }
+
+        .evidence-dashboard { padding: 10px 24px 22px; }
+        .evidence-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+        .evidence-card { padding:15px; border:1px solid var(--line); border-radius:13px; background:#fff; }
+        .evidence-card-label { color:#77867f; font-size:8px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
+        .evidence-card-value { margin-top:7px; font-size:24px; font-weight:800; letter-spacing:-.035em; }
+        .evidence-card-meta { margin-top:4px; color:#73827a; font-size:9px; line-height:1.45; }
+        .evidence-card.primary .evidence-card-value { color:var(--mask); }
+        .evidence-card.secondary .evidence-card-value { color:var(--yolo); }
+        .evidence-card.bilateral .evidence-card-value { color:var(--violet); }
+        .evidence-card.review .evidence-card-value { color:var(--amber); }
+
+        .interpretation-card {
+            margin: 0 24px 18px;
+            padding: 15px 16px;
+            border:1px solid #ead6a6;
+            border-radius:13px;
+            background:var(--amber-soft);
+            color:#7c571d;
+            font-size:10px;
+            line-height:1.6;
+        }
+        .interpretation-card strong { color:#65440f; }
+        .interpretation-eq { display:inline-flex; align-items:center; margin:0 5px; padding:2px 6px; border-radius:5px; background:rgba(255,255,255,.68); font-weight:800; }
+
+        .wall-method { margin:0 24px 14px; background:#f5faf7; border-color:#d8e8df; font-size:10px; }
+        .wall-warning { display:none; }
+
+        .artifact-actions { padding:4px 24px 18px; border-top:1px solid var(--line); padding-top:18px; }
+        .artifact-button { border-radius:10px; }
+        .artifact-button-primary { background:var(--forest-950); }
+        .artifact-button-primary:hover { background:var(--forest-800); }
+
+        .wall-analysis-meta { padding:0 24px 22px; font-size:9px; }
+
+        .technical-divider { display:flex; align-items:center; gap:10px; width:100%; margin:5px 0 2px; color:#87948e; font-size:8px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+        .technical-divider::after { content:''; flex:1; height:1px; background:var(--line); }
+
+        .status-pill { display:inline-flex; align-items:center; gap:6px; padding:6px 9px; border-radius:999px; background:#eaf6ef; color:#286647; font-size:9px; font-weight:800; }
+        .status-pill::before { content:''; width:6px; height:6px; border-radius:50%; background:#2eb875; box-shadow:0 0 0 3px rgba(46,184,117,.12); }
+
+        @media(max-width:1100px) {
+            .protocol-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .protocol-item:nth-child(4n) { border-right:1px solid #e3ebe7; }
+            .protocol-item:nth-child(2n) { border-right:0; }
+            .trace-flow { grid-template-columns:1fr; gap:7px; }
+            .trace-arrow { transform:rotate(90deg); }
+        }
+
+        @media(max-width:800px) {
+            .topbar-inner { padding:14px 18px; }
+            .system-status-copy { display:none; }
+            .page-hero { padding:22px 20px; }
+            .mode-switcher { grid-template-columns:1fr; }
+            .analysis-grid { grid-template-columns:1fr; }
+            .settings { position:static; }
+            .evidence-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .run-zone { flex-direction:column; align-items:stretch; }
+            .run-zone form { flex:auto; }
+        }
+
+        @media(max-width:560px) {
+            main { padding:20px 14px 40px; }
+            .page-hero h1 { font-size:27px; }
+            .protocol-grid, .evidence-grid { grid-template-columns:1fr; }
+            .protocol-item, .protocol-item:nth-child(2n), .protocol-item:nth-child(4n) { border-right:0; }
+            .wall-mosaic-info { grid-template-columns:1fr; }
+            .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        }
+
     </style>
 
 </head>
@@ -1646,56 +2119,38 @@
 
         <div class="brand">
 
-            <div class="brand-logo">
-                🌲
+            <div class="brand-logo" aria-hidden="true">
+                <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 4L8.5 13H12L6.5 20H13V27H19V20H25.5L20 13H23.5L16 4Z" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M5 25.5H27" stroke="white" stroke-width="1.8" stroke-linecap="round" opacity=".65"/>
+                </svg>
             </div>
 
             <div>
-
-                <div class="brand-name">
-                    UAV Forest AI
-                </div>
-
-                <div class="brand-subtitle">
-                    Dasometría computacional y análisis UAV
-                </div>
-
+                <div class="brand-name">UAV Forest AI</div>
+                <div class="brand-subtitle">Inteligencia geoespacial para análisis forestal</div>
             </div>
 
         </div>
 
+        <div class="system-status">
+            <div class="system-status-copy">
+                <div class="system-status-label">Motor de inferencia</div>
+                <div class="system-status-detail">Servicio científico de IA</div>
+            </div>
 
-        <div class="api-status">
-
-            @if(
-                ($apiStatus['status'] ?? 'offline')
-                === 'ok'
-            )
-
-                <span
-                    class="api-dot online"
-                ></span>
-
-                API IA conectada
-
-                @if(
-                    !empty($apiStatus['version'])
-                )
-
-                    · v{{ $apiStatus['version'] }}
-
+            <div class="api-status">
+                @if(($apiStatus['status'] ?? 'offline') === 'ok')
+                    <span class="api-dot online"></span>
+                    Sistema disponible
+                    @if(!empty($apiStatus['version']))
+                        · v{{ $apiStatus['version'] }}
+                    @endif
+                @else
+                    <span class="api-dot offline"></span>
+                    Sistema no disponible
                 @endif
-
-            @else
-
-                <span
-                    class="api-dot offline"
-                ></span>
-
-                API IA desconectada
-
-            @endif
-
+            </div>
         </div>
 
     </div>
@@ -1780,23 +2235,63 @@
             ? ($result['summary'] ?? [])
             : [];
 
+
+    $initialWorkspaceTab =
+        (!$result && $wallToWallAnalysis)
+            ? 'wall'
+            : 'lab';
+
 @endphp
 
 
-<div class="intro">
+<section class="page-hero">
 
-    <h1>
-        Análisis de Copas UAV
-    </h1>
+    <div class="hero-kicker">
+        <span class="hero-kicker-dot"></span>
+        Laboratorio de visión artificial forestal
+    </div>
+
+    <h1>Centro de análisis IA</h1>
 
     <p>
-        Ejecuta YOLO-Seg, Mask R-CNN o ambos modelos sobre una
-        misma imagen UAV y analiza visualmente sus propuestas
-        de segmentación y su nivel de acuerdo espacial.
+        Segmenta candidatos de copa en imágenes UAV, compara la evidencia espacial
+        producida por YOLO-Seg y Mask R-CNN y ejecuta el pipeline wall-to-wall
+        sobre ortomosaicos completos, manteniendo trazabilidad metodológica de los resultados.
     </p>
 
-</div>
+    <div class="scope-note">
+        <div class="scope-note-icon">i</div>
+        <div>
+            <strong>Alcance científico.</strong>
+            Los resultados mostrados en esta interfaz representan candidatos u objetos operativos
+            de copa generados por modelos de IA. No constituyen árboles confirmados ni validación
+            respecto a verdad de campo.
+        </div>
+    </div>
 
+</section>
+
+<nav class="mode-switcher" aria-label="Modo de análisis">
+    <button
+        type="button"
+        class="mode-tab {{ $initialWorkspaceTab === 'lab' ? 'is-active' : '' }}"
+        data-workspace-tab="lab"
+        aria-selected="{{ $initialWorkspaceTab === 'lab' ? 'true' : 'false' }}"
+    >
+        <strong>Laboratorio de inferencia</strong>
+        <span>Imagen individual · comparación experimental · inspección visual</span>
+    </button>
+
+    <button
+        type="button"
+        class="mode-tab {{ $initialWorkspaceTab === 'wall' ? 'is-active' : '' }}"
+        data-workspace-tab="wall"
+        aria-selected="{{ $initialWorkspaceTab === 'wall' ? 'true' : 'false' }}"
+    >
+        <strong>Análisis de ortomosaico</strong>
+        <span>Pipeline wall-to-wall · consolidación · resultados GIS persistentes</span>
+    </button>
+</nav>
 
 @if(session('success'))
 
@@ -1851,6 +2346,8 @@
 
 
 
+<div id="workspace-lab" class="analysis-mode-panel {{ $initialWorkspaceTab === 'lab' ? 'is-active' : '' }}">
+
 <div class="analysis-grid">
 
 
@@ -1861,16 +2358,13 @@
     <aside class="card settings">
 
 
-        <h2 class="section-title">
-            Configuración
-        </h2>
+        <div class="section-eyebrow">Experimento controlado</div>
 
+        <h2 class="section-title">Configurar inferencia</h2>
 
         <p class="section-description">
-
-            Selecciona una imagen, el modelo
-            y los parámetros de inferencia.
-
+            Selecciona una imagen UAV y el modelo que deseas inspeccionar.
+            Los scores y parámetros mostrados deben interpretarse dentro del protocolo experimental.
         </p>
 
 
@@ -1904,17 +2398,14 @@
                     >
 
 
-                    <div class="upload-icon">
-                        🛰️
+                    <div class="upload-symbol" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 16V4M12 4L8 8M12 4L16 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M5 14V18C5 19.1046 5.89543 20 7 20H17C18.1046 20 19 19.1046 19 18V14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
                     </div>
 
-
-                    <div
-                        id="uploadName"
-                        class="upload-name"
-                    >
-                        Seleccionar imagen
-                    </div>
+                    <div id="uploadName" class="upload-name">Seleccionar imagen UAV</div>
 
 
                     <div class="upload-small">
@@ -1934,68 +2425,53 @@
 
             <div class="field">
 
-                <label>
-                    Modo de análisis
-                </label>
+                <label class="model-choice-label">Modelo / estrategia</label>
 
-
-                <select
-                    id="modelSelect"
-                    name="model"
-                    required
-                >
-
-                    <option
-                        value="yolo"
-                        {{
-                            old(
-                                'model',
-                                $analysisMode
-                            ) === 'yolo'
-                                ? 'selected'
-                                : ''
-                        }}
-                    >
-                        YOLO-Seg E1.1
-                    </option>
-
-
-                    <option
-                        value="maskrcnn"
-                        {{
-                            old(
-                                'model',
-                                $analysisMode
-                            ) === 'maskrcnn'
-                                ? 'selected'
-                                : ''
-                        }}
-                    >
-                        Mask R-CNN M1.0
-                    </option>
-
-
-                    <option
-                        value="both"
-                        {{
-                            old(
-                                'model',
-                                $analysisMode
-                            ) === 'both'
-                                ? 'selected'
-                                : ''
-                        }}
-                    >
-                        Comparar ambos
-                    </option>
-
+                <select id="modelSelect" name="model" required class="model-select-native">
+                    <option value="yolo" {{ old('model', $analysisMode) === 'yolo' ? 'selected' : '' }}>YOLO-Seg E1.1</option>
+                    <option value="maskrcnn" {{ old('model', $analysisMode) === 'maskrcnn' ? 'selected' : '' }}>Mask R-CNN M1.0</option>
+                    <option value="both" {{ old('model', $analysisMode) === 'both' ? 'selected' : '' }}>Comparar ambos</option>
                 </select>
 
+                <div class="model-cards" id="modelCards">
+                    <button type="button" class="model-card" data-model-value="yolo">
+                        <div class="model-card-top">
+                            <span class="model-card-name">YOLO-Seg</span>
+                            <span class="model-card-code">E1.1</span>
+                        </div>
+                        <div class="model-card-desc">Segmentación rápida de candidatos de copa. Modelo corroborador y fallback dentro del pipeline wall-to-wall.</div>
+                        <div class="model-card-meta">
+                            <span class="mini-chip">Score base 0.25</span>
+                            <span class="mini-chip">Segmentación</span>
+                        </div>
+                    </button>
 
-                <div
-                    id="modelHelp"
-                    class="helper"
-                ></div>
+                    <button type="button" class="model-card" data-model-value="maskrcnn">
+                        <div class="model-card-top">
+                            <span class="model-card-name">Mask R-CNN</span>
+                            <span class="model-card-code">M1.0</span>
+                        </div>
+                        <div class="model-card-desc">Segmentación de instancias utilizada como geometría primaria provisional cuando existe candidato asociado.</div>
+                        <div class="model-card-meta">
+                            <span class="mini-chip">Score base 0.40</span>
+                            <span class="mini-chip">Geometría primaria</span>
+                        </div>
+                    </button>
+
+                    <button type="button" class="model-card" data-model-value="both">
+                        <div class="model-card-top">
+                            <span class="model-card-name">Comparación intermodelo</span>
+                            <span class="model-card-code">YOLO + MRCNN</span>
+                        </div>
+                        <div class="model-card-desc">Ejecuta ambos modelos sobre la misma imagen para inspeccionar concordancia espacial y evidencia unilateral.</div>
+                        <div class="model-card-meta">
+                            <span class="mini-chip">IoU de máscaras</span>
+                            <span class="mini-chip">QA experimental</span>
+                        </div>
+                    </button>
+                </div>
+
+                <div id="modelHelp" class="helper"></div>
 
             </div>
 
@@ -2008,7 +2484,7 @@
             >
 
                 <label>
-                    Threshold de confianza
+                    Score mínimo del modelo
                 </label>
 
 
@@ -2046,7 +2522,7 @@
                 <div class="field">
 
                     <label>
-                        YOLO threshold
+                        Score mínimo YOLO
                     </label>
 
                     <input
@@ -2074,7 +2550,7 @@
                 <div class="field">
 
                     <label>
-                        Mask R-CNN threshold
+                        Score mínimo Mask R-CNN
                     </label>
 
                     <input
@@ -2148,23 +2624,15 @@
 
 
         <div class="science-note">
-
-            <strong>
-                Nota metodológica
-            </strong>
-
+            <div class="science-note-title">
+                <span>ⓘ</span>
+                Interpretación metodológica
+            </div>
+            El <strong>score del modelo</strong> es una salida interna de confianza y no debe
+            interpretarse como probabilidad de que una detección sea correcta.
             <br><br>
-
-            El confidence es un score interno del modelo.
-            No debe interpretarse directamente como
-            probabilidad de que la detección sea correcta.
-
-            <br><br>
-
-            En el modo comparación, el IoU representa
-            <strong>acuerdo espacial entre modelos</strong>,
-            no exactitud respecto a la verdad de campo.
-
+            En comparación intermodelo, el <strong>IoU describe acuerdo espacial entre máscaras</strong>;
+            no mide exactitud frente a verdad de campo.
         </div>
 
     </aside>
@@ -2186,16 +2654,9 @@
 
                 <div>
 
-                    <div class="workspace-title">
-                        Visor de inferencia
-                    </div>
-
-                    <div class="workspace-description">
-
-                        Imagen original +
-                        segmentaciones producidas por IA
-
-                    </div>
+                    <div class="workspace-eyebrow">Inspección visual</div>
+                    <div class="workspace-title">Visor de inferencia</div>
+                    <div class="workspace-description">Imagen UAV + geometrías propuestas por los modelos</div>
 
                 </div>
 
@@ -2318,13 +2779,14 @@
                         class="viewer-placeholder"
                     >
 
-                        <div class="placeholder-icon">
-                            🌳
+                        <div class="viewer-empty-symbol" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 17L8.5 12L11 14.5L15 9.5L20 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
                         </div>
-
-                        Selecciona una imagen UAV
-                        y ejecuta un análisis para
-                        comenzar.
+                        <strong style="display:block;color:#fff;margin-bottom:6px;">Área de inspección</strong>
+                        Selecciona una imagen UAV para previsualizarla y ejecutar una inferencia.
 
                     </div>
 
@@ -2354,6 +2816,8 @@
 
 
                     <div class="legend">
+
+                        <span class="legend-title">Leyenda</span>
 
                         <div class="legend-item">
 
@@ -2671,11 +3135,11 @@
                                     </th>
 
                                     <th>
-                                        Conf. YOLO
+                                        Score YOLO
                                     </th>
 
                                     <th>
-                                        Conf. Mask
+                                        Score Mask
                                     </th>
 
                                 </tr>
@@ -2847,7 +3311,7 @@
                         <tr>
 
                             <td>
-                                YOLO threshold
+                                Score mínimo YOLO
                             </td>
 
                             <td>
@@ -2871,7 +3335,7 @@
                         <tr>
 
                             <td>
-                                Mask R-CNN threshold
+                                Score mínimo Mask R-CNN
                             </td>
 
                             <td>
@@ -3000,7 +3464,7 @@
                                 </th>
 
                                 <th>
-                                    Confidence
+                                    Score del modelo
                                 </th>
 
                             </tr>
@@ -3057,6 +3521,10 @@
 </div>
 
 
+</div>
+
+<div id="workspace-wall" class="analysis-mode-panel {{ $initialWorkspaceTab === 'wall' ? 'is-active' : '' }}">
+
 {{-- ==========================================================
      EJECUCIÓN WALL-TO-WALL V0.7E
      ========================================================== --}}
@@ -3067,15 +3535,11 @@
 
         <div>
 
-            <h2 class="wall-execution-title">
-                Análisis wall-to-wall
-            </h2>
-
+            <div class="section-eyebrow">Procesamiento espacial integral</div>
+            <h2 class="wall-execution-title">Análisis de ortomosaico</h2>
             <div class="wall-execution-subtitle">
-
-                Ejecuta el pipeline V0.7E sobre un ortomosaico
-                completo utilizando el método científico V0.6G.
-
+                Ejecuta el pipeline V0.7E sobre un ortomosaico completo con el protocolo científico V0.6G.
+                La configuración metodológica permanece protegida durante la ejecución.
             </div>
 
         </div>
@@ -3087,19 +3551,20 @@
         )
 
             <div class="wall-api-badge online-state">
-                ● FastAPI disponible
+                ● Motor IA disponible
             </div>
 
         @else
 
             <div class="wall-api-badge offline-state">
-                ● FastAPI no disponible
+                ● Motor IA no disponible
             </div>
 
         @endif
 
     </div>
 
+    <div class="orthomosaic-workspace">
 
     @if($availableMosaics->isNotEmpty())
 
@@ -3256,30 +3721,34 @@
             </div>
 
 
-            <div class="wall-frozen-config">
+            <div class="protocol-panel">
 
-                <strong>
-                    Configuración científica congelada:
-                </strong>
+                <div class="protocol-panel-head">
+                    <div>
+                        <div class="protocol-panel-title">Protocolo científico activo</div>
+                        <div class="protocol-panel-copy">Parámetros fijados por la metodología de análisis; no se reciben desde el navegador.</div>
+                    </div>
+                    <div class="lock-badge">🔒 Configuración protegida</div>
+                </div>
 
-                YOLO-Seg 0.25
-                ·
-                Mask R-CNN 0.40
-                ·
-                máscara 0.50
-                ·
-                normalización 2144 → 1024 px
-                ·
-                solape de salida 256 px
-                ·
-                IoU intramodelo 0.50
-                ·
-                IoU intermodelo 0.50.
-
-                Estos parámetros no se reciben desde el navegador.
+                <div class="protocol-grid">
+                    <div class="protocol-item"><div class="protocol-key">Score YOLO-Seg</div><div class="protocol-value">0.25</div></div>
+                    <div class="protocol-item"><div class="protocol-key">Score Mask R-CNN</div><div class="protocol-value">0.40</div></div>
+                    <div class="protocol-item"><div class="protocol-key">Threshold máscara</div><div class="protocol-value">0.50</div></div>
+                    <div class="protocol-item"><div class="protocol-key">Entrada modelo</div><div class="protocol-value">1024 px</div></div>
+                    <div class="protocol-item"><div class="protocol-key">Normalización</div><div class="protocol-value">2144 → 1024 px</div></div>
+                    <div class="protocol-item"><div class="protocol-key">Solape de salida</div><div class="protocol-value">256 px</div></div>
+                    <div class="protocol-item"><div class="protocol-key">IoU intramodelo</div><div class="protocol-value">0.50</div></div>
+                    <div class="protocol-item"><div class="protocol-key">IoU intermodelo</div><div class="protocol-value">0.50</div></div>
+                </div>
 
             </div>
 
+            <div class="run-zone">
+                <div class="run-zone-copy">
+                    <strong>Ejecutar pipeline wall-to-wall</strong>
+                    <span>Procesa el ortomosaico mediante ventanas de inferencia, deduplicación y consolidación intermodelo.</span>
+                </div>
 
             <form
                 method="POST"
@@ -3330,6 +3799,7 @@
 
             </form>
 
+            </div>
 
             @if(
                 ($apiStatus['status'] ?? 'offline')
@@ -3356,6 +3826,8 @@
         </div>
 
     @endif
+
+    </div>
 
 </section>
 
@@ -3500,284 +3972,91 @@
             </div>
 
 
-            <div class="wall-status">
+            <div class="status-pill">
 
-                ●
-
-                {{
-                    strtoupper(
-                        $wallToWallAnalysis->status
-                    )
-                }}
+                {{ strtoupper($wallToWallAnalysis->status) }}
 
             </div>
 
         </div>
 
 
-        <div class="wall-summary">
+        <div class="pipeline-trace">
 
-
-            <div class="wall-stat">
-
-                <div class="wall-stat-name">
-                    Predicciones RAW
+            <div class="trace-header">
+                <div>
+                    <div class="trace-title">Trazabilidad de consolidación</div>
+                    <div class="trace-copy">Secuencia registrada desde las predicciones crudas hasta los objetos operativos finales.</div>
                 </div>
-
-                <div class="wall-stat-value">
-
-                    {{
-                        $wallSummary[
-                            'raw_predictions'
-                        ]
-                        ?? 0
-                    }}
-
-                </div>
-
-                <div class="wall-stat-detail">
-                    Antes de deduplicación.
-                </div>
-
             </div>
 
-
-            <div class="wall-stat">
-
-                <div class="wall-stat-name">
-                    Candidatos intramodelo
+            <div class="trace-flow">
+                <div class="trace-node">
+                    <div class="trace-value">{{ $wallSummary['raw_predictions'] ?? 0 }}</div>
+                    <div class="trace-label">Predicciones RAW</div>
+                    <div class="trace-desc">Salidas acumuladas antes de la deduplicación intramodelo.</div>
                 </div>
-
-                <div class="wall-stat-value">
-
-                    {{
-                        $wallSummary[
-                            'unique_predictions'
-                        ]
-                        ?? 0
-                    }}
-
+                <div class="trace-arrow">→</div>
+                <div class="trace-node">
+                    <div class="trace-value">{{ $wallSummary['unique_predictions'] ?? 0 }}</div>
+                    <div class="trace-label">Candidatos únicos</div>
+                    <div class="trace-desc">YOLO {{ $wallSummary['unique_yolo'] ?? 0 }} · Mask R-CNN {{ $wallSummary['unique_maskrcnn'] ?? 0 }}</div>
                 </div>
-
-                <div class="wall-stat-detail">
-
-                    YOLO:
-
-                    {{
-                        $wallSummary[
-                            'unique_yolo'
-                        ]
-                        ?? 0
-                    }}
-
-                    · Mask R-CNN:
-
-                    {{
-                        $wallSummary[
-                            'unique_maskrcnn'
-                        ]
-                        ?? 0
-                    }}
-
+                <div class="trace-arrow">→</div>
+                <div class="trace-node">
+                    <div class="trace-value">{{ $wallSummary['catalog_groups'] ?? 0 }}</div>
+                    <div class="trace-label">Grupos de evidencia</div>
+                    <div class="trace-desc">Catálogo construido para organizar asociaciones entre modelos.</div>
                 </div>
-
+                <div class="trace-arrow">→</div>
+                <div class="trace-node final">
+                    <div class="trace-value">{{ $wallSummary['primary_objects'] ?? 0 }}</div>
+                    <div class="trace-label">Objetos operativos</div>
+                    <div class="trace-desc">Geometrías finales disponibles para QA/QC y análisis posterior.</div>
+                </div>
             </div>
-
-
-            <div class="wall-stat">
-
-                <div class="wall-stat-name">
-                    Grupos de evidencia
-                </div>
-
-                <div class="wall-stat-value">
-
-                    {{
-                        $wallSummary[
-                            'catalog_groups'
-                        ]
-                        ?? 0
-                    }}
-
-                </div>
-
-                <div class="wall-stat-detail">
-                    Catálogo intermodelo.
-                </div>
-
-            </div>
-
-
-            <div class="wall-stat">
-
-                <div class="wall-stat-name">
-                    Objetos operativos
-                </div>
-
-                <div class="wall-stat-value">
-
-                    {{
-                        $wallSummary[
-                            'primary_objects'
-                        ]
-                        ?? 0
-                    }}
-
-                </div>
-
-                <div class="wall-stat-detail">
-
-                    Mask R-CNN:
-
-                    {{
-                        $wallSummary[
-                            'primary_maskrcnn'
-                        ]
-                        ?? 0
-                    }}
-
-                    · fallback YOLO:
-
-                    {{
-                        $wallSummary[
-                            'primary_yolo_fallback'
-                        ]
-                        ?? 0
-                    }}
-
-                </div>
-
-            </div>
-
-
-            <div class="wall-stat">
-
-                <div class="wall-stat-name">
-                    Bilaterales
-                </div>
-
-                <div
-                    class="wall-stat-value"
-                    style="
-                        color:
-                            var(--match);
-                    "
-                >
-
-                    {{
-                        $wallSummary[
-                            'bilateral_clean'
-                        ]
-                        ?? 0
-                    }}
-
-                </div>
-
-                <div class="wall-stat-detail">
-                    Evidencia de ambos modelos.
-                </div>
-
-            </div>
-
-
-            <div class="wall-stat">
-
-                <div class="wall-stat-name">
-                    Mask R-CNN-only
-                </div>
-
-                <div
-                    class="wall-stat-value"
-                    style="
-                        color:
-                            var(--mask);
-                    "
-                >
-
-                    {{
-                        $wallSummary[
-                            'mrcnn_only'
-                        ]
-                        ?? 0
-                    }}
-
-                </div>
-
-                <div class="wall-stat-detail">
-                    Evidencia unilateral.
-                </div>
-
-            </div>
-
-
-            <div class="wall-stat">
-
-                <div class="wall-stat-name">
-                    YOLO-only
-                </div>
-
-                <div
-                    class="wall-stat-value"
-                    style="
-                        color:
-                            var(--yolo);
-                    "
-                >
-
-                    {{
-                        $wallSummary[
-                            'yolo_only'
-                        ]
-                        ?? 0
-                    }}
-
-                </div>
-
-                <div class="wall-stat-detail">
-                    Fallback provisional.
-                </div>
-
-            </div>
-
-
-            <div class="wall-stat">
-
-                <div class="wall-stat-name">
-                    Requieren revisión
-                </div>
-
-                <div
-                    class="wall-stat-value"
-                    style="
-                        color:
-                            var(--warning);
-                    "
-                >
-
-                    {{
-                        $wallSummary[
-                            'requires_review'
-                        ]
-                        ?? 0
-                    }}
-
-                </div>
-
-                <div class="wall-stat-detail">
-
-                    Objetos con conflicto estructural:
-
-                    {{
-                        $structuralConflictObjects
-                    }}
-
-                </div>
-
-            </div>
-
 
         </div>
 
+        <div class="evidence-dashboard">
+            <div class="evidence-grid">
+                <div class="evidence-card primary">
+                    <div class="evidence-card-label">Geometría primaria</div>
+                    <div class="evidence-card-value">{{ $wallSummary['primary_maskrcnn'] ?? 0 }}</div>
+                    <div class="evidence-card-meta">Objetos cuya geometría operativa procede de Mask R-CNN.</div>
+                </div>
+
+                <div class="evidence-card secondary">
+                    <div class="evidence-card-label">Fallback YOLO</div>
+                    <div class="evidence-card-value">{{ $wallSummary['primary_yolo_fallback'] ?? 0 }}</div>
+                    <div class="evidence-card-meta">Objetos conservados cuando Mask R-CNN no aporta candidato asociado.</div>
+                </div>
+
+                <div class="evidence-card bilateral">
+                    <div class="evidence-card-label">Evidencia bilateral</div>
+                    <div class="evidence-card-value">{{ $wallSummary['bilateral_clean'] ?? 0 }}</div>
+                    <div class="evidence-card-meta">Objetos con evidencia espacial compatible proveniente de ambos modelos.</div>
+                </div>
+
+                <div class="evidence-card">
+                    <div class="evidence-card-label">Mask R-CNN-only</div>
+                    <div class="evidence-card-value">{{ $wallSummary['mrcnn_only'] ?? 0 }}</div>
+                    <div class="evidence-card-meta">Evidencia unilateral registrada únicamente por Mask R-CNN.</div>
+                </div>
+
+                <div class="evidence-card">
+                    <div class="evidence-card-label">YOLO-only</div>
+                    <div class="evidence-card-value">{{ $wallSummary['yolo_only'] ?? 0 }}</div>
+                    <div class="evidence-card-meta">Evidencia unilateral registrada únicamente por YOLO-Seg.</div>
+                </div>
+
+                <div class="evidence-card review">
+                    <div class="evidence-card-label">Requieren revisión</div>
+                    <div class="evidence-card-value">{{ $wallSummary['requires_review'] ?? 0 }}</div>
+                    <div class="evidence-card-meta">Incluye {{ $structuralConflictObjects }} objetos con conflicto estructural registrado.</div>
+                </div>
+            </div>
+        </div>
 
         <div class="wall-method">
 
@@ -3796,49 +4075,17 @@
         </div>
 
 
-        <div class="wall-warning">
-
-            <strong>
-                Interpretación científica:
-            </strong>
-
-            Los
-
-            <strong>
-                {{
-                    $wallSummary[
-                        'primary_objects'
-                    ]
-                    ?? 0
-                }}
-                objetos operativos
-            </strong>
-
-            no representan todavía un número
-            validado de árboles.
-
-            Los
-
-            <strong>
-                {{
-                    $wallSummary[
-                        'requires_review'
-                    ]
-                    ?? 0
-                }}
-            </strong>
-
-            objetos marcados para revisión tampoco
-            deben interpretarse automáticamente
-            como errores.
-
-            La clasificación definitiva requiere
-            contraste con verdad de campo.
-
+        <div class="interpretation-card">
+            <strong>Alcance de interpretación:</strong>
+            los <strong>{{ $wallSummary['primary_objects'] ?? 0 }} objetos operativos</strong>
+            son resultados del pipeline y <span class="interpretation-eq">≠ árboles confirmados</span>.
+            De la misma forma, <strong>{{ $wallSummary['requires_review'] ?? 0 }} objetos marcados para revisión</strong>
+            <span class="interpretation-eq">≠ errores confirmados</span>.
+            La clasificación definitiva requiere contraste con verdad de campo.
         </div>
 
-
         <div class="artifact-actions">
+            <div class="technical-divider">Resultados y productos del análisis</div>
 
 
             @if($geojsonArtifact)
@@ -3859,7 +4106,7 @@
                     }}"
                 >
 
-                    Visualizar mapa
+                    Abrir mapa de resultados
 
                 </a>
 
@@ -3887,7 +4134,7 @@
                     }}"
                 >
 
-                    Descargar GeoPackage
+                    Exportar GeoPackage
 
                 </a>
 
@@ -3915,7 +4162,7 @@
                     }}"
                 >
 
-                    Descargar Manifest
+                    Descargar manifest técnico
 
                 </a>
 
@@ -3938,7 +4185,7 @@
                 }}"
             >
 
-                Ver JSON técnico
+                Ver detalles técnicos
 
             </a>
 
@@ -3992,10 +4239,55 @@
 @endif
 
 
+</div>
+
 </main>
 
 
 <script>
+
+    /*
+    |--------------------------------------------------------------------------
+    | Workspace navigation
+    |--------------------------------------------------------------------------
+    */
+
+    const workspaceTabs = document.querySelectorAll('[data-workspace-tab]');
+    const workspacePanels = {
+        lab: document.getElementById('workspace-lab'),
+        wall: document.getElementById('workspace-wall'),
+    };
+
+    function activateWorkspaceTab(tabName) {
+        workspaceTabs.forEach(tab => {
+            const active = tab.dataset.workspaceTab === tabName;
+            tab.classList.toggle('is-active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+
+        Object.entries(workspacePanels).forEach(([name, panel]) => {
+            panel?.classList.toggle('is-active', name === tabName);
+        });
+
+        try {
+            window.sessionStorage.setItem('uav-analysis-workspace', tabName);
+        } catch (error) {
+            // sessionStorage no es indispensable para el funcionamiento.
+        }
+    }
+
+    workspaceTabs.forEach(tab => {
+        tab.addEventListener('click', () => activateWorkspaceTab(tab.dataset.workspaceTab));
+    });
+
+    try {
+        const storedWorkspace = window.sessionStorage.getItem('uav-analysis-workspace');
+        if (storedWorkspace && workspacePanels[storedWorkspace]) {
+            activateWorkspaceTab(storedWorkspace);
+        }
+    } catch (error) {
+        // Mantener el estado inicial definido por Blade.
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -4041,7 +4333,7 @@
             threshold: 0.25,
 
             help:
-                'YOLO-Seg E1.1 · threshold validado = 0.25'
+                'YOLO-Seg E1.1 · score mínimo de referencia = 0.25'
         },
 
         maskrcnn: {
@@ -4049,13 +4341,13 @@
             threshold: 0.40,
 
             help:
-                'Mask R-CNN M1.0 · threshold validado = 0.40'
+                'Mask R-CNN M1.0 · score mínimo de referencia = 0.40'
         },
 
         both: {
 
             help:
-                'Ejecuta ambos modelos sobre exactamente la misma imagen.'
+                'Ejecuta ambos modelos sobre la misma imagen para inspeccionar acuerdo espacial entre máscaras.'
         }
 
     };
@@ -4134,6 +4426,28 @@
     updateModelInterface(
         false
     );
+
+
+    const modelCards = document.querySelectorAll('[data-model-value]');
+
+    function syncModelCards() {
+        const current = modelSelect?.value;
+        modelCards.forEach(card => {
+            card.classList.toggle('is-active', card.dataset.modelValue === current);
+        });
+    }
+
+    modelCards.forEach(card => {
+        card.addEventListener('click', () => {
+            if (!modelSelect) return;
+            modelSelect.value = card.dataset.modelValue;
+            modelSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            syncModelCards();
+        });
+    });
+
+    modelSelect?.addEventListener('change', syncModelCards);
+    syncModelCards();
 
 
     /*
