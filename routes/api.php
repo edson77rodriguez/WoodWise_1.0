@@ -13,6 +13,7 @@ use App\Http\Controllers\API\MobileCatalogoController;
 use App\Http\Controllers\API\MobileFormulaController;
 use App\Http\Controllers\API\MobileEstimacionTrozaController;
 use App\Http\Controllers\API\MobileEstimacionArbolController;
+use App\Http\Controllers\API\MobileSyncController;
 
 Route::prefix('v1/bot')
     ->middleware(['botkey', 'verify.hmac'])
@@ -146,6 +147,17 @@ Route::middleware([
     '/parcelas/{idParcela}/arboles/{idArbol}/estimaciones',
     [
         MobileEstimacionArbolController::class,
+        'store'
+    ]
+);
+
+Route::middleware([
+    'auth:sanctum',
+    'api.role:Tecnico'
+])->post(
+    '/sync/completada',
+    [
+        MobileSyncController::class,
         'store'
     ]
 );
