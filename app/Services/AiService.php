@@ -21,7 +21,10 @@ class AiService
             );
         }
 
-        $this->baseUrl = rtrim($url, '/');
+        $this->baseUrl = rtrim(
+            $url,
+            '/'
+        );
     }
 
 
@@ -57,12 +60,12 @@ class AiService
         UploadedFile $image,
         float $threshold = 0.25
     ): array {
-
         return $this->sendImage(
             '/predict-yolo',
             $image,
             [
-                'threshold' => $threshold,
+                'threshold' =>
+                    $threshold,
             ]
         );
     }
@@ -75,12 +78,12 @@ class AiService
         UploadedFile $image,
         float $threshold = 0.40
     ): array {
-
         return $this->sendImage(
             '/predict-maskrcnn',
             $image,
             [
-                'threshold' => $threshold,
+                'threshold' =>
+                    $threshold,
             ]
         );
     }
@@ -95,7 +98,6 @@ class AiService
         float $maskrcnnThreshold = 0.40,
         float $matchingIou = 0.50
     ): array {
-
         return $this->sendImage(
             '/compare-models',
             $image,
@@ -114,15 +116,13 @@ class AiService
 
 
     /**
-     * Método común para enviar imágenes
-     * mediante multipart/form-data.
+     * Método común para enviar imágenes mediante multipart/form-data.
      */
     private function sendImage(
         string $endpoint,
         UploadedFile $image,
         array $parameters = []
     ): array {
-
         $stream = fopen(
             $image->getRealPath(),
             'r'
@@ -135,7 +135,6 @@ class AiService
         }
 
         try {
-
             $response = Http::timeout(240)
                 ->connectTimeout(20)
                 ->acceptJson()
@@ -162,7 +161,6 @@ class AiService
             return $data;
 
         } finally {
-
             if (is_resource($stream)) {
                 fclose($stream);
             }
@@ -170,155 +168,285 @@ class AiService
     }
 
 
-
+    /**
+     * Inspeccionar GeoTIFF persistente en R2.
+     */
     public function inspectMosaic(
-    string $mosaicUuid,
-    string $objectKey
-): array
-{
-    $response = Http::timeout(300)
-        ->connectTimeout(20)
-        ->acceptJson()
-        ->post(
-            $this->baseUrl . '/mosaic/inspect',
-            [
-                'mosaic_uuid' => $mosaicUuid,
-                'object_key' => $objectKey,
-            ]
-        );
+        string $mosaicUuid,
+        string $objectKey
+    ): array {
+        $response = Http::timeout(300)
+            ->connectTimeout(20)
+            ->acceptJson()
+            ->post(
+                $this->baseUrl . '/mosaic/inspect',
+                [
+                    'mosaic_uuid' =>
+                        $mosaicUuid,
 
-    $response->throw();
+                    'object_key' =>
+                        $objectKey,
+                ]
+            );
 
-    return $response->json();
-}
+        $response->throw();
 
+        $data = $response->json();
 
-public function generateMosaicPreview(
-    string $mosaicUuid,
-    string $objectKey
-): array
-{
-    $response = Http::timeout(300)
-        ->connectTimeout(20)
-        ->acceptJson()
-        ->post(
-            $this->baseUrl
-            . '/mosaic/preview',
-            [
-                'mosaic_uuid' =>
-                    $mosaicUuid,
+        if (
+            !is_array($data)
+            ||
+            ($data['status'] ?? null) !== 'ok'
+        ) {
+            throw new RuntimeException(
+                'FastAPI devolvió una inspección de mosaico inválida.'
+            );
+        }
 
-                'object_key' =>
-                    $objectKey,
-
-                'max_width' =>
-                    1400,
-
-                'max_height' =>
-                    1000,
-
-                'jpeg_quality' =>
-                    88,
-            ]
-        );
-
-    $response->throw();
-
-    return $response->json();
-}
-
-
-
-public function generateMosaicTilingPreview(
-    string $mosaicUuid,
-    string $objectKey
-): array
-{
-    $response = Http::timeout(300)
-        ->connectTimeout(20)
-        ->acceptJson()
-        ->post(
-            $this->baseUrl . '/mosaic/tiling/preview',
-            [
-                'mosaic_uuid' => $mosaicUuid,
-                'object_key' => $objectKey,
-                'tile_size' => 1024,
-                'overlap' => 256,
-                'max_width' => 1400,
-                'max_height' => 1000,
-                'jpeg_quality' => 90,
-            ]
-        );
-
-    $response->throw();
-
-    return $response->json();
-}
-
-
-/**
- * Ejecutar análisis wall-to-wall completo
- * sobre un ortomosaico almacenado en R2.
- */
-public function analyzeMosaicWallToWall(
-    string $analysisUuid,
-    string $mosaicUuid,
-    string $objectKey,
-    string $projectUuid
-): array {
-
-    $response = Http::timeout(900)
-        ->connectTimeout(30)
-        ->acceptJson()
-        ->post(
-            $this->baseUrl . '/mosaic/analyze/wall-to-wall',
-            [
-                'analysis_uuid' => $analysisUuid,
-                'mosaic_uuid' => $mosaicUuid,
-                'object_key' => $objectKey,
-                'project_uuid' => $projectUuid,
-                'analysis_version' => 'V0.7E',
-
-                'configuration' => [
-                    'source_size' => 2144,
-                    'output_size' => 1024,
-                    'output_overlap' => 256,
-
-                    'yolo_threshold' => 0.25,
-                    'maskrcnn_threshold' => 0.40,
-                    'mask_threshold' => 0.50,
-
-                    'intramodel_iou' => 0.50,
-                    'intermodel_iou' => 0.50,
-                ],
-            ]
-        );
-
-    if (!$response->successful()) {
-
-        throw new RuntimeException(
-            'Error en análisis wall-to-wall. '
-            . 'HTTP '
-            . $response->status()
-            . ': '
-            . $response->body()
-        );
+        return $data;
     }
 
-    $data = $response->json();
 
-    if (
-        !is_array($data)
-        ||
-        ($data['status'] ?? null) !== 'ok'
-    ) {
+    /**
+     * Generar preview ligera.
+     */
+    public function generateMosaicPreview(
+        string $mosaicUuid,
+        string $objectKey
+    ): array {
+        $response = Http::timeout(300)
+            ->connectTimeout(20)
+            ->acceptJson()
+            ->post(
+                $this->baseUrl
+                . '/mosaic/preview',
+                [
+                    'mosaic_uuid' =>
+                        $mosaicUuid,
 
-        throw new RuntimeException(
-            'FastAPI devolvió una respuesta '
-            . 'wall-to-wall inválida.'
-        );
+                    'object_key' =>
+                        $objectKey,
+
+                    'max_width' =>
+                        1400,
+
+                    'max_height' =>
+                        1000,
+
+                    'jpeg_quality' =>
+                        88,
+                ]
+            );
+
+        $response->throw();
+
+        $data = $response->json();
+
+        if (
+            !is_array($data)
+            ||
+            ($data['status'] ?? null) !== 'ok'
+        ) {
+            throw new RuntimeException(
+                'FastAPI devolvió una preview inválida.'
+            );
+        }
+
+        return $data;
     }
 
-    return $data;
-}
+
+    /**
+     * V0.8A.WEB.4
+     * Generar COG web de alta resolución para CUALQUIER mosaico.
+     *
+     * El UUID y object_key se reciben dinámicamente desde el modelo Mosaic.
+     * No existe ningún UUID hardcodeado.
+     */
+    public function generateMosaicWebCog(
+        string $mosaicUuid,
+        string $objectKey
+    ): array {
+        $response = Http::timeout(1800)
+            ->connectTimeout(30)
+            ->acceptJson()
+            ->post(
+                $this->baseUrl
+                . '/mosaic/cog',
+                [
+                    'mosaic_uuid' =>
+                        $mosaicUuid,
+
+                    'object_key' =>
+                        $objectKey,
+                ]
+            );
+
+        if (!$response->successful()) {
+            throw new RuntimeException(
+                'Error generando COG web. HTTP '
+                . $response->status()
+                . ': '
+                . $response->body()
+            );
+        }
+
+        $data = $response->json();
+
+        if (
+            !is_array($data)
+            ||
+            ($data['status'] ?? null) !== 'ok'
+            ||
+            empty($data['cog_object_key'])
+            ||
+            !filter_var(
+                $data['verified'] ?? false,
+                FILTER_VALIDATE_BOOLEAN
+            )
+        ) {
+            throw new RuntimeException(
+                'FastAPI devolvió una respuesta COG inválida o no verificada.'
+            );
+        }
+
+        return $data;
+    }
+
+
+    /**
+     * Generar QA/QC visual de tiling.
+     */
+    public function generateMosaicTilingPreview(
+        string $mosaicUuid,
+        string $objectKey
+    ): array {
+        $response = Http::timeout(300)
+            ->connectTimeout(20)
+            ->acceptJson()
+            ->post(
+                $this->baseUrl
+                . '/mosaic/tiling/preview',
+                [
+                    'mosaic_uuid' =>
+                        $mosaicUuid,
+
+                    'object_key' =>
+                        $objectKey,
+
+                    'tile_size' =>
+                        1024,
+
+                    'overlap' =>
+                        256,
+
+                    'max_width' =>
+                        1400,
+
+                    'max_height' =>
+                        1000,
+
+                    'jpeg_quality' =>
+                        90,
+                ]
+            );
+
+        $response->throw();
+
+        $data = $response->json();
+
+        if (!is_array($data)) {
+            throw new RuntimeException(
+                'FastAPI devolvió una respuesta de tiling inválida.'
+            );
+        }
+
+        return $data;
+    }
+
+
+    /**
+     * Ejecutar análisis wall-to-wall completo
+     * sobre un ortomosaico almacenado en R2.
+     */
+    public function analyzeMosaicWallToWall(
+        string $analysisUuid,
+        string $mosaicUuid,
+        string $objectKey,
+        string $projectUuid
+    ): array {
+        $response = Http::timeout(900)
+            ->connectTimeout(30)
+            ->acceptJson()
+            ->post(
+                $this->baseUrl
+                . '/mosaic/analyze/wall-to-wall',
+                [
+                    'analysis_uuid' =>
+                        $analysisUuid,
+
+                    'mosaic_uuid' =>
+                        $mosaicUuid,
+
+                    'object_key' =>
+                        $objectKey,
+
+                    'project_uuid' =>
+                        $projectUuid,
+
+                    'analysis_version' =>
+                        'V0.7E',
+
+                    'configuration' => [
+                        'source_size' =>
+                            2144,
+
+                        'output_size' =>
+                            1024,
+
+                        'output_overlap' =>
+                            256,
+
+                        'yolo_threshold' =>
+                            0.25,
+
+                        'maskrcnn_threshold' =>
+                            0.40,
+
+                        'mask_threshold' =>
+                            0.50,
+
+                        'intramodel_iou' =>
+                            0.50,
+
+                        'intermodel_iou' =>
+                            0.50,
+                    ],
+                ]
+            );
+
+        if (!$response->successful()) {
+            throw new RuntimeException(
+                'Error en análisis wall-to-wall. '
+                . 'HTTP '
+                . $response->status()
+                . ': '
+                . $response->body()
+            );
+        }
+
+        $data = $response->json();
+
+        if (
+            !is_array($data)
+            ||
+            ($data['status'] ?? null) !== 'ok'
+        ) {
+            throw new RuntimeException(
+                'FastAPI devolvió una respuesta wall-to-wall inválida.'
+            );
+        }
+
+        return $data;
+    }
 }

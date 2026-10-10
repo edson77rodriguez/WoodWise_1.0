@@ -176,6 +176,12 @@ Route::get(
     [AiAnalysisController::class, 'mapCogUrl']
 )->name('analysis.map.cog-url');
 
+Route::post(
+    '/ortomosaicos/{mosaic:uuid}/cog',
+    [MosaicController::class, 'generateCog']
+)->name('mosaics.cog.generate');
+
+
 /*
 |--------------------------------------------------------------------------
 | Análisis UAV persistentes
