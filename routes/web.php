@@ -171,6 +171,11 @@ Route::get(
     [AiAnalysisController::class, 'mapPreview']
 )->name('analysis.map.preview');
 
+Route::get(
+    '/analisis-uav/jobs/{analysisUuid}/mapa/cog-url',
+    [AiAnalysisController::class, 'mapCogUrl']
+)->name('analysis.map.cog-url');
+
 /*
 |--------------------------------------------------------------------------
 | Análisis UAV persistentes

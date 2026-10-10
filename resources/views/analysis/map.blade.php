@@ -1649,7 +1649,7 @@
         <div class="map-toolbar">
             <div class="toolbar-left">
                 <div class="tool-group">
-                    @if($previewAvailable)
+                    @if(($cogAvailable ?? false) || $previewAvailable)
                         <button id="toggle-preview" class="map-tool active" type="button" aria-pressed="true">
                             <span class="layer-dot preview"></span>
                             <span class="tool-label">Ortomosaico</span>
@@ -1683,7 +1683,7 @@
                     </button>
 
                     <div class="opacity-panel">
-                        @if($previewAvailable)
+                        @if(($cogAvailable ?? false) || $previewAvailable)
                             <div class="opacity-row">
                                 <div class="opacity-row-head">
                                     <span>Ortomosaico</span>
@@ -1903,6 +1903,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/proj4@2.15.0/dist/proj4.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/geotiff@3.1.0-beta.0/dist-browser/geotiff.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ol@10.10.0/dist/ol.js"></script>
 
 <script>
@@ -1912,6 +1913,7 @@
     const mapBounds = @json($mapBounds);
     const mosaicProjection = @json($mosaic->crs);
     const previewAvailable = @json($previewAvailable);
+    const cogAvailable = @json($cogAvailable ?? false);
 
     const geojsonUrl = @json(
         route('analysis.map.geojson', ['analysisUuid' => $job->uuid])
@@ -1919,6 +1921,10 @@
 
     const previewUrl = previewAvailable
         ? @json(route('analysis.map.preview', ['analysisUuid' => $job->uuid]))
+        : null;
+
+    const cogUrlEndpoint = cogAvailable
+        ? @json(route('analysis.map.cog-url', ['analysisUuid' => $job->uuid]))
         : null;
 
     const summaryExpected = {
@@ -2250,6 +2256,15 @@
        CAPAS Y ESTILOS
     ========================================================= */
 
+    // =========================================================
+    // V0.8A.WEB.3 - RASTER COG DE ALTA RESOLUCIÓN
+    // =========================================================
+    // El preview funciona como fallback. Cuando el COG queda
+    // listo, OpenLayers usa el raster nativo por bloques/rangos.
+
+    let orthomosaicVisible = true;
+    let currentRasterOpacity = Number(els.previewOpacity?.value || 100) / 100;
+
     const previewLayer = previewAvailable
         ? new ol.layer.Image({
             source: new ol.source.ImageStatic({
@@ -2258,10 +2273,134 @@
                 projection: mapProjection,
                 interpolate: true,
             }),
-            opacity: 1,
-            zIndex: 1,
+            opacity: currentRasterOpacity,
+            visible: orthomosaicVisible,
+            zIndex: 0,
         })
         : null;
+
+    let cogLayer = null;
+    let cogSource = null;
+    let cogReady = false;
+    let cogFailed = false;
+
+    function syncRasterLayers() {
+        if (cogLayer) {
+            cogLayer.setOpacity(currentRasterOpacity);
+            cogLayer.setVisible(orthomosaicVisible && !cogFailed);
+        }
+
+        if (previewLayer) {
+            previewLayer.setOpacity(currentRasterOpacity);
+            previewLayer.setVisible(
+                orthomosaicVisible
+                && (!cogReady || cogFailed)
+            );
+        }
+    }
+
+    async function initializeCogLayer() {
+        if (!cogAvailable || !cogUrlEndpoint) {
+            syncRasterLayers();
+            return;
+        }
+
+        try {
+            if (
+                typeof GeoTIFF === 'undefined'
+                || !ol?.source?.GeoTIFF
+                || !ol?.layer?.WebGLTile
+            ) {
+                throw new Error(
+                    'GeoTIFF/OpenLayers WebGLTile no está disponible en el navegador.'
+                );
+            }
+
+            const response = await fetch(cogUrlEndpoint, {
+                headers: {
+                    'Accept': 'application/json',
+                },
+                credentials: 'same-origin',
+                cache: 'no-store',
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    `No fue posible obtener URL COG (HTTP ${response.status}).`
+                );
+            }
+
+            const payload = await response.json();
+
+            if (
+                payload?.status !== 'ok'
+                || payload?.available !== true
+                || !payload?.url
+            ) {
+                throw new Error('Laravel no devolvió una URL COG válida.');
+            }
+
+            cogSource = new ol.source.GeoTIFF({
+                sources: [
+                    {
+                        url: payload.url,
+                    },
+                ],
+                projection: mapProjection,
+                convertToRGB: 'auto',
+                normalize: true,
+                interpolate: true,
+                wrapX: false,
+                transition: 120,
+            });
+
+            cogLayer = new ol.layer.WebGLTile({
+                source: cogSource,
+                opacity: currentRasterOpacity,
+                visible: orthomosaicVisible,
+                zIndex: 1,
+                preload: 0,
+            });
+
+            map.addLayer(cogLayer);
+
+            cogSource.on('change', () => {
+                const state = cogSource.getState();
+
+                if (state === 'ready') {
+                    cogReady = true;
+                    cogFailed = false;
+                    syncRasterLayers();
+
+                    console.info('COG web listo:', {
+                        crs: payload.crs,
+                        width: payload.width,
+                        height: payload.height,
+                        overviews: payload.overviews,
+                        expires_at: payload.expires_at,
+                    });
+                } else if (state === 'error') {
+                    cogReady = false;
+                    cogFailed = true;
+                    syncRasterLayers();
+                    console.error(
+                        'GeoTIFFSource entró en estado error. Se mantiene el preview como fallback.'
+                    );
+                }
+            });
+
+            syncRasterLayers();
+        } catch (error) {
+            cogReady = false;
+            cogFailed = true;
+            syncRasterLayers();
+
+            console.error(
+                'No fue posible inicializar el COG. Se usará el preview como fallback.',
+                error
+            );
+        }
+    }
 
     const vectorSource = new ol.source.Vector();
 
@@ -2869,11 +3008,9 @@
     }
 
     els.togglePreview?.addEventListener('click', () => {
-        if (!previewLayer) return;
-
-        const next = !previewLayer.getVisible();
-        previewLayer.setVisible(next);
-        setToolActive(els.togglePreview, next);
+        orthomosaicVisible = !orthomosaicVisible;
+        syncRasterLayers();
+        setToolActive(els.togglePreview, orthomosaicVisible);
     });
 
     els.toggleMrcnn.addEventListener('click', () => {
@@ -2908,10 +3045,8 @@
     });
 
     els.previewOpacity?.addEventListener('input', () => {
-        if (!previewLayer) return;
-
-        const opacity = Number(els.previewOpacity.value) / 100;
-        previewLayer.setOpacity(opacity);
+        currentRasterOpacity = Number(els.previewOpacity.value) / 100;
+        syncRasterLayers();
         els.previewOpacityValue.textContent = `${els.previewOpacity.value}%`;
     });
 
@@ -3008,6 +3143,7 @@
     els.retryGeojson.addEventListener('click', loadGeoJson);
 
     updateViewStatus();
+    initializeCogLayer();
     loadGeoJson();
 })();
 </script>
