@@ -281,6 +281,170 @@
         .menu-panel form { margin: 0; }
         .menu-panel .menu-item { display: block; }
 
+        .menu-separator {
+            height: 1px;
+            margin: 5px 4px;
+            background: var(--border);
+        }
+
+        .menu-item-danger {
+            color: var(--red);
+        }
+
+        .menu-item-danger:hover {
+            background: var(--red-soft);
+            color: #8f1c13;
+        }
+
+        .menu-item-danger:disabled {
+            cursor: not-allowed;
+            opacity: .45;
+            background: transparent;
+        }
+
+        /* Delete confirmation modal */
+        .delete-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 22px;
+        }
+
+        .delete-modal.open {
+            display: flex;
+        }
+
+        .delete-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(8, 24, 18, .56);
+            backdrop-filter: blur(3px);
+        }
+
+        .delete-modal-card {
+            position: relative;
+            z-index: 1;
+            width: min(510px, 100%);
+            border: 1px solid #efc9c5;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 24px 70px rgba(31, 45, 38, .22);
+            overflow: hidden;
+        }
+
+        .delete-modal-head {
+            display: flex;
+            align-items: flex-start;
+            gap: 13px;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid #f1d7d4;
+            background: linear-gradient(180deg, #fff, #fff8f7);
+        }
+
+        .delete-modal-icon {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            display: grid;
+            place-items: center;
+            border-radius: 11px;
+            color: var(--red);
+            background: var(--red-soft);
+            border: 1px solid #efc9c5;
+        }
+
+        .delete-modal-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .delete-modal-title {
+            margin: 0;
+            color: #7f1d16;
+            font-size: 16px;
+            letter-spacing: -.015em;
+        }
+
+        .delete-modal-subtitle {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 10.5px;
+            line-height: 1.5;
+        }
+
+        .delete-modal-body {
+            padding: 18px 20px;
+        }
+
+        .delete-target {
+            padding: 11px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface-soft);
+        }
+
+        .delete-target-label {
+            color: var(--muted-2);
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .delete-target-name {
+            margin-top: 4px;
+            color: var(--text);
+            font-size: 11px;
+            font-weight: 760;
+            overflow-wrap: anywhere;
+        }
+
+        .delete-warning-list {
+            margin: 14px 0 0;
+            padding-left: 18px;
+            color: #6f332e;
+            font-size: 10px;
+            line-height: 1.65;
+        }
+
+        .delete-warning-final {
+            margin-top: 13px;
+            padding: 10px 11px;
+            border-radius: 9px;
+            color: #8a231a;
+            background: var(--red-soft);
+            border: 1px solid #efc9c5;
+            font-size: 10px;
+            font-weight: 720;
+            line-height: 1.5;
+        }
+
+        .delete-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 9px;
+            padding: 14px 20px 18px;
+            border-top: 1px solid var(--border);
+            background: #fcfdfc;
+        }
+
+        .btn-danger {
+            color: #fff;
+            background: var(--red);
+            box-shadow: 0 6px 14px rgba(180, 35, 24, .16);
+        }
+
+        .btn-danger:hover {
+            background: #8f1c13;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
         /* Details drawer inside row */
         .technical-panel { display: none; border-top: 1px solid var(--border); background: #fbfdfc; }
         .technical-panel.open { display: block; }
@@ -785,6 +949,32 @@
                                             @endif
                                         @endif
                                         <button type="button" class="menu-item" data-details-toggle="details-{{ $mosaic->uuid }}">Detalles técnicos</button>
+
+                                        @if(\Illuminate\Support\Facades\Route::has('mosaics.destroy'))
+                                            <div class="menu-separator"></div>
+
+                                            @if(in_array($mosaic->status, ['uploading', 'inspecting', 'processing']))
+                                                <button
+                                                    type="button"
+                                                    class="menu-item menu-item-danger"
+                                                    disabled
+                                                    title="No se puede eliminar mientras el ortomosaico está siendo procesado."
+                                                >
+                                                    Eliminar ortomosaico
+                                                </button>
+                                            @else
+                                                <button
+                                                    type="button"
+                                                    class="menu-item menu-item-danger"
+                                                    data-delete-mosaic
+                                                    data-delete-name="{{ $mosaic->original_name }}"
+                                                    data-delete-uuid="{{ $mosaic->uuid }}"
+                                                    data-delete-action="{{ route('mosaics.destroy', ['mosaic' => $mosaic->uuid]) }}"
+                                                >
+                                                    Eliminar ortomosaico
+                                                </button>
+                                            @endif
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -890,6 +1080,88 @@
         </div>
     </section>
 </main>
+
+@if(\Illuminate\Support\Facades\Route::has('mosaics.destroy'))
+    <div
+        id="deleteMosaicModal"
+        class="delete-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deleteMosaicTitle"
+        aria-describedby="deleteMosaicDescription"
+        hidden
+    >
+        <div class="delete-modal-backdrop" data-delete-close></div>
+
+        <div class="delete-modal-card">
+            <div class="delete-modal-head">
+                <div class="delete-modal-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5M14 11v5"
+                              stroke="currentColor"
+                              stroke-width="1.8"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
+                <div>
+                    <h3 id="deleteMosaicTitle" class="delete-modal-title">
+                        Eliminar ortomosaico
+                    </h3>
+                    <div id="deleteMosaicDescription" class="delete-modal-subtitle">
+                        Esta operación elimina el insumo y sus productos derivados asociados.
+                    </div>
+                </div>
+            </div>
+
+            <div class="delete-modal-body">
+                <div class="delete-target">
+                    <div class="delete-target-label">Archivo seleccionado</div>
+                    <div id="deleteMosaicName" class="delete-target-name">—</div>
+                    <div id="deleteMosaicUuid" class="delete-target-name mono" style="color:var(--muted); font-weight:600;">—</div>
+                </div>
+
+                <ul class="delete-warning-list">
+                    <li>Se eliminará el GeoTIFF original almacenado en R2.</li>
+                    <li>También se eliminarán preview, COG, QA/QC y demás derivados del mosaico.</li>
+                    <li>Los AnalysisJobs y artifacts asociados al mosaico también serán eliminados.</li>
+                </ul>
+
+                <div class="delete-warning-final">
+                    Esta acción es irreversible. No elimina otros ortomosaicos ni otros proyectos.
+                </div>
+            </div>
+
+            <div class="delete-modal-actions">
+                <button
+                    type="button"
+                    class="btn btn-outline"
+                    data-delete-close
+                >
+                    Cancelar
+                </button>
+
+                <form
+                    id="deleteMosaicForm"
+                    method="POST"
+                    action=""
+                >
+                    @csrf
+                    @method('DELETE')
+
+                    <button
+                        id="confirmDeleteMosaic"
+                        type="submit"
+                        class="btn btn-danger"
+                    >
+                        Eliminar definitivamente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+@endif
 
 <script>
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -1152,6 +1424,71 @@
         document.querySelectorAll('.action-menu.open').forEach(menu => menu.classList.remove('open'));
     });
     document.querySelectorAll('.menu-panel').forEach(panel => panel.addEventListener('click', event => event.stopPropagation()));
+
+    /* Delete mosaic modal */
+    const deleteModal = document.getElementById('deleteMosaicModal');
+    const deleteForm = document.getElementById('deleteMosaicForm');
+    const deleteName = document.getElementById('deleteMosaicName');
+    const deleteUuid = document.getElementById('deleteMosaicUuid');
+    const confirmDeleteButton = document.getElementById('confirmDeleteMosaic');
+
+    function closeDeleteModal() {
+        if (!deleteModal) return;
+
+        deleteModal.classList.remove('open');
+        deleteModal.hidden = true;
+        document.body.classList.remove('modal-open');
+
+        if (deleteForm) deleteForm.action = '';
+        if (deleteName) deleteName.textContent = '—';
+        if (deleteUuid) deleteUuid.textContent = '—';
+        if (confirmDeleteButton) {
+            confirmDeleteButton.disabled = false;
+            confirmDeleteButton.textContent = 'Eliminar definitivamente';
+        }
+    }
+
+    document.querySelectorAll('[data-delete-mosaic]').forEach(deleteButton => {
+        deleteButton.addEventListener('click', () => {
+            if (!deleteModal || !deleteForm) return;
+
+            const action = deleteButton.dataset.deleteAction || '';
+            const name = deleteButton.dataset.deleteName || 'Ortomosaico';
+            const uuid = deleteButton.dataset.deleteUuid || '—';
+
+            if (!action) return;
+
+            deleteForm.action = action;
+            if (deleteName) deleteName.textContent = name;
+            if (deleteUuid) deleteUuid.textContent = uuid;
+
+            deleteButton.closest('.action-menu')?.classList.remove('open');
+
+            deleteModal.hidden = false;
+            deleteModal.classList.add('open');
+            document.body.classList.add('modal-open');
+        });
+    });
+
+    document.querySelectorAll('[data-delete-close]').forEach(closeDeleteButton => {
+        closeDeleteButton.addEventListener('click', closeDeleteModal);
+    });
+
+    deleteForm?.addEventListener('submit', () => {
+        if (confirmDeleteButton) {
+            confirmDeleteButton.disabled = true;
+            confirmDeleteButton.textContent = 'Eliminando...';
+        }
+    });
+
+    document.addEventListener('keydown', event => {
+        if (
+            event.key === 'Escape'
+            && deleteModal?.classList.contains('open')
+        ) {
+            closeDeleteModal();
+        }
+    });
 
     /* Technical panels */
     document.querySelectorAll('[data-details-toggle]').forEach(buttonDetails => {

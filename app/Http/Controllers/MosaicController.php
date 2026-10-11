@@ -13,6 +13,7 @@ use App\Models\Project;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 use Illuminate\Support\Str;
 
@@ -1926,5 +1927,210 @@ public function tilingPreview(
 
 
 
+
+
+    /**
+     * V0.8A.WEB.5
+     * Eliminar de forma controlada un ortomosaico de prueba.
+     *
+     * Alcance:
+     * - bloquea eliminación si existe un AnalysisJob en cola/proceso;
+     * - elimina TODOS los objetos R2 bajo el prefijo exclusivo del mosaico;
+     * - elimina artifacts y AnalysisJobs asociados;
+     * - elimina finalmente el registro Mosaic.
+     *
+     * IMPORTANTE:
+     * esta acción es irreversible.
+     */
+    public function destroy(
+        Mosaic $mosaic
+    )
+    {
+        $mosaic->loadMissing([
+            'project',
+            'analysisJobs.artifacts',
+        ]);
+
+        $hasActiveJobs = (
+            $mosaic->analysisJobs()
+                ->whereIn(
+                    'status',
+                    [
+                        'queued',
+                        'processing',
+                    ]
+                )
+                ->exists()
+        );
+
+        if ($hasActiveJobs) {
+            return redirect()
+                ->route('mosaics.index')
+                ->with(
+                    'error',
+                    'No se puede eliminar el ortomosaico porque existe un análisis UAV en cola o procesamiento.'
+                );
+        }
+
+        $projectUuid = (
+            $mosaic->project->uuid
+            ?? null
+        );
+
+        if (!$projectUuid) {
+            return redirect()
+                ->route('mosaics.index')
+                ->with(
+                    'error',
+                    'No se puede eliminar el ortomosaico porque no tiene un proyecto válido asociado.'
+                );
+        }
+
+        $prefix = (
+            "projects/{$projectUuid}/"
+            . "mosaics/{$mosaic->uuid}/"
+        );
+
+        $disk = Storage::disk('r2');
+
+        try {
+            $remoteFiles = $disk->allFiles(
+                $prefix
+            );
+
+            $deletedRemoteCount = count(
+                $remoteFiles
+            );
+
+            foreach (
+                array_chunk(
+                    $remoteFiles,
+                    500
+                )
+                as
+                $chunk
+            ) {
+                if (!empty($chunk)) {
+                    $disk->delete(
+                        $chunk
+                    );
+                }
+            }
+
+            $remainingFiles = $disk->allFiles(
+                $prefix
+            );
+
+            if (!empty($remainingFiles)) {
+                throw new \RuntimeException(
+                    'R2 todavía contiene '
+                    . count($remainingFiles)
+                    . ' objeto(s) bajo el prefijo del mosaico.'
+                );
+            }
+
+            $deletedJobs = 0;
+            $deletedArtifacts = 0;
+
+            DB::transaction(
+                function () use (
+                    $mosaic,
+                    &$deletedJobs,
+                    &$deletedArtifacts
+                ) {
+                    foreach (
+                        $mosaic->analysisJobs
+                        as
+                        $job
+                    ) {
+                        $artifactCount = (
+                            $job->artifacts
+                                ->count()
+                        );
+
+                        if ($artifactCount > 0) {
+                            $job->artifacts()
+                                ->delete();
+
+                            $deletedArtifacts += (
+                                $artifactCount
+                            );
+                        }
+
+                        $job->delete();
+
+                        $deletedJobs += 1;
+                    }
+
+                    $mosaic->delete();
+                }
+            );
+
+            Log::notice(
+                'Ortomosaico eliminado manualmente.',
+                [
+                    'mosaic_uuid' =>
+                        $mosaic->uuid,
+
+                    'project_uuid' =>
+                        $projectUuid,
+
+                    'r2_prefix' =>
+                        $prefix,
+
+                    'deleted_r2_objects' =>
+                        $deletedRemoteCount,
+
+                    'deleted_analysis_jobs' =>
+                        $deletedJobs,
+
+                    'deleted_analysis_artifacts' =>
+                        $deletedArtifacts,
+
+                    'user_id' =>
+                        auth()->id(),
+                ]
+            );
+
+            return redirect()
+                ->route('mosaics.index')
+                ->with(
+                    'success',
+                    'Ortomosaico eliminado correctamente. '
+                    . "R2: {$deletedRemoteCount} archivo(s); "
+                    . "análisis: {$deletedJobs}; "
+                    . "artifacts: {$deletedArtifacts}."
+                );
+
+        } catch (\Throwable $e) {
+            Log::error(
+                'Error eliminando ortomosaico.',
+                [
+                    'mosaic_uuid' =>
+                        $mosaic->uuid,
+
+                    'project_uuid' =>
+                        $projectUuid,
+
+                    'r2_prefix' =>
+                        $prefix,
+
+                    'user_id' =>
+                        auth()->id(),
+
+                    'error' =>
+                        $e->getMessage(),
+                ]
+            );
+
+            return redirect()
+                ->route('mosaics.index')
+                ->with(
+                    'error',
+                    'No se pudo eliminar el ortomosaico: '
+                    . $e->getMessage()
+                );
+        }
+    }
 
 }

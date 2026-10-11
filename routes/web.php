@@ -181,6 +181,10 @@ Route::post(
     [MosaicController::class, 'generateCog']
 )->name('mosaics.cog.generate');
 
+Route::delete(
+    '/ortomosaicos/{mosaic:uuid}',
+    [MosaicController::class, 'destroy']
+)->name('mosaics.destroy');
 
 /*
 |--------------------------------------------------------------------------
