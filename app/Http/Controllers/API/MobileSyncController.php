@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\MobileSyncNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class MobileSyncController extends Controller
@@ -54,6 +56,18 @@ class MobileSyncController extends Controller
         // ============================================
 
         $validated = $request->validate([
+
+            /*
+             * Temporalmente es opcional porque la versión
+             * actual de React Native todavía no lo envía.
+             *
+             * En el siguiente paso la app generará
+             * y conservará este identificador.
+             */
+            'sync_id' => [
+                'sometimes',
+                'uuid',
+            ],
 
             'parcelas' => [
                 'required',
@@ -132,9 +146,7 @@ class MobileSyncController extends Controller
                 );
 
 
-        if (
-            $idsNoAutorizados->isNotEmpty()
-        ) {
+        if ($idsNoAutorizados->isNotEmpty()) {
 
             return response()->json([
                 'message' =>
@@ -174,9 +186,8 @@ class MobileSyncController extends Controller
         // ============================================
         // 7. CONSTRUIR DETALLE VALIDADO
         //
-        // IMPORTANTE:
-        // id_productor se obtiene desde MySQL.
-        // La app NO decide quién es el Productor.
+        // id_productor SIEMPRE se obtiene desde MySQL.
+        // La app no decide quién recibe la notificación.
         // ============================================
 
         $detalleParcelas =
@@ -224,8 +235,7 @@ class MobileSyncController extends Controller
         // ============================================
         // 8. AGRUPAR POR PRODUCTOR
         //
-        // Esto permitirá posteriormente enviar
-        // UN mensaje consolidado por Productor.
+        // Un evento consolidado por Productor.
         // ============================================
 
         $productores =
@@ -271,25 +281,359 @@ class MobileSyncController extends Controller
 
 
         // ============================================
-        // 9. IDENTIFICADOR DEL EVENTO
+        // 9. IDENTIFICADOR DE SINCRONIZACIÓN
         //
-        // De momento identifica esta recepción.
-        // La persistencia/idempotencia vendrá en
-        // el siguiente micro-paso.
+        // Si React Native lo manda, se conserva.
+        // Si todavía no lo manda, Laravel genera uno.
         // ============================================
 
         $syncId =
+            $validated['sync_id']
+            ??
             (string) Str::uuid();
 
 
+        $idTecnico =
+            (int) $persona->tecnico->getKey();
+
+
         // ============================================
-        // 10. RESPUESTA
+        // 10. PREPARAR EVENTO POR PRODUCTOR
+        // ============================================
+
+        $notificaciones =
+            $productores
+                ->map(
+                    function ($productor)
+                    use (
+                        $syncId,
+                        $idTecnico
+                    ) {
+
+                        /*
+                         * Orden estable para que el hash
+                         * siempre produzca el mismo resultado
+                         * para el mismo contenido.
+                         */
+                        $parcelas =
+                            collect(
+                                $productor['parcelas']
+                            )
+                            ->sortBy(
+                                'id_parcela'
+                            )
+                            ->values()
+                            ->map(
+                                function ($parcela) {
+
+                                    return [
+
+                                        'id_parcela' =>
+                                            (int) $parcela['id_parcela'],
+
+                                        'nom_parcela' =>
+                                            $parcela['nom_parcela'],
+
+                                        'id_productor' =>
+                                            (int) $parcela['id_productor'],
+
+                                        'arboles' =>
+                                            (int) $parcela['arboles'],
+
+                                        'trozas' =>
+                                            (int) $parcela['trozas'],
+
+                                        'total_registros' =>
+                                            (int) $parcela['total_registros'],
+                                    ];
+                                }
+                            )
+                            ->all();
+
+
+                        $payload = [
+
+                            'sync_id' =>
+                                $syncId,
+
+                            'id_tecnico' =>
+                                $idTecnico,
+
+                            'id_productor' =>
+                                (int) $productor['id_productor'],
+
+                            'total_parcelas' =>
+                                (int) $productor['total_parcelas'],
+
+                            'total_arboles' =>
+                                (int) $productor['total_arboles'],
+
+                            'total_trozas' =>
+                                (int) $productor['total_trozas'],
+
+                            'total_registros' =>
+                                (int) $productor['total_registros'],
+
+                            'parcelas' =>
+                                $parcelas,
+                        ];
+
+
+                        $payloadJson =
+                            json_encode(
+                                $payload,
+                                JSON_UNESCAPED_UNICODE
+                                |
+                                JSON_UNESCAPED_SLASHES
+                                |
+                                JSON_PRESERVE_ZERO_FRACTION
+                            );
+
+
+                        return [
+
+                            'id_productor' =>
+                                (int) $productor['id_productor'],
+
+                            'payload' =>
+                                $payload,
+
+                            'payload_hash' =>
+                                hash(
+                                    'sha256',
+                                    $payloadJson
+                                ),
+                        ];
+                    }
+                );
+
+
+        // ============================================
+        // 11. PERSISTENCIA + IDEMPOTENCIA
+        // ============================================
+
+        $resultadoIdempotencia =
+            DB::transaction(
+                function ()
+                use (
+                    $syncId,
+                    $idTecnico,
+                    $notificaciones
+                ) {
+
+                    /*
+                     * Bloqueamos cualquier evento existente
+                     * con este sync_id mientras lo validamos.
+                     */
+                    $eventosExistentes =
+                        MobileSyncNotification::query()
+                            ->where(
+                                'sync_id',
+                                $syncId
+                            )
+                            ->lockForUpdate()
+                            ->get();
+
+
+                    // ====================================
+                    // REINTENTO
+                    // ====================================
+
+                    if ($eventosExistentes->isNotEmpty()) {
+
+                        /*
+                         * El mismo sync_id no puede
+                         * pertenecer a otro Técnico.
+                         */
+                        $tecnicoDiferente =
+                            $eventosExistentes
+                                ->contains(
+                                    function ($evento)
+                                    use ($idTecnico) {
+
+                                        return
+                                            (int) $evento->id_tecnico
+                                            !==
+                                            $idTecnico;
+                                    }
+                                );
+
+
+                        if ($tecnicoDiferente) {
+
+                            return [
+                                'ok' => false,
+
+                                'message' =>
+                                    'El sync_id ya pertenece a otra sincronización.',
+                            ];
+                        }
+
+
+                        /*
+                         * Deben ser exactamente
+                         * los mismos Productores.
+                         */
+                        $productoresEsperados =
+                            $notificaciones
+                                ->pluck(
+                                    'id_productor'
+                                )
+                                ->sort()
+                                ->values()
+                                ->all();
+
+
+                        $productoresExistentes =
+                            $eventosExistentes
+                                ->pluck(
+                                    'id_productor'
+                                )
+                                ->map(
+                                    fn ($id) =>
+                                        (int) $id
+                                )
+                                ->sort()
+                                ->values()
+                                ->all();
+
+
+                        if (
+                            $productoresEsperados
+                            !==
+                            $productoresExistentes
+                        ) {
+
+                            return [
+                                'ok' => false,
+
+                                'message' =>
+                                    'El sync_id fue reutilizado con productores diferentes.',
+                            ];
+                        }
+
+
+                        /*
+                         * El contenido de cada evento
+                         * también debe coincidir.
+                         */
+                        foreach (
+                            $notificaciones
+                            as $notificacion
+                        ) {
+
+                            $eventoExistente =
+                                $eventosExistentes
+                                    ->firstWhere(
+                                        'id_productor',
+                                        $notificacion['id_productor']
+                                    );
+
+
+                            if (
+                                !$eventoExistente
+                                ||
+                                !hash_equals(
+                                    (string) $eventoExistente->payload_hash,
+                                    (string) $notificacion['payload_hash']
+                                )
+                            ) {
+
+                                return [
+                                    'ok' => false,
+
+                                    'message' =>
+                                        'El sync_id fue reutilizado con información diferente.',
+                                ];
+                            }
+                        }
+
+
+                        return [
+                            'ok' => true,
+                            'replay' => true,
+                        ];
+                    }
+
+
+                    // ====================================
+                    // EVENTO NUEVO
+                    // ====================================
+
+                    foreach (
+                        $notificaciones
+                        as $notificacion
+                    ) {
+
+                        MobileSyncNotification::create([
+
+                            'sync_id' =>
+                                $syncId,
+
+                            'id_tecnico' =>
+                                $idTecnico,
+
+                            'id_productor' =>
+                                $notificacion['id_productor'],
+
+                            'payload' =>
+                                $notificacion['payload'],
+
+                            'payload_hash' =>
+                                $notificacion['payload_hash'],
+
+                            'status' =>
+                                'pending',
+
+                            'attempts' =>
+                                0,
+
+                            'notified_at' =>
+                                null,
+
+                            'last_error' =>
+                                null,
+                        ]);
+                    }
+
+
+                    return [
+                        'ok' => true,
+                        'replay' => false,
+                    ];
+                }
+            );
+
+
+        // ============================================
+        // 12. CONFLICTO DE IDEMPOTENCIA
+        // ============================================
+
+        if (!$resultadoIdempotencia['ok']) {
+
+            return response()->json([
+
+                'message' =>
+                    $resultadoIdempotencia['message'],
+
+            ], 409);
+        }
+
+
+        $esReintento =
+            (bool) $resultadoIdempotencia['replay'];
+
+
+        // ============================================
+        // 13. RESPUESTA
         // ============================================
 
         return response()->json([
 
             'message' =>
-                'Sincronización validada correctamente.',
+                $esReintento
+                    ? 'Sincronización ya registrada previamente.'
+                    : 'Sincronización validada y registrada correctamente.',
 
             'data' => [
 
@@ -297,7 +641,14 @@ class MobileSyncController extends Controller
                     $syncId,
 
                 'id_tecnico' =>
-                    $persona->tecnico->getKey(),
+                    $idTecnico,
+
+                /*
+                 * false = evento nuevo
+                 * true  = mismo evento reenviado
+                 */
+                'idempotent_replay' =>
+                    $esReintento,
 
                 'total_parcelas' =>
                     $detalleParcelas->count(),
