@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>Mapa de resultados | UAV Forest AI</title>
@@ -252,6 +252,7 @@
 
         .workspace {
             height: calc(100vh - var(--topbar-h));
+            height: calc(100dvh - var(--topbar-h));
             display: grid;
             grid-template-columns: var(--left-w) minmax(0, 1fr) var(--right-w);
             min-height: 0;
@@ -1451,6 +1452,185 @@
                 display: none;
             }
         }
+
+        /* =========================================================
+           WEB.6 — GPS PARA TRABAJO DE CAMPO
+           Componentes visuales independientes del pipeline científico.
+        ========================================================= */
+        .field-gps {
+            position: absolute;
+            top: 63px;
+            right: 12px;
+            z-index: 55;
+            width: min(246px, calc(100% - 24px));
+            display: grid;
+            gap: 7px;
+            pointer-events: none;
+        }
+        .field-gps-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            pointer-events: auto;
+        }
+        .gps-button {
+            min-width: 40px;
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            border: 1px solid rgba(207,226,215,.18);
+            border-radius: 11px;
+            background: rgba(13,21,17,.94);
+            box-shadow: 0 7px 24px rgba(0,0,0,.28);
+            color: #e5f4eb;
+            font-weight: 800;
+            font-size: 11px;
+            cursor: pointer;
+            backdrop-filter: blur(9px);
+            touch-action: manipulation;
+        }
+        .gps-button svg { width: 18px; height: 18px; flex: 0 0 auto; }
+        .gps-button.primary { background: #1b7355; border-color: #4fc58d; }
+        .gps-button.primary:hover { background: #258361; }
+        .gps-button:disabled { opacity: .48; cursor: not-allowed; }
+        .gps-button.is-following { background: #244d8a; border-color: #7badf3; }
+        .gps-status {
+            pointer-events: auto;
+            padding: 9px 11px;
+            border: 1px solid rgba(207,226,215,.17);
+            border-radius: 11px;
+            background: rgba(13,21,17,.94);
+            box-shadow: 0 7px 24px rgba(0,0,0,.21);
+            backdrop-filter: blur(9px);
+            color: var(--text-soft);
+            font-size: 10px;
+            line-height: 1.5;
+        }
+        .gps-status-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .gps-status-title { font-size: 11px; font-weight: 850; color: #f3fbf6; }
+        .gps-status-indicator { font-size: 9px; font-weight: 800; color: #aecac0; }
+        .gps-status-indicator[data-state="good"] { color: #76e4aa; }
+        .gps-status-indicator[data-state="warning"] { color: #ffc974; }
+        .gps-status-indicator[data-state="error"] { color: #ff9991; }
+        .gps-status-text { margin-top: 4px; color: #c1d0c7; overflow-wrap: anywhere; }
+        .gps-metrics { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; color: #a4bcb0; }
+        .gps-metrics strong { color: white; }
+        .gps-target {
+            margin-top: 7px;
+            padding-top: 7px;
+            border-top: 1px solid rgba(207,226,215,.12);
+            color: #cfe8db;
+            font-size: 10px;
+        }
+        .gps-field-note { color: #8ea79a; font-size: 9px; margin-top: 5px; }
+        .field-selected {
+            display: none;
+            position: absolute;
+            bottom: 89px;
+            left: 10px;
+            right: 10px;
+            z-index: 50;
+            min-height: 51px;
+            padding: 8px 10px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 9px;
+            border: 1px solid rgba(191,229,210,.25);
+            border-radius: 13px;
+            background: rgba(13,21,17,.95);
+            color: white;
+            box-shadow: var(--shadow-panel);
+            backdrop-filter: blur(12px);
+        }
+        .field-selected-meta { min-width: 0; }
+        .field-selected-title { font-size: 11px; font-weight: 850; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .field-selected-sub { font-size: 9px; color: #bfd0c7; margin-top: 3px; }
+        .field-selected .gps-button { min-height: 34px; padding: 0 11px; white-space: nowrap; }
+        .gps-mobile-close { display: none; }
+
+        @media (max-width: 760px) {
+            .workspace {
+                height: calc(100dvh - var(--topbar-h) - env(safe-area-inset-top, 0px));
+            }
+            .topbar {
+                height: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+                padding-top: env(safe-area-inset-top, 0px);
+                padding-left: max(10px, env(safe-area-inset-left, 0px));
+                padding-right: max(10px, env(safe-area-inset-right, 0px));
+            }
+            #map {
+                bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+            }
+            .map-statusbar {
+                height: calc(36px + env(safe-area-inset-bottom, 0px));
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+            }
+            .map-summary { display: none; }
+            .map-toolbar {
+                flex-wrap: nowrap;
+                gap: 6px;
+                pointer-events: auto;
+            }
+            .toolbar-left {
+                min-width: 0;
+                flex: 1 1 auto;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                scrollbar-width: none;
+                overscroll-behavior-x: contain;
+            }
+            .toolbar-left::-webkit-scrollbar { display: none; }
+            .toolbar-right { flex: 0 0 auto; flex-wrap: nowrap; }
+            .toolbar-right > .tool-group:last-child { display: none; }
+            .tool-group { min-height: 43px; }
+            .map-tool { min-height: 33px; min-width: 33px; }
+            .field-gps {
+                top: 64px;
+                right: 9px;
+                width: min(233px, calc(100% - 18px));
+            }
+            .gps-button { min-width: 44px; min-height: 44px; }
+            .gps-status { font-size: 10px; }
+            .ol-zoom { display: none !important; }
+            .map-tooltip { display: none !important; }
+            .right-panel {
+                top: auto;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                height: min(74dvh, 650px);
+                border-radius: 19px 19px 0 0;
+                border-top: 1px solid rgba(207,226,215,.23);
+                border-left: 0;
+                transform: translateY(105%);
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+            }
+            .right-panel.open { transform: translateY(0); }
+            .right-panel .panel-heading::before {
+                content: '';
+                display: block;
+                width: 42px;
+                height: 4px;
+                border-radius: 8px;
+                background: #647a6b;
+                margin: -3px auto 10px;
+            }
+            .field-selected:not([hidden]) { display: flex; bottom: calc(47px + env(safe-area-inset-bottom, 0px)); }
+            .gps-mobile-close { display: inline-flex; }
+            .map-loading, .map-error { inset: 0 0 calc(36px + env(safe-area-inset-bottom, 0px)); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .side-panel { transition: none !important; }
+        }
+
     </style>
 </head>
 
@@ -1728,6 +1908,44 @@
             </div>
         </div>
 
+
+        {{-- WEB.6 — GPS local: el navegador solicita permiso al pulsar el botón. --}}
+        <section class="field-gps" aria-label="Navegación GPS del trabajo de campo">
+            <div class="field-gps-actions">
+                <button id="gps-toggle" class="gps-button primary" type="button" aria-label="Iniciar mi ubicación en tiempo real" title="Activar / detener GPS">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/>
+                        <path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke-linecap="round"/>
+                    </svg>
+                    <span id="gps-toggle-text">Mi ubicación</span>
+                </button>
+                <button id="gps-follow" class="gps-button" type="button" title="Seguir mi posición" aria-label="Centrar y seguir GPS" aria-pressed="false" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 20 7-16 2 7 7 2-16 7Z" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
+            <div class="gps-status" role="status" aria-live="polite">
+                <div class="gps-status-top">
+                    <span class="gps-status-title">Navegación de campo</span>
+                    <span id="gps-indicator" class="gps-status-indicator" data-state="idle">APAGADO</span>
+                </div>
+                <div id="gps-status-text" class="gps-status-text">Activa la ubicación para orientarte sobre el ortomosaico.</div>
+                <div class="gps-metrics">
+                    <span>Precisión: <strong id="gps-accuracy">—</strong></span>
+                    <span>Actualización: <strong id="gps-age">—</strong></span>
+                </div>
+                <div id="gps-target" class="gps-target" hidden>Selecciona una copa para consultar la distancia aproximada.</div>
+                <div class="gps-field-note">GPS orientativo, no confirma la identidad del árbol.</div>
+            </div>
+        </section>
+
+        <div id="field-selected" class="field-selected" hidden>
+            <div class="field-selected-meta">
+                <div id="field-selected-name" class="field-selected-title">Objeto</div>
+                <div id="field-selected-distance" class="field-selected-sub">Distancia pendiente de GPS</div>
+            </div>
+            <button type="button" id="field-show-inspector" class="gps-button">Ver ficha</button>
+        </div>
+
         <div class="map-summary" aria-label="Resumen de objetos visibles">
             <div class="summary-item">
                 <div class="summary-label">Visibles</div>
@@ -1966,6 +2184,18 @@
         fitExtent: document.getElementById('fit-extent'),
         clearSelection: document.getElementById('clear-selection'),
         fullscreenMap: document.getElementById('fullscreen-map'),
+        gpsToggle: document.getElementById('gps-toggle'),
+        gpsToggleText: document.getElementById('gps-toggle-text'),
+        gpsFollow: document.getElementById('gps-follow'),
+        gpsIndicator: document.getElementById('gps-indicator'),
+        gpsStatusText: document.getElementById('gps-status-text'),
+        gpsAccuracy: document.getElementById('gps-accuracy'),
+        gpsAge: document.getElementById('gps-age'),
+        gpsTarget: document.getElementById('gps-target'),
+        fieldSelected: document.getElementById('field-selected'),
+        fieldSelectedName: document.getElementById('field-selected-name'),
+        fieldSelectedDistance: document.getElementById('field-selected-distance'),
+        fieldShowInspector: document.getElementById('field-show-inspector'),
 
         visibleCount: document.getElementById('visible-count'),
         visibleMrcnnCount: document.getElementById('visible-mrcnn-count'),
@@ -2529,6 +2759,242 @@
 
     map.addInteraction(selectInteraction);
 
+
+    /* =========================================================
+       WEB.6 — GEOLOCALIZACIÓN GPS LOCAL
+       - Solicitud exclusivamente tras interacción del usuario.
+       - Posición WGS84 -> CRS proyectado del mapa.
+       - No se envían ni persisten posiciones GPS en el servidor.
+       - Coordenada/precisión no constituyen verdad de campo.
+    ========================================================= */
+    const gpsSource = new ol.source.Vector();
+    const gpsAccuracyFeature = new ol.Feature({
+        geometry: new ol.geom.Circle([0, 0], 0),
+        gps_kind: 'accuracy',
+    });
+    const gpsPositionFeature = new ol.Feature({
+        geometry: new ol.geom.Point([0, 0]),
+        gps_kind: 'position',
+    });
+    gpsSource.addFeatures([gpsAccuracyFeature, gpsPositionFeature]);
+
+    const gpsLayer = new ol.layer.Vector({
+        source: gpsSource,
+        visible: false,
+        zIndex: 40,
+        updateWhileAnimating: false,
+        updateWhileInteracting: false,
+        style: feature => feature.get('gps_kind') === 'accuracy'
+            ? new ol.style.Style({
+                stroke: new ol.style.Stroke({ color: 'rgba(97,184,255,.75)', width: 1.4 }),
+                fill: new ol.style.Fill({ color: 'rgba(69,162,247,.12)' }),
+            })
+            : [
+                new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 11,
+                        fill: new ol.style.Fill({ color: '#ffffff' }),
+                        stroke: new ol.style.Stroke({ color: 'rgba(25,50,90,.30)', width: 1.3 }),
+                    }),
+                }),
+                new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 7,
+                        fill: new ol.style.Fill({ color: '#278cf2' }),
+                        stroke: new ol.style.Stroke({ color: '#ffffff', width: 1.4 }),
+                    }),
+                }),
+            ],
+    });
+    map.addLayer(gpsLayer);
+
+    let gpsWatchId = null;
+    let gpsActive = false;
+    let gpsFollow = false;
+    let gpsCoordinate = null;
+    let gpsAccuracy = null;
+    let gpsTimestamp = 0;
+    let gpsHasFix = false;
+
+    function gpsUpdateStatus(message, state = 'idle', label = 'GPS') {
+        els.gpsStatusText.textContent = message;
+        els.gpsIndicator.textContent = label;
+        els.gpsIndicator.dataset.state = state;
+    }
+
+    function gpsUpdateButtons() {
+        els.gpsToggleText.textContent = gpsActive ? 'Detener GPS' : 'Mi ubicación';
+        els.gpsToggle.setAttribute('aria-label', gpsActive ? 'Detener seguimiento GPS' : 'Iniciar GPS');
+        els.gpsFollow.disabled = !gpsHasFix;
+        els.gpsFollow.classList.toggle('is-following', gpsActive && gpsFollow);
+        els.gpsFollow.setAttribute('aria-pressed', (gpsActive && gpsFollow) ? 'true' : 'false');
+        els.gpsFollow.title = gpsFollow ? 'Siguiendo tu posición' : 'Centrar y seguir mi posición';
+    }
+
+    function gpsDistanceToSelected() {
+        if (!gpsHasFix || !gpsCoordinate || !selectedFeature) {
+            els.gpsTarget.hidden = !selectedFeature;
+            if (selectedFeature) {
+                els.gpsTarget.textContent = 'Distancia: pendiente de ubicación GPS.';
+            }
+            if (els.fieldSelectedDistance) {
+                els.fieldSelectedDistance.textContent = 'Activa GPS para estimar distancia';
+            }
+            return;
+        }
+
+        const geometry = selectedFeature.getGeometry();
+        if (!geometry) return;
+        const center = ol.extent.getCenter(geometry.getExtent());
+        // Ambas coordenadas están en UTM, por lo que la distancia es euclidiana métrica.
+        const meters = Math.hypot(center[0] - gpsCoordinate[0], center[1] - gpsCoordinate[1]);
+        const label = Number.isFinite(meters) ? `${meters.toFixed(1)} m` : '—';
+        els.gpsTarget.hidden = false;
+        els.gpsTarget.textContent = `Hasta centro aproximado de ${getOperationalId(selectedFeature)}: ${label} (línea recta).`;
+        els.fieldSelectedDistance.textContent = `${label} aprox. · No identifica el fuste`;
+        const inspectorDistance = document.getElementById('gps-distance-inspector');
+        if (inspectorDistance) inspectorDistance.textContent = `Distancia GPS aproximada al centro geométrico: ${label}. La incertidumbre GNSS puede superar esta distancia.`;
+    }
+
+    function gpsSyncSelected() {
+        els.fieldSelected.hidden = !selectedFeature;
+        if (selectedFeature) {
+            els.fieldSelectedName.textContent = getOperationalId(selectedFeature);
+        }
+        gpsDistanceToSelected();
+    }
+
+    function gpsStop(silent = false) {
+        if (gpsWatchId !== null && navigator.geolocation) {
+            navigator.geolocation.clearWatch(gpsWatchId);
+        }
+        gpsWatchId = null;
+        gpsActive = false;
+        gpsFollow = false;
+        gpsHasFix = false;
+        gpsCoordinate = null;
+        gpsAccuracy = null;
+        gpsLayer.setVisible(false);
+        els.gpsAccuracy.textContent = '—';
+        els.gpsAge.textContent = '—';
+        if (!silent) gpsUpdateStatus('GPS detenido. Tu ubicación no se guarda en el sistema.', 'idle', 'APAGADO');
+        gpsUpdateButtons();
+        gpsDistanceToSelected();
+    }
+
+    function gpsCenterOnCurrent() {
+        if (!gpsCoordinate) return;
+        const view = map.getView();
+        const options = { center: gpsCoordinate, duration: 280 };
+        // Al entrar desde fuera del área, mantener una escala razonable.
+        if (!gpsHasFix || (view.getZoom() ?? 0) < 18) options.zoom = 19;
+        view.animate(options);
+    }
+
+    function gpsSuccess(result) {
+        if (!gpsActive) return;
+        const longitude = Number(result.coords.longitude);
+        const latitude = Number(result.coords.latitude);
+        const accuracy = Number(result.coords.accuracy);
+        if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return;
+        const projected = ol.proj.fromLonLat([longitude, latitude], mapProjection);
+        if (!projected.every(Number.isFinite)) return;
+        const firstFix = !gpsHasFix;
+        gpsCoordinate = projected;
+        gpsAccuracy = Number.isFinite(accuracy) && accuracy >= 0 ? accuracy : null;
+        gpsTimestamp = result.timestamp || Date.now();
+        gpsHasFix = true;
+        gpsPositionFeature.getGeometry().setCoordinates(projected);
+        gpsAccuracyFeature.getGeometry().setCenterAndRadius(projected, Math.min(gpsAccuracy ?? 0, 1000));
+        gpsLayer.setVisible(true);
+
+        const withinMosaic = ol.extent.containsCoordinate(mapBounds, projected);
+        const accuracyText = gpsAccuracy !== null ? `± ${Math.round(gpsAccuracy)} m` : 'No disponible';
+        els.gpsAccuracy.textContent = accuracyText;
+        const lowConfidence = gpsAccuracy === null || gpsAccuracy > 15;
+        gpsUpdateStatus(
+            !withinMosaic
+                ? 'Estás fuera de la extensión del mosaico o existe desplazamiento GPS. Comprueba el área y la precisión.'
+                : lowConfidence
+                    ? 'Posición obtenida con incertidumbre alta; úsala solo como orientación.'
+                    : 'Posición recibida. Puedes seleccionar una copa y consultar su distancia aproximada.',
+            !withinMosaic || lowConfidence ? 'warning' : 'good',
+            (!withinMosaic || lowConfidence) ? 'REVISAR GPS' : 'GPS ACTIVO'
+        );
+        gpsUpdateButtons();
+        gpsDistanceToSelected();
+        if (gpsFollow && ol.extent.containsCoordinate(ol.extent.buffer(mapBounds, 60), projected)) {
+            if (firstFix) {
+                gpsCenterOnCurrent();
+            } else {
+                // No animar si el movimiento es menor a la propia incertidumbre.
+                const viewCenter = map.getView().getCenter();
+                const d = viewCenter ? Math.hypot(viewCenter[0]-projected[0],viewCenter[1]-projected[1]) : Infinity;
+                if (d > Math.max(2, Math.min(gpsAccuracy ?? 5, 12))) gpsCenterOnCurrent();
+            }
+        }
+    }
+
+    function gpsError(err) {
+        const message = err?.code === 1
+            ? 'Permiso de ubicación denegado. Habilítalo en la configuración del navegador.'
+            : err?.code === 2
+                ? 'El teléfono no consigue una posición GPS. Verifica señal y servicios de ubicación.'
+                : 'La posición tardó demasiado. Prueba al aire libre y vuelve a intentar.';
+        gpsUpdateStatus(message, 'error', 'SIN SEÑAL');
+        if (err?.code === 1) {
+            gpsStop(true);
+            gpsUpdateStatus(message, 'error', 'SIN PERMISO');
+        }
+    }
+
+    function gpsStart() {
+        if (!window.isSecureContext || !('geolocation' in navigator)) {
+            gpsUpdateStatus('Se requiere HTTPS y un navegador con geolocalización.', 'error', 'NO DISPONIBLE');
+            return;
+        }
+        gpsActive = true;
+        gpsFollow = true;
+        gpsUpdateStatus('Solicitando permiso y primera posición…', 'warning', 'BUSCANDO');
+        gpsUpdateButtons();
+        try {
+            gpsWatchId = navigator.geolocation.watchPosition(gpsSuccess, gpsError, {
+                enableHighAccuracy: true,
+                maximumAge: 3000,
+                timeout: 18000,
+            });
+        } catch (err) {
+            gpsStop(true);
+            gpsUpdateStatus('No fue posible iniciar el GPS: ' + (err.message || 'error inesperado'), 'error', 'ERROR');
+        }
+    }
+
+    els.gpsToggle.addEventListener('click', () => gpsActive ? gpsStop() : gpsStart());
+    els.gpsFollow.addEventListener('click', () => {
+        if (!gpsHasFix) return;
+        gpsFollow = true;
+        gpsUpdateButtons();
+        gpsCenterOnCurrent();
+    });
+    els.fieldShowInspector?.addEventListener('click', () => {
+        if (selectedFeature && window.innerWidth <= 1080) openDrawer(els.rightPanel);
+    });
+    map.on('pointerdrag', () => {
+        if (gpsFollow) {
+            gpsFollow = false;
+            gpsUpdateButtons();
+        }
+    });
+    window.addEventListener('pagehide', () => gpsStop(true));
+    window.setInterval(() => {
+        if (!gpsActive || !gpsHasFix) return;
+        const age = Math.max(0, Math.round((Date.now() - gpsTimestamp) / 1000));
+        els.gpsAge.textContent = age < 60 ? `${age} s` : `${Math.floor(age / 60)} min`;
+        if (age > 45) gpsUpdateStatus('Posición antigua: esperando una nueva lectura GPS.', 'warning', 'GPS ANTIGUO');
+    }, 5000);
+    gpsUpdateButtons();
+
+
     /* =========================================================
        LISTA DE OBJETOS
     ========================================================= */
@@ -2733,6 +3199,7 @@
             <div class="section-block">
                 <div class="info-note">
                     Esta ficha describe un objeto operativo de copa. La correspondencia con un árbol individual requiere la fase posterior de contraste con verdad de campo.
+                    <div id="gps-distance-inspector" style="margin-top:7px;">La distancia GPS es solo orientativa.</div>
                 </div>
             </div>
         `;
@@ -2794,6 +3261,7 @@
         renderSelected(feature);
         activateInspectorTab('object');
         syncSelectedRow();
+        gpsSyncSelected();
 
         if (zoom) {
             zoomToFeature(feature);
@@ -2810,6 +3278,7 @@
         selectedFilteredIndex = -1;
         renderSelected(null);
         syncSelectedRow();
+        gpsSyncSelected();
     }
 
     /* =========================================================
@@ -2937,13 +3406,15 @@
         selectedFilteredIndex = feature ? filteredFeatures.indexOf(feature) : -1;
         renderSelected(feature);
         syncSelectedRow();
+        gpsSyncSelected();
 
         if (feature) {
             activateInspectorTab('object');
         }
     });
 
-    map.on('pointermove', event => {
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (finePointer) map.on('pointermove', event => {
         if (event.coordinate) {
             els.coordX.textContent = formatNumber(event.coordinate[0], 2);
             els.coordY.textContent = formatNumber(event.coordinate[1], 2);
@@ -3091,7 +3562,12 @@
         });
     });
 
-    els.search.addEventListener('input', applyFilters);
+    // Reducir reconstrucciones del listado al teclear en móviles.
+    let searchDebounce = null;
+    els.search.addEventListener('input', () => {
+        if (searchDebounce !== null) clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(applyFilters, 130);
+    });
     els.evidenceFilter.addEventListener('change', applyFilters);
     els.conflictFilter.addEventListener('change', applyFilters);
     els.resetFilters.addEventListener('click', resetFilters);
@@ -3128,8 +3604,22 @@
     els.closeInspectorMobile?.addEventListener('click', closeDrawers);
     els.drawerBackdrop.addEventListener('click', closeDrawers);
 
+    let resizeRaf = null;
+    function updateMapViewport() {
+        if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+        resizeRaf = requestAnimationFrame(() => {
+            map.updateSize();
+            resizeRaf = null;
+        });
+    }
+
+    window.visualViewport?.addEventListener('resize', updateMapViewport);
+    if (window.ResizeObserver) {
+        const mapResizeObserver = new ResizeObserver(updateMapViewport);
+        mapResizeObserver.observe(document.querySelector('.map-pane'));
+    }
     window.addEventListener('resize', () => {
-        map.updateSize();
+        updateMapViewport();
 
         if (window.innerWidth > 1080) {
             closeDrawers();
@@ -3150,4 +3640,3 @@
 
 </body>
 </html>
-

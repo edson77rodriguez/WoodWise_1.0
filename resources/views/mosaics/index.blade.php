@@ -2,3641 +2,1522 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <title>Mapa de resultados | UAV Forest AI</title>
-
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/ol@10.10.0/ol.css"
-    >
+    <title>Ortomosaicos UAV | UAV Forest AI</title>
 
     <style>
         :root {
-            --bg: #0b110e;
-            --surface: #111a16;
-            --surface-2: #16221c;
-            --surface-3: #1b2922;
-            --surface-hover: #203129;
-            --panel: rgba(17, 26, 22, .97);
-            --panel-soft: rgba(22, 34, 28, .94);
-
-            --text: #f2f7f4;
-            --text-soft: #c3d0c8;
-            --muted: #8fa299;
-            --faint: #697b72;
-
-            --border: rgba(207, 226, 215, .11);
-            --border-strong: rgba(207, 226, 215, .19);
-
-            --forest: #2f9d6a;
-            --forest-strong: #49bd83;
-            --forest-soft: rgba(47, 157, 106, .14);
-
-            --mrcnn: #35c77b;
-            --mrcnn-soft: rgba(53, 199, 123, .16);
-
-            --yolo: #a56bf4;
-            --yolo-soft: rgba(165, 107, 244, .16);
-
-            --review: #f2ad3d;
-            --review-soft: rgba(242, 173, 61, .15);
-
-            --danger: #ef6a62;
-            --danger-soft: rgba(239, 106, 98, .13);
-
-            --info: #69a7f2;
-            --info-soft: rgba(105, 167, 242, .13);
-
-            --neutral-model: #9fb0a7;
-
-            --topbar-h: 66px;
-            --left-w: 304px;
-            --right-w: 372px;
-
-            --radius-xl: 18px;
-            --radius-lg: 14px;
-            --radius-md: 11px;
-            --radius-sm: 8px;
-
-            --shadow-panel: 0 18px 46px rgba(0, 0, 0, .24);
+            --bg: #f3f6f4;
+            --surface: #ffffff;
+            --surface-soft: #f7faf8;
+            --surface-dark: #102a21;
+            --text: #17251f;
+            --muted: #66766e;
+            --muted-2: #8a9891;
+            --border: #dce6e0;
+            --border-strong: #c9d8d0;
+            --forest: #176b4d;
+            --forest-dark: #0f4e38;
+            --forest-soft: #e8f4ee;
+            --forest-softer: #f3f9f6;
+            --blue: #245f92;
+            --blue-soft: #edf5fb;
+            --amber: #9b6412;
+            --amber-soft: #fff6e5;
+            --red: #b42318;
+            --red-soft: #fff0ee;
+            --purple: #6d4ab0;
+            --purple-soft: #f2edfb;
+            --shadow-sm: 0 6px 18px rgba(20, 50, 35, .055);
+            --shadow-md: 0 16px 38px rgba(20, 50, 35, .085);
+            --radius: 16px;
+            --radius-sm: 11px;
         }
 
-        * {
-            box-sizing: border-box;
-        }
-
-        html,
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             margin: 0;
-            width: 100%;
-            min-height: 100%;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background: var(--bg);
             color: var(--text);
-            font-family:
-                Inter,
-                ui-sans-serif,
-                system-ui,
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
         }
+        button, input, select { font: inherit; }
+        a { color: inherit; }
+        [hidden] { display: none !important; }
 
-        body {
-            overflow: hidden;
+        /* App shell */
+        .appbar {
+            background: var(--surface-dark);
+            color: #fff;
+            border-bottom: 1px solid rgba(255,255,255,.08);
         }
-
-        button,
-        input,
-        select {
-            font: inherit;
-        }
-
-        button,
-        a {
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        a {
-            color: inherit;
-        }
-
-        [hidden] {
-            display: none !important;
-        }
-
-        /* =========================================================
-           TOPBAR
-        ========================================================= */
-
-        .topbar {
-            height: var(--topbar-h);
+        .appbar-inner {
+            max-width: 1540px;
+            margin: 0 auto;
+            padding: 15px 28px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 18px;
-            padding: 0 18px;
-            background: #0d1511;
-            border-bottom: 1px solid var(--border);
-            position: relative;
-            z-index: 150;
+            gap: 22px;
         }
-
-        .topbar-left,
-        .topbar-right {
-            min-width: 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
         .brand-mark {
-            width: 38px;
-            height: 38px;
-            flex: 0 0 38px;
-            border-radius: 11px;
-            display: grid;
-            place-items: center;
-            background: linear-gradient(145deg, #1a533d, #123427);
-            border: 1px solid rgba(105, 207, 154, .22);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-        }
-
-        .brand-mark svg {
-            width: 22px;
-            height: 22px;
-        }
-
-        .brand-copy {
+            width: 42px; height: 42px; border-radius: 12px;
+            display: grid; place-items: center;
+            background: rgba(255,255,255,.09);
+            border: 1px solid rgba(255,255,255,.12);
             flex: 0 0 auto;
         }
-
-        .brand-name {
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: -.01em;
+        .brand-mark svg { width: 25px; height: 25px; }
+        .brand-name { font-size: 15px; font-weight: 780; letter-spacing: .01em; }
+        .brand-sub { margin-top: 2px; font-size: 11px; color: rgba(255,255,255,.64); }
+        .appbar-module {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 7px 11px; border-radius: 999px;
+            font-size: 11px; font-weight: 700;
+            color: rgba(255,255,255,.8);
+            border: 1px solid rgba(255,255,255,.1);
+            background: rgba(255,255,255,.05);
+        }
+        .appbar-module::before {
+            content: ""; width: 7px; height: 7px; border-radius: 999px; background: #73d69e;
         }
 
-        .brand-mode {
-            margin-top: 2px;
-            color: var(--muted);
-            font-size: 10px;
+        .page { max-width: 1540px; margin: 0 auto; padding: 28px 28px 64px; }
+        .breadcrumb {
+            display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+            margin-bottom: 16px; color: var(--muted); font-size: 11px; font-weight: 650;
         }
-
-        .breadcrumb-divider {
-            width: 1px;
-            height: 30px;
-            background: var(--border);
-            margin: 0 2px;
+        .breadcrumb strong { color: var(--forest-dark); }
+        .page-header {
+            display: flex; justify-content: space-between; align-items: flex-start; gap: 24px;
+            margin-bottom: 22px;
         }
-
-        .context-path {
-            min-width: 0;
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            color: var(--muted);
-            font-size: 11px;
-            white-space: nowrap;
-            overflow: hidden;
+        .eyebrow {
+            margin-bottom: 7px; color: var(--forest); font-size: 10px;
+            font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
         }
+        .page-title { margin: 0; font-size: clamp(28px, 3vw, 38px); letter-spacing: -.035em; line-height: 1.08; }
+        .page-subtitle { max-width: 880px; margin: 10px 0 0; color: var(--muted); line-height: 1.62; font-size: 14px; }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-        .context-path strong {
-            max-width: 220px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: var(--text-soft);
-            font-weight: 700;
-        }
-
-        .context-chevron {
-            color: var(--faint);
-        }
-
-        .top-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            min-height: 32px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,.035);
-            color: var(--text-soft);
-            font-size: 10px;
-            font-weight: 700;
+        /* Buttons */
+        .btn {
+            appearance: none; border: 0; border-radius: 10px; padding: 10px 14px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 12px; font-weight: 750; text-decoration: none; cursor: pointer;
+            transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease;
             white-space: nowrap;
         }
+        .btn:hover { transform: translateY(-1px); }
+        .btn:focus-visible { outline: 3px solid rgba(23,107,77,.18); outline-offset: 2px; }
+        .btn:disabled { cursor: not-allowed; opacity: .58; transform: none; }
+        .btn-primary { color: #fff; background: var(--forest); box-shadow: 0 6px 14px rgba(23,107,77,.18); }
+        .btn-primary:hover { background: var(--forest-dark); }
+        .btn-secondary { color: var(--forest-dark); background: var(--forest-soft); }
+        .btn-secondary:hover { background: #dceee5; }
+        .btn-outline { color: var(--text); background: #fff; border: 1px solid var(--border); }
+        .btn-outline:hover { border-color: var(--border-strong); background: var(--surface-soft); }
+        .btn-ghost { color: var(--muted); background: transparent; border: 1px solid transparent; }
+        .btn-ghost:hover { background: var(--surface-soft); color: var(--text); }
+        .btn-small { padding: 8px 10px; font-size: 11px; }
+        .btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
 
-        .status-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--forest-strong);
-            box-shadow: 0 0 0 3px rgba(73, 189, 131, .11);
+        /* Alerts */
+        .alert {
+            margin-bottom: 18px; padding: 13px 15px; border-radius: 11px;
+            font-size: 12px; line-height: 1.55; border: 1px solid;
         }
+        .alert-success { color: #155b3b; background: #eaf7ef; border-color: #c6e4d2; }
+        .alert-error { color: var(--red); background: var(--red-soft); border-color: #efc9c5; }
 
-        .top-action {
-            height: 34px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            padding: 0 11px;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            background: rgba(255,255,255,.035);
-            color: var(--text-soft);
-            text-decoration: none;
-            font-size: 11px;
-            font-weight: 750;
-            cursor: pointer;
-            transition: background .15s ease, border-color .15s ease;
+        /* Summary strip */
+        .summary-strip {
+            display: grid; grid-template-columns: repeat(5, minmax(0,1fr));
+            background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+            box-shadow: var(--shadow-sm); margin-bottom: 22px; overflow: hidden;
         }
+        .summary-item { padding: 16px 18px; position: relative; min-width: 0; }
+        .summary-item + .summary-item { border-left: 1px solid var(--border); }
+        .summary-label { color: var(--muted); font-size: 10px; font-weight: 720; text-transform: uppercase; letter-spacing: .055em; }
+        .summary-value { margin-top: 3px; font-size: 24px; font-weight: 790; letter-spacing: -.03em; }
+        .summary-detail { margin-top: 2px; color: var(--muted-2); font-size: 10px; }
+        .summary-item.success .summary-value { color: var(--forest); }
+        .summary-item.warning .summary-value { color: var(--amber); }
+        .summary-item.danger .summary-value { color: var(--red); }
+        .summary-item.info .summary-value { color: var(--blue); }
 
-        .top-action:hover {
-            background: rgba(255,255,255,.07);
-            border-color: var(--border-strong);
+        /* Cards */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+        .section-card { margin-bottom: 22px; overflow: hidden; }
+        .section-header {
+            padding: 18px 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 18px;
+            border-bottom: 1px solid var(--border); background: linear-gradient(180deg, #fff, #fcfdfc);
         }
+        .section-title { margin: 0; font-size: 16px; letter-spacing: -.015em; }
+        .section-desc { margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+        .section-body { padding: 20px; }
+        .section-kicker { font-size: 9px; color: var(--forest); font-weight: 800; text-transform: uppercase; letter-spacing: .09em; margin-bottom: 5px; }
 
-        .top-action svg {
-            width: 15px;
-            height: 15px;
+        /* Upload */
+        .upload-layout { display: grid; grid-template-columns: minmax(230px,.55fr) minmax(420px,1.45fr); gap: 18px; align-items: stretch; }
+        .field label { display: block; margin-bottom: 7px; font-size: 11px; font-weight: 750; color: #34483f; }
+        select, .search-input {
+            width: 100%; padding: 11px 12px; background: #fff; border: 1px solid var(--border-strong);
+            border-radius: 10px; color: var(--text); font-size: 12px;
         }
-
-        /* =========================================================
-           WORKSPACE
-        ========================================================= */
-
-        .workspace {
-            height: calc(100vh - var(--topbar-h));
-            height: calc(100dvh - var(--topbar-h));
-            display: grid;
-            grid-template-columns: var(--left-w) minmax(0, 1fr) var(--right-w);
-            min-height: 0;
-            background: var(--bg);
+        select:focus, .search-input:focus { outline: none; border-color: var(--forest); box-shadow: 0 0 0 3px rgba(23,107,77,.09); }
+        .project-box { height: 100%; padding: 16px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface-soft); }
+        .project-box .field { margin-bottom: 12px; }
+        .project-note { color: var(--muted); font-size: 10px; line-height: 1.5; }
+        .dropzone {
+            min-height: 170px; padding: 22px; border: 1.5px dashed #b9cbc2; border-radius: 14px;
+            background: linear-gradient(180deg, #fbfdfc, #f7faf8); display: flex; align-items: center; justify-content: center;
+            text-align: center; cursor: pointer; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
         }
-
-        .side-panel {
-            min-width: 0;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-            background: var(--surface);
-            position: relative;
-            z-index: 60;
+        .dropzone:hover, .dropzone.dragging { border-color: var(--forest); background: var(--forest-softer); box-shadow: inset 0 0 0 1px rgba(23,107,77,.04); }
+        .dropzone input { display: none; }
+        .drop-icon {
+            width: 46px; height: 46px; margin: 0 auto 10px; display: grid; place-items: center;
+            border-radius: 13px; background: var(--forest-soft); color: var(--forest);
         }
-
-        .left-panel {
-            border-right: 1px solid var(--border);
+        .drop-icon svg { width: 24px; height: 24px; }
+        .drop-title { font-size: 13px; font-weight: 760; }
+        .drop-sub { margin-top: 4px; color: var(--muted); font-size: 11px; }
+        .drop-types { margin-top: 9px; color: var(--muted-2); font-size: 9px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
+        .selected-file {
+            margin-top: 12px; padding: 11px 12px; display: none; align-items: center; justify-content: space-between; gap: 12px;
+            border: 1px solid var(--border); border-radius: 10px; background: #fff;
         }
+        .selected-file.visible { display: flex; }
+        .selected-file-name { min-width: 0; font-size: 11px; font-weight: 730; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .selected-file-size { flex: 0 0 auto; color: var(--muted); font-size: 10px; }
+        .upload-actions { margin-top: 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .upload-privacy { color: var(--muted); font-size: 10px; line-height: 1.45; }
 
-        .right-panel {
-            border-left: 1px solid var(--border);
-        }
+        /* Progress */
+        .progress-shell { margin-top: 16px; padding: 14px; border-radius: 12px; background: var(--surface-soft); border: 1px solid var(--border); }
+        .progress-head { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 8px; }
+        .progress-label { font-size: 11px; font-weight: 750; }
+        .progress-percent { font-size: 11px; font-weight: 800; color: var(--forest); }
+        progress { width: 100%; height: 9px; border: 0; border-radius: 999px; overflow: hidden; appearance: none; }
+        progress::-webkit-progress-bar { background: #e3ebe7; border-radius: 999px; }
+        progress::-webkit-progress-value { background: var(--forest); border-radius: 999px; }
+        progress::-moz-progress-bar { background: var(--forest); }
+        .progress-meta-line { margin-top: 7px; display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 9px; }
+        .progress-stages { margin-top: 12px; display: flex; gap: 7px; flex-wrap: wrap; }
+        .stage-chip { padding: 5px 8px; border-radius: 999px; background: #fff; border: 1px solid var(--border); color: var(--muted); font-size: 9px; font-weight: 700; }
+        .stage-chip.active { color: var(--forest-dark); background: var(--forest-soft); border-color: #cce4d7; }
+        .stage-chip.done { color: #155b3b; background: #eaf7ef; border-color: #c6e4d2; }
+        .upload-status { margin-top: 8px; font-size: 10px; font-weight: 700; }
 
-        .panel-heading {
-            flex: 0 0 auto;
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .panel-heading-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .panel-kicker {
-            color: var(--forest-strong);
-            font-size: 9px;
-            font-weight: 850;
-            letter-spacing: .11em;
-            text-transform: uppercase;
-        }
-
-        .panel-title {
-            margin: 4px 0 0;
-            font-size: 16px;
-            line-height: 1.2;
-            font-weight: 800;
-            letter-spacing: -.015em;
-        }
-
-        .panel-description {
-            margin: 7px 0 0;
-            color: var(--muted);
-            font-size: 10.5px;
-            line-height: 1.55;
-        }
-
-        .panel-count {
-            min-width: 30px;
-            height: 26px;
-            padding: 0 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 999px;
-            background: var(--forest-soft);
-            color: #bde9d1;
-            border: 1px solid rgba(73, 189, 131, .18);
-            font-size: 10px;
-            font-weight: 850;
-        }
-
-        /* =========================================================
-           EXPLORER
-        ========================================================= */
-
-        .explorer-controls {
-            flex: 0 0 auto;
-            padding: 13px 14px 12px;
-            border-bottom: 1px solid var(--border);
-            display: grid;
-            gap: 10px;
-        }
-
-        .search-box {
-            position: relative;
-        }
-
-        .search-box svg {
-            position: absolute;
-            left: 11px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 14px;
-            height: 14px;
-            color: var(--muted);
-            pointer-events: none;
-        }
-
-        .search-input {
-            width: 100%;
-            height: 38px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: #0e1713;
-            color: var(--text);
-            padding: 0 11px 0 34px;
-            font-size: 11px;
-            outline: none;
-            transition: border-color .15s ease, box-shadow .15s ease;
-        }
-
-        .search-input:focus {
-            border-color: rgba(73, 189, 131, .55);
-            box-shadow: 0 0 0 3px rgba(73, 189, 131, .08);
-        }
-
-        .search-input::placeholder {
-            color: #677a70;
-        }
-
-        .quick-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
+        /* Explorer */
+        .explorer-toolbar { padding: 15px 20px; display: grid; grid-template-columns: minmax(250px,1fr) auto; gap: 14px; align-items: center; border-bottom: 1px solid var(--border); }
+        .search-wrap { position: relative; max-width: 480px; }
+        .search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted-2); pointer-events: none; }
+        .search-input { padding-left: 34px; }
+        .filters { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         .filter-chip {
-            min-height: 29px;
-            padding: 5px 9px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,.025);
-            color: var(--muted);
-            font-size: 9.5px;
-            font-weight: 750;
-            cursor: pointer;
-            transition: background .15s ease, color .15s ease, border-color .15s ease;
+            border: 1px solid var(--border); background: #fff; color: var(--muted); padding: 7px 10px;
+            border-radius: 999px; font-size: 10px; font-weight: 740; cursor: pointer;
+        }
+        .filter-chip:hover { border-color: var(--border-strong); color: var(--text); }
+        .filter-chip.active { background: var(--forest-soft); color: var(--forest-dark); border-color: #cce4d7; }
+        .results-count { padding: 0 20px 11px; color: var(--muted); font-size: 10px; }
+        .mosaic-list { padding: 0 20px 20px; display: grid; gap: 12px; }
+        .mosaic-row {
+            border: 1px solid var(--border); border-radius: 14px; background: #fff; overflow: hidden;
+            transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+        }
+        .mosaic-row:hover { border-color: #cbd9d1; box-shadow: 0 9px 24px rgba(20,50,35,.055); transform: translateY(-1px); }
+        .mosaic-main {
+            padding: 14px; display: grid;
+            grid-template-columns: 152px minmax(220px,1.5fr) minmax(200px,1fr) 160px 170px auto;
+            gap: 16px; align-items: center;
+        }
+        .preview-box {
+            width: 152px; height: 92px; border-radius: 10px; border: 1px solid var(--border); overflow: hidden;
+            background: linear-gradient(135deg,#edf3ef,#f8faf9); display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .preview-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .preview-empty { padding: 10px; color: var(--muted-2); font-size: 9px; line-height: 1.4; text-align: center; }
+        .preview-link { display: block; text-decoration: none; }
+        .preview-link:hover .preview-box { border-color: var(--forest); }
+        .preview-badge { position: absolute; left: 7px; bottom: 7px; padding: 3px 6px; border-radius: 6px; background: rgba(10,35,26,.77); color: #fff; font-size: 8px; backdrop-filter: blur(4px); }
+        .mosaic-title { font-size: 13px; font-weight: 770; overflow-wrap: anywhere; }
+        .mosaic-project { margin-top: 5px; color: var(--muted); font-size: 10px; }
+        .mosaic-filemeta { margin-top: 8px; display: flex; gap: 7px; flex-wrap: wrap; }
+        .micro-tag { padding: 4px 6px; border-radius: 6px; background: var(--surface-soft); border: 1px solid var(--border); color: var(--muted); font-size: 8px; font-weight: 700; }
+        .specs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+        .spec-label { color: var(--muted-2); font-size: 8px; text-transform: uppercase; letter-spacing: .05em; }
+        .spec-value { margin-top: 2px; font-size: 10px; font-weight: 730; overflow-wrap: anywhere; }
+        .status-stack { display: grid; gap: 7px; justify-items: start; }
+        .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 999px; font-size: 9px; font-weight: 780; white-space: nowrap; }
+        .badge::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+        .badge-ready { color: #15603d; background: #eaf7ef; }
+        .badge-uploading, .badge-inspecting, .badge-processing, .badge-uploaded { color: var(--amber); background: var(--amber-soft); }
+        .badge-failed { color: var(--red); background: var(--red-soft); }
+        .badge-default { color: var(--blue); background: var(--blue-soft); }
+        .status-next { color: var(--muted); font-size: 9px; line-height: 1.4; }
+        .qa-block { min-width: 0; }
+        .qa-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+        .qa-title { font-size: 9px; font-weight: 760; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+        .qa-score { font-size: 10px; font-weight: 800; }
+        .qa-bar { height: 6px; margin-top: 7px; background: #edf2ef; border-radius: 999px; overflow: hidden; }
+        .qa-fill { height: 100%; border-radius: 999px; background: var(--forest); }
+        .qa-note { margin-top: 5px; color: var(--muted-2); font-size: 8px; line-height: 1.35; }
+        .row-actions { display: flex; gap: 7px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+        .action-menu { position: relative; }
+        .menu-toggle { width: 34px; height: 34px; padding: 0; font-size: 17px; }
+        .menu-panel {
+            position: absolute; right: 0; top: calc(100% + 7px); z-index: 50; min-width: 210px;
+            padding: 6px; background: #fff; border: 1px solid var(--border); border-radius: 11px; box-shadow: var(--shadow-md); display: none;
+        }
+        .action-menu.open .menu-panel { display: grid; }
+        .menu-item { width: 100%; border: 0; background: transparent; color: var(--text); padding: 9px 10px; border-radius: 8px; text-align: left; text-decoration: none; font-size: 10px; font-weight: 650; cursor: pointer; }
+        .menu-item:hover { background: var(--surface-soft); }
+        .menu-panel form { margin: 0; }
+        .menu-panel .menu-item { display: block; }
+
+        .menu-separator {
+            height: 1px;
+            margin: 5px 4px;
+            background: var(--border);
         }
 
-        .filter-chip:hover {
-            color: var(--text-soft);
-            border-color: var(--border-strong);
+        .menu-item-danger {
+            color: var(--red);
         }
 
-        .filter-chip.active {
-            color: #d8f4e5;
-            border-color: rgba(73, 189, 131, .28);
-            background: var(--forest-soft);
+        .menu-item-danger:hover {
+            background: var(--red-soft);
+            color: #8f1c13;
         }
 
-        .advanced-filters {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 7px;
-        }
-
-        .compact-select {
-            width: 100%;
-            height: 34px;
-            padding: 0 26px 0 9px;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            background: #0e1713;
-            color: var(--text-soft);
-            font-size: 9.5px;
-            outline: none;
-        }
-
-        .filter-feedback {
-            min-height: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            color: var(--muted);
-            font-size: 9.5px;
-        }
-
-        .filter-reset {
-            padding: 0;
-            border: 0;
+        .menu-item-danger:disabled {
+            cursor: not-allowed;
+            opacity: .45;
             background: transparent;
-            color: #9fdab9;
-            font-size: 9.5px;
-            font-weight: 750;
-            cursor: pointer;
         }
 
-        .object-list {
-            min-height: 0;
-            flex: 1 1 auto;
-            overflow: auto;
-            padding: 8px;
-            scrollbar-width: thin;
-            scrollbar-color: #31453a transparent;
-        }
-
-        .object-list-empty {
-            margin: 12px;
-            padding: 20px 14px;
-            border: 1px dashed var(--border-strong);
-            border-radius: 12px;
-            color: var(--muted);
-            font-size: 10.5px;
-            line-height: 1.6;
-            text-align: center;
-        }
-
-        .object-row {
-            width: 100%;
-            display: block;
-            border: 1px solid transparent;
-            border-radius: 11px;
-            background: transparent;
-            color: inherit;
-            text-align: left;
-            padding: 10px;
-            margin: 0 0 4px;
-            cursor: pointer;
-            transition: background .12s ease, border-color .12s ease;
-        }
-
-        .object-row:hover {
-            background: var(--surface-2);
-        }
-
-        .object-row.selected {
-            background: rgba(73, 189, 131, .09);
-            border-color: rgba(73, 189, 131, .24);
-        }
-
-        .object-row-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-
-        .object-id {
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 11px;
-            font-weight: 820;
-            color: #f0f7f3;
-        }
-
-        .model-mark {
-            flex: 0 0 auto;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .model-mark.mrcnn { background: var(--mrcnn); }
-        .model-mark.yolo { background: var(--yolo); }
-        .model-mark.unknown { background: var(--neutral-model); }
-
-        .object-row-meta {
-            margin-top: 7px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 5px 8px;
-            color: var(--muted);
-            font-size: 9.5px;
-        }
-
-        .mini-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .mini-status::before {
-            content: "";
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: var(--forest-strong);
-        }
-
-        .mini-status.review::before {
-            background: var(--review);
-        }
-
-        .explorer-footer {
-            flex: 0 0 auto;
-            padding: 10px 14px 12px;
-            border-top: 1px solid var(--border);
-            color: var(--muted);
-            font-size: 9.5px;
-            line-height: 1.5;
-        }
-
-        /* =========================================================
-           MAP PANE
-        ========================================================= */
-
-        .map-pane {
-            min-width: 0;
-            min-height: 0;
-            position: relative;
-            overflow: hidden;
-            background: #101914;
-        }
-
-        #map {
-            position: absolute;
-            inset: 0 0 32px;
-            background:
-                linear-gradient(45deg, rgba(255,255,255,.018) 25%, transparent 25%),
-                linear-gradient(-45deg, rgba(255,255,255,.018) 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, rgba(255,255,255,.018) 75%),
-                linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.018) 75%),
-                #111b16;
-            background-size: 28px 28px;
-            background-position: 0 0, 0 14px, 14px -14px, -14px 0;
-        }
-
-        .map-toolbar {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            right: 12px;
-            z-index: 40;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 10px;
-            pointer-events: none;
-        }
-
-        .toolbar-left,
-        .toolbar-right {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 7px;
-            pointer-events: auto;
-        }
-
-        .tool-group {
-            min-height: 38px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px;
-            border-radius: 11px;
-            border: 1px solid rgba(222, 239, 229, .12);
-            background: rgba(13, 21, 17, .90);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 22px rgba(0,0,0,.18);
-        }
-
-        .map-tool {
-            height: 28px;
-            display: inline-flex;
+        /* Delete confirmation modal */
+        .delete-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            display: none;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 0 8px;
-            border: 0;
-            border-radius: 7px;
-            background: transparent;
-            color: var(--text-soft);
-            font-size: 9.5px;
-            font-weight: 750;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: background .12s ease, color .12s ease;
+            padding: 22px;
         }
 
-        .map-tool:hover {
-            background: rgba(255,255,255,.07);
-            color: var(--text);
-        }
-
-        .map-tool.active {
-            background: var(--forest-soft);
-            color: #c7f0da;
-        }
-
-        .map-tool.review-active {
-            background: var(--review-soft);
-            color: #ffe2ac;
-        }
-
-        .map-tool svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        .layer-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-        }
-
-        .layer-dot.preview { background: #f1f4f2; }
-        .layer-dot.mrcnn { background: var(--mrcnn); }
-        .layer-dot.yolo { background: var(--yolo); }
-        .layer-dot.review { background: var(--review); }
-
-        .opacity-popover {
-            position: relative;
-        }
-
-        .opacity-panel {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            width: 236px;
-            padding: 12px;
-            border-radius: 12px;
-            border: 1px solid var(--border-strong);
-            background: rgba(13, 21, 17, .97);
-            box-shadow: var(--shadow-panel);
-            display: none;
-        }
-
-        .opacity-popover.open .opacity-panel {
-            display: grid;
-            gap: 12px;
-        }
-
-        .opacity-row {
-            display: grid;
-            gap: 6px;
-        }
-
-        .opacity-row-head {
+        .delete-modal.open {
             display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            color: var(--muted);
-            font-size: 9.5px;
-            font-weight: 700;
         }
 
-        .opacity-row-head strong {
-            color: var(--text-soft);
-        }
-
-        .opacity-row input[type="range"] {
-            width: 100%;
-            accent-color: var(--forest-strong);
-        }
-
-        .map-summary {
+        .delete-modal-backdrop {
             position: absolute;
-            left: 12px;
-            bottom: 44px;
-            z-index: 35;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 5px;
-            border-radius: 11px;
-            border: 1px solid rgba(222, 239, 229, .11);
-            background: rgba(13, 21, 17, .88);
-            backdrop-filter: blur(9px);
-            box-shadow: 0 8px 22px rgba(0,0,0,.17);
-            pointer-events: none;
-        }
-
-        .summary-item {
-            min-width: 68px;
-            padding: 5px 8px;
-            border-right: 1px solid var(--border);
-        }
-
-        .summary-item:last-child {
-            border-right: 0;
-        }
-
-        .summary-label {
-            color: var(--muted);
-            font-size: 8px;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-            font-weight: 750;
-        }
-
-        .summary-value {
-            margin-top: 2px;
-            font-size: 13px;
-            font-weight: 850;
-        }
-
-        .map-statusbar {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 32px;
-            z-index: 45;
-            display: flex;
-            align-items: center;
-            gap: 0;
-            overflow-x: auto;
-            border-top: 1px solid var(--border);
-            background: #0d1511;
-            color: var(--muted);
-            scrollbar-width: none;
-        }
-
-        .map-statusbar::-webkit-scrollbar {
-            display: none;
-        }
-
-        .statusbar-item {
-            min-height: 31px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 0 11px;
-            border-right: 1px solid var(--border);
-            font-size: 9.5px;
-            white-space: nowrap;
-        }
-
-        .statusbar-item strong {
-            color: var(--text-soft);
-            font-weight: 750;
-        }
-
-        .map-tooltip {
-            position: absolute;
-            z-index: 80;
-            transform: translate(-50%, calc(-100% - 13px));
-            pointer-events: none;
-            min-width: 190px;
-            max-width: 260px;
-            padding: 10px 11px;
-            border-radius: 11px;
-            border: 1px solid rgba(222, 239, 229, .14);
-            background: rgba(10, 17, 13, .96);
-            box-shadow: 0 15px 35px rgba(0,0,0,.28);
-            opacity: 0;
-            transition: opacity .1s ease;
-        }
-
-        .map-tooltip.active {
-            opacity: 1;
-        }
-
-        .tooltip-title {
-            font-size: 11px;
-            font-weight: 820;
-        }
-
-        .tooltip-meta {
-            margin-top: 5px;
-            color: var(--muted);
-            font-size: 9.5px;
-            line-height: 1.5;
-        }
-
-        .tooltip-status {
-            margin-top: 7px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 4px 6px;
-            border-radius: 6px;
-            background: var(--review-soft);
-            color: #fbd698;
-            font-size: 8.5px;
-            font-weight: 800;
-        }
-
-        .map-loading,
-        .map-error {
-            position: absolute;
-            inset: 0 0 32px;
-            z-index: 70;
-            display: grid;
-            place-items: center;
-            background: rgba(8, 14, 11, .54);
+            inset: 0;
+            background: rgba(8, 24, 18, .56);
             backdrop-filter: blur(3px);
         }
 
-        .map-error {
-            background: rgba(8, 14, 11, .72);
-        }
-
-        .loading-card,
-        .error-card {
-            width: min(380px, calc(100% - 40px));
-            padding: 20px;
-            border: 1px solid var(--border-strong);
-            border-radius: 15px;
-            background: rgba(17, 26, 22, .97);
-            box-shadow: var(--shadow-panel);
-            text-align: center;
-        }
-
-        .loading-spinner {
-            width: 24px;
-            height: 24px;
-            margin: 0 auto 10px;
-            border: 2px solid rgba(255,255,255,.10);
-            border-top-color: var(--forest-strong);
-            border-radius: 50%;
-            animation: spin .75s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-title,
-        .error-title {
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        .loading-text,
-        .error-text {
-            margin-top: 6px;
-            color: var(--muted);
-            font-size: 10px;
-            line-height: 1.55;
-        }
-
-        .error-action {
-            margin-top: 13px;
-            min-height: 32px;
-            padding: 0 12px;
-            border: 1px solid rgba(73, 189, 131, .22);
-            border-radius: 8px;
-            background: var(--forest-soft);
-            color: #c8efdc;
-            font-size: 10px;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        /* =========================================================
-           OPENLAYERS
-        ========================================================= */
-
-        .ol-control button {
-            background: rgba(13, 21, 17, .92) !important;
-            color: white !important;
-            border-radius: 7px !important;
-        }
-
-        .ol-control button:hover {
-            background: rgba(31, 49, 40, .96) !important;
-        }
-
-        .ol-zoom {
-            top: 62px !important;
-            left: auto !important;
-            right: 12px !important;
-            border-radius: 9px !important;
+        .delete-modal-card {
+            position: relative;
+            z-index: 1;
+            width: min(510px, 100%);
+            border: 1px solid #efc9c5;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 24px 70px rgba(31, 45, 38, .22);
             overflow: hidden;
-            border: 1px solid rgba(222,239,229,.12);
-            background: transparent !important;
         }
 
-        .ol-scale-line {
-            left: auto !important;
-            right: 12px !important;
-            bottom: 44px !important;
-            border-radius: 8px;
-            background: rgba(13, 21, 17, .84) !important;
-            border: 1px solid rgba(222,239,229,.10);
+        .delete-modal-head {
+            display: flex;
+            align-items: flex-start;
+            gap: 13px;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid #f1d7d4;
+            background: linear-gradient(180deg, #fff, #fff8f7);
         }
 
-        .ol-attribution {
-            right: 6px !important;
-            bottom: 36px !important;
-            background: rgba(13, 21, 17, .78) !important;
-            color: white !important;
-            border-radius: 7px !important;
-        }
-
-        /* =========================================================
-           INSPECTOR
-        ========================================================= */
-
-        .inspector-tabs {
-            flex: 0 0 auto;
+        .delete-modal-icon {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
-            padding: 7px;
-            border-bottom: 1px solid var(--border);
-            background: #0f1814;
+            place-items: center;
+            border-radius: 11px;
+            color: var(--red);
+            background: var(--red-soft);
+            border: 1px solid #efc9c5;
         }
 
-        .inspector-tab {
-            min-height: 32px;
-            border: 0;
-            border-radius: 8px;
-            background: transparent;
-            color: var(--muted);
-            font-size: 10px;
-            font-weight: 800;
-            cursor: pointer;
+        .delete-modal-icon svg {
+            width: 20px;
+            height: 20px;
         }
 
-        .inspector-tab.active {
-            background: var(--surface-3);
-            color: var(--text);
+        .delete-modal-title {
+            margin: 0;
+            color: #7f1d16;
+            font-size: 16px;
+            letter-spacing: -.015em;
         }
 
-        .inspector-body {
-            min-height: 0;
-            flex: 1 1 auto;
-            overflow-y: auto;
-            padding: 14px;
-            scrollbar-width: thin;
-            scrollbar-color: #31453a transparent;
-        }
-
-        .inspector-empty {
-            padding: 18px 14px;
-            border: 1px dashed var(--border-strong);
-            border-radius: 12px;
+        .delete-modal-subtitle {
+            margin-top: 4px;
             color: var(--muted);
             font-size: 10.5px;
+            line-height: 1.5;
+        }
+
+        .delete-modal-body {
+            padding: 18px 20px;
+        }
+
+        .delete-target {
+            padding: 11px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface-soft);
+        }
+
+        .delete-target-label {
+            color: var(--muted-2);
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .delete-target-name {
+            margin-top: 4px;
+            color: var(--text);
+            font-size: 11px;
+            font-weight: 760;
+            overflow-wrap: anywhere;
+        }
+
+        .delete-warning-list {
+            margin: 14px 0 0;
+            padding-left: 18px;
+            color: #6f332e;
+            font-size: 10px;
             line-height: 1.65;
         }
 
-        .selected-header {
+        .delete-warning-final {
+            margin-top: 13px;
+            padding: 10px 11px;
+            border-radius: 9px;
+            color: #8a231a;
+            background: var(--red-soft);
+            border: 1px solid #efc9c5;
+            font-size: 10px;
+            font-weight: 720;
+            line-height: 1.5;
+        }
+
+        .delete-modal-actions {
             display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 13px;
+            justify-content: flex-end;
+            gap: 9px;
+            padding: 14px 20px 18px;
+            border-top: 1px solid var(--border);
+            background: #fcfdfc;
         }
 
-        .selected-kicker {
-            color: var(--muted);
-            font-size: 8.5px;
-            text-transform: uppercase;
-            letter-spacing: .08em;
-            font-weight: 800;
+        .btn-danger {
+            color: #fff;
+            background: var(--red);
+            box-shadow: 0 6px 14px rgba(180, 35, 24, .16);
         }
 
-        .selected-id {
-            margin-top: 3px;
-            font-size: 18px;
-            line-height: 1.15;
-            font-weight: 850;
-            letter-spacing: -.02em;
-            overflow-wrap: anywhere;
+        .btn-danger:hover {
+            background: #8f1c13;
         }
 
-        .badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-bottom: 13px;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 7px;
-            border-radius: 7px;
-            border: 1px solid var(--border);
-            font-size: 8.5px;
-            font-weight: 800;
-        }
-
-        .badge-mrcnn {
-            color: #c6f2d9;
-            border-color: rgba(53,199,123,.22);
-            background: var(--mrcnn-soft);
-        }
-
-        .badge-yolo {
-            color: #eadbff;
-            border-color: rgba(165,107,244,.22);
-            background: var(--yolo-soft);
-        }
-
-        .badge-neutral {
-            color: #d8e2dc;
-            background: rgba(159,176,167,.10);
-        }
-
-        .badge-review {
-            color: #f9dda9;
-            border-color: rgba(242,173,61,.24);
-            background: var(--review-soft);
-        }
-
-        .badge-ok {
-            color: #c5edd6;
-            border-color: rgba(73,189,131,.18);
-            background: var(--forest-soft);
-        }
-
-        .inspector-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 14px;
-        }
-
-        .small-action {
-            min-height: 30px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            padding: 0 9px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,.025);
-            color: var(--text-soft);
-            font-size: 9px;
-            font-weight: 750;
-            cursor: pointer;
-        }
-
-        .small-action:hover {
-            background: var(--surface-3);
-        }
-
-        .small-action:disabled {
-            opacity: .4;
-            cursor: default;
-        }
-
-        .metric-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 7px;
-            margin-bottom: 14px;
-        }
-
-        .metric-box {
-            min-width: 0;
-            padding: 10px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,.025);
-        }
-
-        .metric-label {
-            color: var(--muted);
-            font-size: 8px;
-            font-weight: 800;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-        }
-
-        .metric-value {
-            margin-top: 5px;
-            color: var(--text);
-            font-size: 15px;
-            font-weight: 850;
-            overflow-wrap: anywhere;
-        }
-
-        .section-block {
-            margin-top: 14px;
-        }
-
-        .section-block:first-child {
-            margin-top: 0;
-        }
-
-        .section-label {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 8px;
-            color: #b8c9bf;
-            font-size: 9px;
-            font-weight: 850;
-            text-transform: uppercase;
-            letter-spacing: .09em;
-        }
-
-        .section-help {
-            text-transform: none;
-            letter-spacing: 0;
-            color: var(--faint);
-            font-size: 8px;
-            font-weight: 650;
-        }
-
-        .property-list {
-            border: 1px solid var(--border);
-            border-radius: 11px;
+        body.modal-open {
             overflow: hidden;
         }
 
-        .property-row {
-            display: grid;
-            grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
-            gap: 10px;
-            padding: 8px 10px;
-            border-bottom: 1px solid var(--border);
-            background: rgba(255,255,255,.018);
+        /* Details drawer inside row */
+        .technical-panel { display: none; border-top: 1px solid var(--border); background: #fbfdfc; }
+        .technical-panel.open { display: block; }
+        .technical-inner { padding: 18px; }
+        .technical-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+        .technical-title { font-size: 13px; font-weight: 780; }
+        .technical-sub { margin-top: 3px; color: var(--muted); font-size: 9px; }
+        .technical-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+        .technical-card { padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 10px; min-width: 0; }
+        .technical-card-title { margin-bottom: 9px; color: var(--forest-dark); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+        .detail-line { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px dashed #edf1ef; font-size: 9px; }
+        .detail-line:last-child { border-bottom: 0; }
+        .detail-line span:first-child { color: var(--muted); }
+        .detail-line strong { text-align: right; overflow-wrap: anywhere; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        .hash-line { margin-top: 10px; padding: 10px; border-radius: 9px; background: #f6f8f7; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .hash-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8px; color: var(--muted); }
+
+        /* Empty */
+        .empty-state { padding: 48px 20px 52px; text-align: center; color: var(--muted); }
+        .empty-icon { width: 48px; height: 48px; margin: 0 auto 12px; display: grid; place-items: center; border-radius: 14px; background: var(--forest-soft); color: var(--forest); }
+        .empty-icon svg { width: 24px; height: 24px; }
+        .empty-title { color: var(--text); font-size: 14px; font-weight: 780; margin-bottom: 5px; }
+        .no-results { display: none; padding: 34px 20px 42px; text-align: center; color: var(--muted); font-size: 11px; }
+
+        /* Integrity */
+        .integrity-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+        .integrity-step { position: relative; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft); }
+        .integrity-step:not(:last-child)::after { content: "→"; position: absolute; right: -17px; top: 50%; transform: translateY(-50%); z-index: 2; color: var(--muted-2); font-weight: 800; }
+        .integrity-index { color: var(--forest); font-size: 9px; font-weight: 800; letter-spacing: .06em; }
+        .integrity-title { margin-top: 4px; font-size: 12px; font-weight: 780; }
+        .integrity-copy { margin-top: 5px; color: var(--muted); font-size: 9px; line-height: 1.5; }
+        .method-note { margin-top: 13px; padding: 11px 12px; border-radius: 10px; background: var(--blue-soft); color: #315d7c; border: 1px solid #d9e8f3; font-size: 9px; line-height: 1.55; }
+
+        @media (max-width: 1250px) {
+            .summary-strip { grid-template-columns: repeat(3,1fr); }
+            .summary-item:nth-child(4) { border-left: 0; border-top: 1px solid var(--border); }
+            .summary-item:nth-child(5) { border-top: 1px solid var(--border); }
+            .mosaic-main { grid-template-columns: 140px minmax(220px,1.4fr) minmax(180px,1fr) 150px auto; }
+            .qa-block { display: none; }
+            .technical-grid { grid-template-columns: repeat(2,1fr); }
         }
-
-        .property-row:last-child {
-            border-bottom: 0;
+        @media (max-width: 980px) {
+            .page, .appbar-inner { padding-left: 18px; padding-right: 18px; }
+            .page-header { flex-direction: column; }
+            .upload-layout { grid-template-columns: 1fr; }
+            .explorer-toolbar { grid-template-columns: 1fr; }
+            .filters { justify-content: flex-start; }
+            .mosaic-main { grid-template-columns: 128px 1fr auto; }
+            .specs, .status-stack { grid-column: 2; }
+            .row-actions { grid-column: 3; grid-row: 1 / span 3; align-self: center; }
+            .integrity-grid { grid-template-columns: 1fr; }
+            .integrity-step:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -17px; transform: translateX(-50%); }
         }
-
-        .property-key {
-            color: var(--muted);
-            font-size: 9px;
-            line-height: 1.4;
+        @media (max-width: 680px) {
+            .appbar-module { display: none; }
+            .page { padding: 22px 13px 44px; }
+            .appbar-inner { padding: 12px 13px; }
+            .summary-strip { grid-template-columns: 1fr 1fr; }
+            .summary-item { border-top: 1px solid var(--border); }
+            .summary-item:nth-child(-n+2) { border-top: 0; }
+            .summary-item:nth-child(odd) { border-left: 0; }
+            .mosaic-main { grid-template-columns: 1fr; }
+            .preview-box { width: 100%; height: 160px; }
+            .specs, .status-stack, .row-actions { grid-column: auto; grid-row: auto; }
+            .row-actions { justify-content: flex-start; }
+            .technical-grid { grid-template-columns: 1fr; }
+            .section-header { flex-direction: column; }
         }
-
-        .property-value {
-            color: var(--text-soft);
-            font-size: 9.5px;
-            font-weight: 720;
-            line-height: 1.4;
-            text-align: right;
-            overflow-wrap: anywhere;
-        }
-
-        .method-note,
-        .warning-note,
-        .info-note {
-            padding: 11px;
-            border-radius: 10px;
-            font-size: 9.5px;
-            line-height: 1.58;
-        }
-
-        .method-note {
-            color: #c8d7cf;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,.025);
-        }
-
-        .warning-note {
-            color: #f7dca9;
-            border: 1px solid rgba(242,173,61,.20);
-            background: var(--review-soft);
-        }
-
-        .info-note {
-            color: #c7d9f1;
-            border: 1px solid rgba(105,167,242,.18);
-            background: var(--info-soft);
-        }
-
-        .analysis-flow {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
-            margin: 8px 0 14px;
-        }
-
-        .flow-step {
-            min-width: 0;
-            padding: 9px 6px;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            background: rgba(255,255,255,.022);
-            text-align: center;
-            position: relative;
-        }
-
-        .flow-step:not(:last-child)::after {
-            content: "";
-            position: absolute;
-            right: -5px;
-            top: 50%;
-            width: 5px;
-            border-top: 1px solid var(--border-strong);
-        }
-
-        .flow-value {
-            font-size: 15px;
-            font-weight: 850;
-        }
-
-        .flow-label {
-            margin-top: 3px;
-            color: var(--muted);
-            font-size: 7.5px;
-            line-height: 1.25;
-            text-transform: uppercase;
-            letter-spacing: .05em;
-        }
-
-        .analysis-kpis {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 7px;
-        }
-
-        .analysis-kpi {
-            padding: 10px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,.022);
-        }
-
-        .analysis-kpi-label {
-            color: var(--muted);
-            font-size: 8px;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-            font-weight: 800;
-        }
-
-        .analysis-kpi-value {
-            margin-top: 4px;
-            font-size: 17px;
-            font-weight: 850;
-        }
-
-        /* =========================================================
-           MOBILE CONTROLS
-        ========================================================= */
-
-        .mobile-panel-button {
-            display: none;
-        }
-
-        .panel-close {
-            display: none;
-            width: 30px;
-            height: 30px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: rgba(255,255,255,.03);
-            color: var(--text-soft);
-            cursor: pointer;
-        }
-
-        .drawer-backdrop {
-            display: none;
-        }
-
-        /* =========================================================
-           FULLSCREEN
-        ========================================================= */
-
-        .workspace:fullscreen {
-            height: 100vh;
-        }
-
-        .workspace:fullscreen .map-pane {
-            background: #0b110e;
-        }
-
-        /* =========================================================
-           RESPONSIVE
-        ========================================================= */
-
-        @media (max-width: 1380px) {
-            :root {
-                --left-w: 276px;
-                --right-w: 344px;
-            }
-
-            .context-path strong {
-                max-width: 150px;
-            }
-
-            .top-pill.version-pill {
-                display: none;
-            }
-        }
-
-        @media (max-width: 1080px) {
-            body {
-                overflow: hidden;
-            }
-
-            .workspace {
-                grid-template-columns: 1fr;
-                position: relative;
-            }
-
-            .side-panel {
-                position: absolute;
-                top: 0;
-                bottom: 0;
-                width: min(360px, calc(100vw - 28px));
-                z-index: 120;
-                box-shadow: var(--shadow-panel);
-                transition: transform .2s ease;
-            }
-
-            .left-panel {
-                left: 0;
-                transform: translateX(-105%);
-            }
-
-            .right-panel {
-                right: 0;
-                transform: translateX(105%);
-            }
-
-            .left-panel.open,
-            .right-panel.open {
-                transform: translateX(0);
-            }
-
-            .drawer-backdrop {
-                position: absolute;
-                inset: 0;
-                z-index: 110;
-                background: rgba(0,0,0,.42);
-            }
-
-            .drawer-backdrop.active {
-                display: block;
-            }
-
-            .panel-close {
-                display: inline-grid;
-                place-items: center;
-            }
-
-            .mobile-panel-button {
-                display: inline-flex;
-            }
-
-            .context-path {
-                display: none;
-            }
-
-            .breadcrumb-divider {
-                display: none;
-            }
-        }
-
-        @media (max-width: 760px) {
-            :root {
-                --topbar-h: 58px;
-            }
-
-            .topbar {
-                padding: 0 10px;
-            }
-
-            .brand-mark {
-                width: 34px;
-                height: 34px;
-                flex-basis: 34px;
-            }
-
-            .brand-mode,
-            .top-pill,
-            .json-action {
-                display: none;
-            }
-
-            .top-action {
-                padding: 0 9px;
-            }
-
-            .top-action .action-text {
-                display: none;
-            }
-
-            .map-toolbar {
-                top: 8px;
-                left: 8px;
-                right: 8px;
-                align-items: flex-start;
-            }
-
-            .map-tool .tool-label {
-                display: none;
-            }
-
-            .map-summary {
-                left: 8px;
-                bottom: 40px;
-                max-width: calc(100% - 16px);
-                overflow-x: auto;
-                pointer-events: auto;
-            }
-
-            .summary-item {
-                min-width: 62px;
-            }
-
-            .ol-scale-line {
-                display: none;
-            }
-        }
-
-        /* =========================================================
-           WEB.6 — GPS PARA TRABAJO DE CAMPO
-           Componentes visuales independientes del pipeline científico.
-        ========================================================= */
-        .field-gps {
-            position: absolute;
-            top: 63px;
-            right: 12px;
-            z-index: 55;
-            width: min(246px, calc(100% - 24px));
-            display: grid;
-            gap: 7px;
-            pointer-events: none;
-        }
-        .field-gps-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 6px;
-            pointer-events: auto;
-        }
-        .gps-button {
-            min-width: 40px;
-            min-height: 40px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            border: 1px solid rgba(207,226,215,.18);
-            border-radius: 11px;
-            background: rgba(13,21,17,.94);
-            box-shadow: 0 7px 24px rgba(0,0,0,.28);
-            color: #e5f4eb;
-            font-weight: 800;
-            font-size: 11px;
-            cursor: pointer;
-            backdrop-filter: blur(9px);
-            touch-action: manipulation;
-        }
-        .gps-button svg { width: 18px; height: 18px; flex: 0 0 auto; }
-        .gps-button.primary { background: #1b7355; border-color: #4fc58d; }
-        .gps-button.primary:hover { background: #258361; }
-        .gps-button:disabled { opacity: .48; cursor: not-allowed; }
-        .gps-button.is-following { background: #244d8a; border-color: #7badf3; }
-        .gps-status {
-            pointer-events: auto;
-            padding: 9px 11px;
-            border: 1px solid rgba(207,226,215,.17);
-            border-radius: 11px;
-            background: rgba(13,21,17,.94);
-            box-shadow: 0 7px 24px rgba(0,0,0,.21);
-            backdrop-filter: blur(9px);
-            color: var(--text-soft);
-            font-size: 10px;
-            line-height: 1.5;
-        }
-        .gps-status-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-        .gps-status-title { font-size: 11px; font-weight: 850; color: #f3fbf6; }
-        .gps-status-indicator { font-size: 9px; font-weight: 800; color: #aecac0; }
-        .gps-status-indicator[data-state="good"] { color: #76e4aa; }
-        .gps-status-indicator[data-state="warning"] { color: #ffc974; }
-        .gps-status-indicator[data-state="error"] { color: #ff9991; }
-        .gps-status-text { margin-top: 4px; color: #c1d0c7; overflow-wrap: anywhere; }
-        .gps-metrics { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; color: #a4bcb0; }
-        .gps-metrics strong { color: white; }
-        .gps-target {
-            margin-top: 7px;
-            padding-top: 7px;
-            border-top: 1px solid rgba(207,226,215,.12);
-            color: #cfe8db;
-            font-size: 10px;
-        }
-        .gps-field-note { color: #8ea79a; font-size: 9px; margin-top: 5px; }
-        .field-selected {
-            display: none;
-            position: absolute;
-            bottom: 89px;
-            left: 10px;
-            right: 10px;
-            z-index: 50;
-            min-height: 51px;
-            padding: 8px 10px;
-            align-items: center;
-            justify-content: space-between;
-            gap: 9px;
-            border: 1px solid rgba(191,229,210,.25);
-            border-radius: 13px;
-            background: rgba(13,21,17,.95);
-            color: white;
-            box-shadow: var(--shadow-panel);
-            backdrop-filter: blur(12px);
-        }
-        .field-selected-meta { min-width: 0; }
-        .field-selected-title { font-size: 11px; font-weight: 850; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .field-selected-sub { font-size: 9px; color: #bfd0c7; margin-top: 3px; }
-        .field-selected .gps-button { min-height: 34px; padding: 0 11px; white-space: nowrap; }
-        .gps-mobile-close { display: none; }
-
-        @media (max-width: 760px) {
-            .workspace {
-                height: calc(100dvh - var(--topbar-h) - env(safe-area-inset-top, 0px));
-            }
-            .topbar {
-                height: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
-                padding-top: env(safe-area-inset-top, 0px);
-                padding-left: max(10px, env(safe-area-inset-left, 0px));
-                padding-right: max(10px, env(safe-area-inset-right, 0px));
-            }
-            #map {
-                bottom: calc(36px + env(safe-area-inset-bottom, 0px));
-            }
-            .map-statusbar {
-                height: calc(36px + env(safe-area-inset-bottom, 0px));
-                padding-bottom: env(safe-area-inset-bottom, 0px);
-            }
-            .map-summary { display: none; }
-            .map-toolbar {
-                flex-wrap: nowrap;
-                gap: 6px;
-                pointer-events: auto;
-            }
-            .toolbar-left {
-                min-width: 0;
-                flex: 1 1 auto;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                scrollbar-width: none;
-                overscroll-behavior-x: contain;
-            }
-            .toolbar-left::-webkit-scrollbar { display: none; }
-            .toolbar-right { flex: 0 0 auto; flex-wrap: nowrap; }
-            .toolbar-right > .tool-group:last-child { display: none; }
-            .tool-group { min-height: 43px; }
-            .map-tool { min-height: 33px; min-width: 33px; }
-            .field-gps {
-                top: 64px;
-                right: 9px;
-                width: min(233px, calc(100% - 18px));
-            }
-            .gps-button { min-width: 44px; min-height: 44px; }
-            .gps-status { font-size: 10px; }
-            .ol-zoom { display: none !important; }
-            .map-tooltip { display: none !important; }
-            .right-panel {
-                top: auto;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                width: 100%;
-                height: min(74dvh, 650px);
-                border-radius: 19px 19px 0 0;
-                border-top: 1px solid rgba(207,226,215,.23);
-                border-left: 0;
-                transform: translateY(105%);
-                padding-bottom: env(safe-area-inset-bottom, 0px);
-            }
-            .right-panel.open { transform: translateY(0); }
-            .right-panel .panel-heading::before {
-                content: '';
-                display: block;
-                width: 42px;
-                height: 4px;
-                border-radius: 8px;
-                background: #647a6b;
-                margin: -3px auto 10px;
-            }
-            .field-selected:not([hidden]) { display: flex; bottom: calc(47px + env(safe-area-inset-bottom, 0px)); }
-            .gps-mobile-close { display: inline-flex; }
-            .map-loading, .map-error { inset: 0 0 calc(36px + env(safe-area-inset-bottom, 0px)); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .side-panel { transition: none !important; }
-        }
-
     </style>
 </head>
-
 <body>
 
 @php
-    $summary = $job->summary ?? [];
-    $models = $job->models ?? [];
-    $parameters = $job->parameters ?? [];
+    $totalMosaics = $mosaics->count();
 
-    $pipelineVersion =
-        data_get($parameters, 'pipeline_version')
-        ?? data_get($models, 'pipeline_version')
-        ?? 'V0.7E';
+    $readyMosaics = $mosaics->where('status', 'ready')->count();
 
-    $scientificMethodVersion =
-        data_get($parameters, 'scientific_method_version')
-        ?? data_get($models, 'scientific_method_version')
-        ?? 'V0.6G';
+    $preparingMosaics = $mosaics->whereIn('status', [
+        'uploading', 'uploaded', 'inspecting', 'processing'
+    ])->count();
 
-    $statusLabel = match($job->status) {
-        'completed' => 'Completado',
-        'processing' => 'Procesando',
-        'queued' => 'En cola',
-        'failed' => 'Incidencia',
-        default => ucfirst((string) $job->status),
-    };
+    $failedMosaics = $mosaics->where('status', 'failed')->count();
+
+    $previewMosaics = $mosaics->filter(
+        fn ($mosaic) => !empty($mosaic->preview_object_key)
+    )->count();
+
+    $tilingPreviewMosaics = $mosaics->filter(
+        fn ($mosaic) =>
+            !empty(data_get($mosaic->metadata, 'tiling_preview.footprints_object_key'))
+            && !empty(data_get($mosaic->metadata, 'tiling_preview.coverage_object_key'))
+    )->count();
+
+    $qaCompleteMosaics = $mosaics->filter(function ($mosaic) {
+        $hasPreview = !empty($mosaic->preview_object_key);
+        $hasTiling =
+            !empty(data_get($mosaic->metadata, 'tiling_preview.footprints_object_key'))
+            && !empty(data_get($mosaic->metadata, 'tiling_preview.coverage_object_key'));
+        $uncovered = data_get($mosaic->metadata, 'tiling_preview.coverage.uncovered_valid_pixels');
+
+        return $mosaic->status === 'ready'
+            && !empty($mosaic->crs)
+            && $mosaic->gsd_cm !== null
+            && $hasPreview
+            && $hasTiling
+            && $uncovered !== null
+            && (int) $uncovered === 0;
+    })->count();
 @endphp
 
-<header class="topbar">
-    <div class="topbar-left">
-        <div class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-                <path d="M12 2.5 6.2 8h3.1L5 12.2h4L4.8 17h5.7v4.5h3V17h5.7L15 12.2h4L14.7 8h3.1L12 2.5Z" fill="#BDE8D0"/>
-                <path d="M3 18.5h18" stroke="#68C997" stroke-width="1.4" stroke-linecap="round" opacity=".9"/>
-            </svg>
+<header class="appbar">
+    <div class="appbar-inner">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 32 32" fill="none">
+                    <path d="M16 4 7.5 15h5.2L8.8 21h5.3v6h3.8v-6h5.3l-3.9-6h5.2L16 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M4 25.5h24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".6"/>
+                </svg>
+            </div>
+            <div>
+                <div class="brand-name">UAV Forest AI</div>
+                <div class="brand-sub">Inteligencia geoespacial para análisis forestal</div>
+            </div>
         </div>
-
-        <div class="brand-copy">
-            <div class="brand-name">UAV Forest AI</div>
-            <div class="brand-mode">Visor GIS de resultados</div>
-        </div>
-
-        <span class="breadcrumb-divider"></span>
-
-        <nav class="context-path" aria-label="Ruta de navegación">
-            <strong>{{ $mosaic->project->name ?? 'Proyecto' }}</strong>
-            <span class="context-chevron">›</span>
-            <strong>{{ $mosaic->original_name ?? $mosaic->uuid }}</strong>
-            <span class="context-chevron">›</span>
-            <span>Análisis</span>
-            <span class="context-chevron">›</span>
-            <span>Mapa</span>
-        </nav>
-    </div>
-
-    <div class="topbar-right">
-        <span class="top-pill version-pill">
-            Método {{ $scientificMethodVersion }} · Pipeline {{ $pipelineVersion }}
-        </span>
-
-        <span class="top-pill">
-            <span class="status-dot"></span>
-            {{ $statusLabel }}
-        </span>
-
-        <button
-            id="open-explorer-mobile"
-            class="top-action mobile-panel-button"
-            type="button"
-            title="Abrir explorador de objetos"
-        >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/>
-            </svg>
-            <span class="action-text">Objetos</span>
-        </button>
-
-        <button
-            id="open-inspector-mobile"
-            class="top-action mobile-panel-button"
-            type="button"
-            title="Abrir inspector"
-        >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <circle cx="12" cy="12" r="9"/>
-                <path d="M12 10v6M12 7h.01" stroke-linecap="round"/>
-            </svg>
-            <span class="action-text">Inspector</span>
-        </button>
-
-        <a
-            class="top-action json-action"
-            href="{{ route('analysis.jobs.show', ['analysisUuid' => $job->uuid]) }}"
-        >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            JSON técnico
-        </a>
-
-        <a
-            class="top-action"
-            href="{{ route('analysis.index', ['mosaic' => $mosaic->uuid]) }}"
-        >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M15 18 9 12l6-6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span class="action-text">Volver al análisis</span>
-        </a>
+        <div class="appbar-module">Módulo de datos UAV</div>
     </div>
 </header>
 
-<div id="workspace" class="workspace">
+<main class="page">
+    <div class="breadcrumb">
+        <span>Datos UAV</span><span>/</span><strong>Ortomosaicos</strong>
+    </div>
 
-    <div id="drawer-backdrop" class="drawer-backdrop"></div>
-
-    {{-- =========================================================
-         EXPLORADOR DE OBJETOS
-    ========================================================== --}}
-
-    <aside id="left-panel" class="side-panel left-panel">
-        <div class="panel-heading">
-            <div class="panel-heading-row">
-                <div>
-                    <div class="panel-kicker">Explorador</div>
-                    <h2 class="panel-title">Objetos operativos</h2>
-                </div>
-
-                <div style="display:flex; align-items:center; gap:7px;">
-                    <span id="explorer-count" class="panel-count">0</span>
-                    <button id="close-explorer-mobile" class="panel-close" type="button">×</button>
-                </div>
-            </div>
-
-            <p class="panel-description">
-                Busca y filtra geometrías consolidadas sin alterar el resultado científico del análisis.
+    <div class="page-header">
+        <div>
+            <div class="eyebrow">Insumos geoespaciales</div>
+            <h1 class="page-title">Ortomosaicos UAV</h1>
+            <p class="page-subtitle">
+                Registra ortomosaicos GeoTIFF, verifica sus propiedades espaciales y prepara los productos QA/QC necesarios antes de incorporarlos al análisis con inteligencia artificial.
             </p>
         </div>
+        <div class="header-actions">
+            @if(\Illuminate\Support\Facades\Route::has('analysis.index'))
+                <a href="{{ route('analysis.index') }}" class="btn btn-outline">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 5h16v14H4zM8 9h8M8 13h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Centro de análisis IA
+                </a>
+            @endif
+        </div>
+    </div>
 
-        <div class="explorer-controls">
-            <div class="search-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <circle cx="11" cy="11" r="7"/>
-                    <path d="m20 20-3.4-3.4" stroke-linecap="round"/>
-                </svg>
-                <input
-                    id="object-search"
-                    class="search-input"
-                    type="search"
-                    placeholder="Buscar Operational ID..."
-                    autocomplete="off"
-                >
-            </div>
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
 
-            <div class="quick-filters" role="group" aria-label="Filtros rápidos">
-                <button class="filter-chip active" type="button" data-filter="all">Todos</button>
-                <button class="filter-chip" type="button" data-filter="mrcnn">Mask R-CNN</button>
-                <button class="filter-chip" type="button" data-filter="yolo">YOLO</button>
-                <button class="filter-chip" type="button" data-filter="review">Revisión</button>
-                <button class="filter-chip" type="button" data-filter="no-review">Sin revisión</button>
-            </div>
+    @if(session('error'))
+        <div class="alert alert-error">{{ session('error') }}</div>
+    @endif
 
-            <div class="advanced-filters">
-                <select id="evidence-filter" class="compact-select" aria-label="Filtrar por evidencia">
-                    <option value="">Toda evidencia</option>
-                </select>
+    @if($errors->any())
+        <div class="alert alert-error">
+            <strong>No se pudo completar la operación.</strong><br>
+            {{ $errors->first() }}
+        </div>
+    @endif
 
-                <select id="conflict-filter" class="compact-select" aria-label="Filtrar por conflicto">
-                    <option value="">Todo conflicto</option>
-                </select>
-            </div>
+    <section class="summary-strip" aria-label="Resumen de ortomosaicos">
+        <div class="summary-item">
+            <div class="summary-label">Total</div>
+            <div class="summary-value">{{ $totalMosaics }}</div>
+            <div class="summary-detail">Ortomosaicos registrados</div>
+        </div>
+        <div class="summary-item success">
+            <div class="summary-label">Listos</div>
+            <div class="summary-value">{{ $readyMosaics }}</div>
+            <div class="summary-detail">Disponibles para análisis</div>
+        </div>
+        <div class="summary-item warning">
+            <div class="summary-label">En preparación</div>
+            <div class="summary-value">{{ $preparingMosaics }}</div>
+            <div class="summary-detail">Carga o inspección en curso</div>
+        </div>
+        <div class="summary-item danger">
+            <div class="summary-label">Incidencias</div>
+            <div class="summary-value">{{ $failedMosaics }}</div>
+            <div class="summary-detail">Requieren atención</div>
+        </div>
+        <div class="summary-item info">
+            <div class="summary-label">QA/QC técnico</div>
+            <div class="summary-value">{{ $qaCompleteMosaics }}</div>
+            <div class="summary-detail">Evidencias técnicas completas</div>
+        </div>
+    </section>
 
-            <div class="filter-feedback">
-                <span id="filter-feedback">Cargando objetos...</span>
-                <button id="reset-filters" class="filter-reset" type="button">Restablecer</button>
+    <section class="card section-card" id="newMosaicSection">
+        <div class="section-header">
+            <div>
+                <div class="section-kicker">Ingestión de datos</div>
+                <h2 class="section-title">Nuevo ortomosaico</h2>
+                <div class="section-desc">Asocia el GeoTIFF a un proyecto y transfiérelo al almacenamiento seguro del sistema.</div>
             </div>
         </div>
 
-        <div id="object-list" class="object-list">
-            <div class="object-list-empty">Cargando catálogo espacial...</div>
-        </div>
-
-        <div class="explorer-footer">
-            Los filtros afectan únicamente la visualización y exploración web. No modifican el GeoJSON ni el resultado persistente del pipeline.
-        </div>
-    </aside>
-
-    {{-- =========================================================
-         MAPA
-    ========================================================== --}}
-
-    <main class="map-pane">
-        <div id="map"></div>
-
-        <div class="map-toolbar">
-            <div class="toolbar-left">
-                <div class="tool-group">
-                    @if(($cogAvailable ?? false) || $previewAvailable)
-                        <button id="toggle-preview" class="map-tool active" type="button" aria-pressed="true">
-                            <span class="layer-dot preview"></span>
-                            <span class="tool-label">Ortomosaico</span>
-                        </button>
-                    @endif
-
-                    <button id="toggle-mrcnn" class="map-tool active" type="button" aria-pressed="true">
-                        <span class="layer-dot mrcnn"></span>
-                        <span class="tool-label">Mask R-CNN</span>
-                    </button>
-
-                    <button id="toggle-yolo" class="map-tool active" type="button" aria-pressed="true">
-                        <span class="layer-dot yolo"></span>
-                        <span class="tool-label">YOLO fallback</span>
-                    </button>
-
-                    <button id="toggle-review-highlight" class="map-tool review-active" type="button" aria-pressed="true">
-                        <span class="layer-dot review"></span>
-                        <span class="tool-label">Resaltar revisión</span>
-                    </button>
+        <div class="section-body">
+            @if($projects->isEmpty())
+                <div class="alert alert-error">
+                    No existe ningún proyecto activo. Primero debes crear o activar un proyecto antes de registrar un ortomosaico.
                 </div>
-            </div>
+            @else
+                <div class="upload-layout">
+                    <div class="project-box">
+                        <div class="field">
+                            <label for="project">Proyecto de destino</label>
+                            <select id="project">
+                                @foreach($projects as $project)
+                                    <option value="{{ $project->id }}">{{ $project->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="project-note">
+                            El ortomosaico quedará asociado al proyecto seleccionado y podrá utilizarse posteriormente en el flujo de análisis IA.
+                        </div>
+                    </div>
 
-            <div class="toolbar-right">
-                <div id="opacity-popover" class="tool-group opacity-popover">
-                    <button id="opacity-toggle" class="map-tool" type="button">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M12 3s6 6.2 6 11a6 6 0 1 1-12 0c0-4.8 6-11 6-11Z"/>
-                        </svg>
-                        <span class="tool-label">Opacidad</span>
-                    </button>
-
-                    <div class="opacity-panel">
-                        @if(($cogAvailable ?? false) || $previewAvailable)
-                            <div class="opacity-row">
-                                <div class="opacity-row-head">
-                                    <span>Ortomosaico</span>
-                                    <strong id="preview-opacity-value">100%</strong>
+                    <div>
+                        <label class="dropzone" id="dropzone" for="mosaicFile">
+                            <input type="file" id="mosaicFile" accept=".tif,.tiff,image/tiff">
+                            <div>
+                                <div class="drop-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M12 16V4m0 0L8 8m4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
                                 </div>
-                                <input id="preview-opacity" type="range" min="0" max="100" value="100">
+                                <div class="drop-title">Arrastra un GeoTIFF o selecciona un archivo</div>
+                                <div class="drop-sub">El archivo original será conservado como insumo geoespacial del proyecto.</div>
+                                <div class="drop-types">GeoTIFF · .TIF · .TIFF</div>
                             </div>
-                        @endif
+                        </label>
 
-                        <div class="opacity-row">
-                            <div class="opacity-row-head">
-                                <span>Segmentaciones</span>
-                                <strong id="seg-opacity-value">82%</strong>
+                        <div id="selectedFileCard" class="selected-file">
+                            <div id="selectedFileName" class="selected-file-name">—</div>
+                            <div id="selectedFileSize" class="selected-file-size">—</div>
+                        </div>
+
+                        <div class="upload-actions">
+                            <button id="uploadButton" class="btn btn-primary" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 16V4m0 0L8 8m4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Subir ortomosaico
+                            </button>
+                            <span class="upload-privacy">Transferencia directa al almacenamiento seguro; Laravel registra y verifica la carga.</span>
+                        </div>
+
+                        <div id="progressWrapper" class="progress-shell" hidden>
+                            <div class="progress-head">
+                                <span id="progressLabel" class="progress-label">Preparando...</span>
+                                <span id="progressPercent" class="progress-percent">0 %</span>
                             </div>
-                            <input id="seg-opacity" type="range" min="15" max="100" value="82">
+                            <progress id="uploadProgress" value="0" max="100"></progress>
+                            <div class="progress-meta-line">
+                                <span id="progressBytes">0 B / 0 B</span>
+                                <span id="progressState">Transferencia</span>
+                            </div>
+                            <div class="progress-stages">
+                                <span id="stagePrepare" class="stage-chip active">Preparación</span>
+                                <span id="stageTransfer" class="stage-chip">Transferencia</span>
+                                <span id="stageVerify" class="stage-chip">Verificación</span>
+                            </div>
+                            <div id="uploadStatus" class="upload-status"></div>
                         </div>
                     </div>
                 </div>
+            @endif
+        </div>
+    </section>
 
-                <div class="tool-group">
-                    <button id="fit-extent" class="map-tool" type="button" title="Ajustar al ortomosaico">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <span class="tool-label">Extensión</span>
-                    </button>
-
-                    <button id="clear-selection" class="map-tool" type="button" title="Limpiar selección">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="m6 6 12 12M18 6 6 18" stroke-linecap="round"/>
-                        </svg>
-                        <span class="tool-label">Limpiar</span>
-                    </button>
-
-                    <button id="fullscreen-map" class="map-tool" type="button" title="Pantalla completa">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <span class="tool-label">Pantalla completa</span>
-                    </button>
-                </div>
+    <section class="card section-card" id="mosaicExplorer">
+        <div class="section-header">
+            <div>
+                <div class="section-kicker">Biblioteca geoespacial</div>
+                <h2 class="section-title">Ortomosaicos registrados</h2>
+                <div class="section-desc">Consulta disponibilidad, propiedades del raster y evidencias de preparación técnica antes de la inferencia.</div>
             </div>
+            <span class="section-desc">{{ $totalMosaics }} registro{{ $totalMosaics === 1 ? '' : 's' }}</span>
         </div>
 
-
-        {{-- WEB.6 — GPS local: el navegador solicita permiso al pulsar el botón. --}}
-        <section class="field-gps" aria-label="Navegación GPS del trabajo de campo">
-            <div class="field-gps-actions">
-                <button id="gps-toggle" class="gps-button primary" type="button" aria-label="Iniciar mi ubicación en tiempo real" title="Activar / detener GPS">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                        <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/>
-                        <path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke-linecap="round"/>
+        @if($mosaics->isEmpty())
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="m4 8 8-4 8 4-8 4-8-4Zm0 4 8 4 8-4M4 16l8 4 8-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <span id="gps-toggle-text">Mi ubicación</span>
-                </button>
-                <button id="gps-follow" class="gps-button" type="button" title="Seguir mi posición" aria-label="Centrar y seguir GPS" aria-pressed="false" disabled>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 20 7-16 2 7 7 2-16 7Z" stroke-linejoin="round"/></svg>
-                </button>
-            </div>
-            <div class="gps-status" role="status" aria-live="polite">
-                <div class="gps-status-top">
-                    <span class="gps-status-title">Navegación de campo</span>
-                    <span id="gps-indicator" class="gps-status-indicator" data-state="idle">APAGADO</span>
                 </div>
-                <div id="gps-status-text" class="gps-status-text">Activa la ubicación para orientarte sobre el ortomosaico.</div>
-                <div class="gps-metrics">
-                    <span>Precisión: <strong id="gps-accuracy">—</strong></span>
-                    <span>Actualización: <strong id="gps-age">—</strong></span>
+                <div class="empty-title">Todavía no hay ortomosaicos</div>
+                <div>Selecciona un proyecto y carga tu primer GeoTIFF para iniciar la preparación del insumo.</div>
+            </div>
+        @else
+            <div class="explorer-toolbar">
+                <div class="search-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.7"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                    <input id="mosaicSearch" class="search-input" type="search" placeholder="Buscar por archivo o proyecto..." autocomplete="off">
                 </div>
-                <div id="gps-target" class="gps-target" hidden>Selecciona una copa para consultar la distancia aproximada.</div>
-                <div class="gps-field-note">GPS orientativo, no confirma la identidad del árbol.</div>
-            </div>
-        </section>
-
-        <div id="field-selected" class="field-selected" hidden>
-            <div class="field-selected-meta">
-                <div id="field-selected-name" class="field-selected-title">Objeto</div>
-                <div id="field-selected-distance" class="field-selected-sub">Distancia pendiente de GPS</div>
-            </div>
-            <button type="button" id="field-show-inspector" class="gps-button">Ver ficha</button>
-        </div>
-
-        <div class="map-summary" aria-label="Resumen de objetos visibles">
-            <div class="summary-item">
-                <div class="summary-label">Visibles</div>
-                <div id="visible-count" class="summary-value">0</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Mask</div>
-                <div id="visible-mrcnn-count" class="summary-value">0</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">YOLO</div>
-                <div id="visible-yolo-count" class="summary-value">0</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Revisión</div>
-                <div id="visible-review-count" class="summary-value">0</div>
-            </div>
-        </div>
-
-        <div id="map-tooltip" class="map-tooltip"></div>
-
-        <div id="map-loading" class="map-loading">
-            <div class="loading-card">
-                <div class="loading-spinner"></div>
-                <div class="loading-title">Cargando resultados espaciales</div>
-                <div class="loading-text">Preparando las geometrías operativas del análisis para visualización.</div>
-            </div>
-        </div>
-
-        <div id="map-error" class="map-error" hidden>
-            <div class="error-card">
-                <div class="error-title">No fue posible cargar la capa de objetos</div>
-                <div id="map-error-text" class="error-text">
-                    El ortomosaico puede seguir disponible, pero la capa GeoJSON no pudo cargarse.
+                <div class="filters" aria-label="Filtros de estado">
+                    <button type="button" class="filter-chip active" data-filter="all">Todos</button>
+                    <button type="button" class="filter-chip" data-filter="ready">Listos</button>
+                    <button type="button" class="filter-chip" data-filter="preparing">En preparación</button>
+                    <button type="button" class="filter-chip" data-filter="failed">Incidencias</button>
                 </div>
-                <button id="retry-geojson" class="error-action" type="button">Reintentar carga</button>
+            </div>
+            <div id="resultsCount" class="results-count">Mostrando {{ $totalMosaics }} de {{ $totalMosaics }} ortomosaicos</div>
+
+            <div class="mosaic-list" id="mosaicList">
+                @foreach($mosaics as $mosaic)
+                    @php
+                        $badgeClass = match($mosaic->status) {
+                            'ready' => 'badge-ready',
+                            'uploaded' => 'badge-uploaded',
+                            'uploading', 'inspecting', 'processing' => 'badge-processing',
+                            'failed' => 'badge-failed',
+                            default => 'badge-default',
+                        };
+
+                        $statusText = match($mosaic->status) {
+                            'uploading' => 'Subiendo',
+                            'uploaded' => 'Cargado',
+                            'inspecting' => 'Inspeccionando',
+                            'ready' => 'Listo para análisis',
+                            'processing' => 'Procesando QA/QC',
+                            'failed' => 'Incidencia',
+                            default => ucfirst($mosaic->status),
+                        };
+
+                        $statusGroup = match($mosaic->status) {
+                            'ready' => 'ready',
+                            'failed' => 'failed',
+                            'uploading', 'uploaded', 'inspecting', 'processing' => 'preparing',
+                            default => 'preparing',
+                        };
+
+                        $nextActionText = match($mosaic->status) {
+                            'uploaded' => 'Requiere inspección técnica',
+                            'inspecting' => 'Inspección en curso',
+                            'processing' => 'Productos técnicos en preparación',
+                            'failed' => 'Revisa la incidencia y vuelve a inspeccionar',
+                            'ready' => 'Disponible para el pipeline de IA',
+                            default => 'Estado técnico registrado',
+                        };
+
+                        $hasPreview = !empty($mosaic->preview_object_key);
+                        $previewMetadata = data_get($mosaic->metadata, 'preview', []);
+                        $tilingPreviewMetadata = data_get($mosaic->metadata, 'tiling_preview', []);
+                        $tilingFootprintsObjectKey = data_get($mosaic->metadata, 'tiling_preview.footprints_object_key');
+                        $tilingCoverageObjectKey = data_get($mosaic->metadata, 'tiling_preview.coverage_object_key');
+                        $hasTilingPreview = !empty($tilingFootprintsObjectKey) && !empty($tilingCoverageObjectKey);
+                        $uncoveredValidPixels = data_get($tilingPreviewMetadata, 'coverage.uncovered_valid_pixels');
+                        $meanValidFraction = data_get($tilingPreviewMetadata, 'summary.valid_fraction.mean');
+
+                        $qaChecks = [
+                            $mosaic->status === 'ready',
+                            !empty($mosaic->crs),
+                            $mosaic->gsd_cm !== null,
+                            $hasPreview,
+                            $hasTilingPreview,
+                            $uncoveredValidPixels !== null && (int) $uncoveredValidPixels === 0,
+                        ];
+                        $qaPassed = collect($qaChecks)->filter()->count();
+                        $qaTotal = count($qaChecks);
+                        $qaPercent = (int) round(($qaPassed / $qaTotal) * 100);
+                    @endphp
+
+                    <article
+                        class="mosaic-row"
+                        data-mosaic-row
+                        data-status="{{ $statusGroup }}"
+                        data-search="{{ strtolower(($mosaic->original_name ?? '') . ' ' . ($mosaic->project?->name ?? '')) }}"
+                    >
+                        <div class="mosaic-main">
+                            <div>
+                                @if($hasPreview && \Illuminate\Support\Facades\Route::has('mosaics.preview'))
+                                    <a href="{{ route('mosaics.preview', $mosaic->uuid) }}" target="_blank" rel="noopener" class="preview-link" title="Abrir vista previa">
+                                        <div class="preview-box">
+                                            <img src="{{ route('mosaics.preview', $mosaic->uuid) }}" alt="Vista previa de {{ $mosaic->original_name }}" loading="lazy">
+                                            <span class="preview-badge">Vista previa</span>
+                                        </div>
+                                    </a>
+                                @else
+                                    <div class="preview-box">
+                                        <div class="preview-empty">
+                                            Sin vista previa
+                                            @if($mosaic->status === 'ready')
+                                                <br>
+                                                Disponible desde acciones
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div>
+                                <div class="mosaic-title">{{ $mosaic->original_name }}</div>
+                                <div class="mosaic-project">{{ $mosaic->project?->name ?? 'Sin proyecto' }}</div>
+                                <div class="mosaic-filemeta">
+                                    <span class="micro-tag">{{ strtoupper($mosaic->extension ?? 'tif') }}</span>
+                                    @if($mosaic->dtype)
+                                        <span class="micro-tag">{{ $mosaic->dtype }}</span>
+                                    @endif
+                                    @if($mosaic->bands)
+                                        <span class="micro-tag">{{ $mosaic->bands }} banda{{ $mosaic->bands == 1 ? '' : 's' }}</span>
+                                    @endif
+                                    @if($mosaic->size_bytes)
+                                        <span class="micro-tag">{{ number_format($mosaic->size_bytes / 1024 / 1024, 2) }} MiB</span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="specs">
+                                <div>
+                                    <div class="spec-label">GSD</div>
+                                    <div class="spec-value">{{ $mosaic->gsd_cm !== null ? number_format($mosaic->gsd_cm, 3) . ' cm/px' : '—' }}</div>
+                                </div>
+                                <div>
+                                    <div class="spec-label">CRS</div>
+                                    <div class="spec-value mono">{{ $mosaic->crs ?? '—' }}</div>
+                                </div>
+                                <div>
+                                    <div class="spec-label">Resolución</div>
+                                    <div class="spec-value">
+                                        @if($mosaic->width && $mosaic->height)
+                                            {{ number_format($mosaic->width) }} × {{ number_format($mosaic->height) }} px
+                                        @else
+                                            —
+                                        @endif
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="spec-label">Cuadrícula</div>
+                                    <div class="spec-value">
+                                        @if($hasTilingPreview)
+                                            {{ data_get($tilingPreviewMetadata, 'grid.columns') ?? '—' }} × {{ data_get($tilingPreviewMetadata, 'grid.rows') ?? '—' }}
+                                        @else
+                                            —
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="status-stack">
+                                <span class="badge {{ $badgeClass }}">{{ $statusText }}</span>
+                                <div class="status-next">{{ $nextActionText }}</div>
+                            </div>
+
+                            <div class="qa-block">
+                                <div class="qa-head">
+                                    <span class="qa-title">QA/QC técnico</span>
+                                    <span class="qa-score">{{ $qaPassed }}/{{ $qaTotal }}</span>
+                                </div>
+                                <div class="qa-bar"><div class="qa-fill" style="width: {{ $qaPercent }}%"></div></div>
+                                <div class="qa-note">Disponibilidad de metadatos y productos técnicos; no representa validación científica.</div>
+                            </div>
+
+                            <div class="row-actions">
+                                @if(in_array($mosaic->status, ['uploaded', 'failed']))
+                                    <form method="POST" action="{{ route('mosaics.inspect', $mosaic->uuid) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-primary btn-small">Inspeccionar</button>
+                                    </form>
+                                @elseif($mosaic->status === 'ready')
+                                    @if(\Illuminate\Support\Facades\Route::has('analysis.index'))
+                                        <a href="{{ route('analysis.index', ['mosaic' => $mosaic->uuid]) }}" class="btn btn-primary btn-small">Analizar con IA</a>
+                                    @endif
+                                @else
+                                    <span class="status-next">En proceso...</span>
+                                @endif
+
+                                <div class="action-menu">
+                                    <button type="button" class="btn btn-outline btn-small menu-toggle" data-menu-toggle aria-label="Más acciones">•••</button>
+                                    <div class="menu-panel">
+                                        @if($mosaic->status === 'ready')
+                                            @if(!$hasPreview && \Illuminate\Support\Facades\Route::has('mosaics.preview.generate'))
+                                                <form method="POST" action="{{ route('mosaics.preview.generate', $mosaic->uuid) }}">
+                                                    @csrf
+                                                    <button type="submit" class="menu-item">Generar vista previa</button>
+                                                </form>
+                                            @elseif($hasPreview && \Illuminate\Support\Facades\Route::has('mosaics.preview'))
+                                                <a href="{{ route('mosaics.preview', $mosaic->uuid) }}" target="_blank" rel="noopener" class="menu-item">Abrir vista previa</a>
+                                            @endif
+
+                                            @if(!$hasTilingPreview && \Illuminate\Support\Facades\Route::has('mosaics.tiling.generate'))
+                                                <form method="POST" action="{{ route('mosaics.tiling.generate', $mosaic->uuid) }}">
+                                                    @csrf
+                                                    <button type="submit" class="menu-item">Generar QA/QC de tiling</button>
+                                                </form>
+                                            @elseif($hasTilingPreview && \Illuminate\Support\Facades\Route::has('mosaics.tiling.preview'))
+                                                <a href="{{ route('mosaics.tiling.preview', ['mosaic' => $mosaic->uuid, 'type' => 'footprints']) }}" target="_blank" rel="noopener" class="menu-item">Ver cuadrícula de inferencia</a>
+                                                <a href="{{ route('mosaics.tiling.preview', ['mosaic' => $mosaic->uuid, 'type' => 'coverage']) }}" target="_blank" rel="noopener" class="menu-item">Ver mapa de cobertura</a>
+                                            @endif
+                                        @endif
+                                        <button type="button" class="menu-item" data-details-toggle="details-{{ $mosaic->uuid }}">Detalles técnicos</button>
+
+                                        @if(\Illuminate\Support\Facades\Route::has('mosaics.destroy'))
+                                            <div class="menu-separator"></div>
+
+                                            @if(in_array($mosaic->status, ['uploading', 'inspecting', 'processing']))
+                                                <button
+                                                    type="button"
+                                                    class="menu-item menu-item-danger"
+                                                    disabled
+                                                    title="No se puede eliminar mientras el ortomosaico está siendo procesado."
+                                                >
+                                                    Eliminar ortomosaico
+                                                </button>
+                                            @else
+                                                <button
+                                                    type="button"
+                                                    class="menu-item menu-item-danger"
+                                                    data-delete-mosaic
+                                                    data-delete-name="{{ $mosaic->original_name }}"
+                                                    data-delete-uuid="{{ $mosaic->uuid }}"
+                                                    data-delete-action="{{ route('mosaics.destroy', ['mosaic' => $mosaic->uuid]) }}"
+                                                >
+                                                    Eliminar ortomosaico
+                                                </button>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="details-{{ $mosaic->uuid }}" class="technical-panel">
+                            <div class="technical-inner">
+                                <div class="technical-header">
+                                    <div>
+                                        <div class="technical-title">Inspección geoespacial</div>
+                                        <div class="technical-sub">Metadatos del raster y evidencias QA/QC disponibles para este insumo.</div>
+                                    </div>
+                                    <button type="button" class="btn btn-ghost btn-small" data-close-details="details-{{ $mosaic->uuid }}">Cerrar</button>
+                                </div>
+
+                                <div class="technical-grid">
+                                    <div class="technical-card">
+                                        <div class="technical-card-title">Raster</div>
+                                        <div class="detail-line"><span>Resolución</span><strong>{{ $mosaic->width && $mosaic->height ? number_format($mosaic->width) . ' × ' . number_format($mosaic->height) . ' px' : '—' }}</strong></div>
+                                        <div class="detail-line"><span>Bandas</span><strong>{{ $mosaic->bands ?? '—' }}</strong></div>
+                                        <div class="detail-line"><span>Tipo de dato</span><strong>{{ $mosaic->dtype ?? '—' }}</strong></div>
+                                        <div class="detail-line"><span>Compresión</span><strong>{{ data_get($mosaic->metadata, 'compression') ?? '—' }}</strong></div>
+                                        <div class="detail-line"><span>Alpha</span><strong>{{ data_get($mosaic->metadata, 'has_alpha') ? 'Sí' : 'No' }}</strong></div>
+                                    </div>
+
+                                    <div class="technical-card">
+                                        <div class="technical-card-title">Referencia espacial</div>
+                                        <div class="detail-line"><span>CRS</span><strong class="mono">{{ $mosaic->crs ?? '—' }}</strong></div>
+                                        <div class="detail-line"><span>GSD</span><strong>{{ $mosaic->gsd_cm !== null ? number_format($mosaic->gsd_cm, 3) . ' cm/px' : '—' }}</strong></div>
+                                        <div class="detail-line"><span>Píxel X</span><strong>{{ $mosaic->pixel_size_x ?? '—' }} m</strong></div>
+                                        <div class="detail-line"><span>Píxel Y</span><strong>{{ $mosaic->pixel_size_y ?? '—' }} m</strong></div>
+                                        <div class="detail-line"><span>Proyectado</span><strong>{{ data_get($mosaic->metadata, 'is_projected') ? 'Sí' : 'No' }}</strong></div>
+                                    </div>
+
+                                    <div class="technical-card">
+                                        <div class="technical-card-title">QA/QC de tiling</div>
+                                        <div class="detail-line"><span>Cuadrícula</span><strong>{{ $hasTilingPreview ? (data_get($tilingPreviewMetadata, 'grid.columns') ?? '—') . ' × ' . (data_get($tilingPreviewMetadata, 'grid.rows') ?? '—') : '—' }}</strong></div>
+                                        <div class="detail-line"><span>Total tiles</span><strong>{{ data_get($tilingPreviewMetadata, 'summary.total_tiles') ?? '—' }}</strong></div>
+                                        <div class="detail-line"><span>Tile</span><strong>{{ data_get($tilingPreviewMetadata, 'configuration.tile_size') ?? '—' }} px</strong></div>
+                                        <div class="detail-line"><span>Overlap solicitado</span><strong>{{ data_get($tilingPreviewMetadata, 'configuration.requested_overlap') ?? '—' }} px</strong></div>
+                                        <div class="detail-line"><span>Overlap real X</span><strong>{{ data_get($tilingPreviewMetadata, 'actual_overlap.x_min_px') ?? '—' }}–{{ data_get($tilingPreviewMetadata, 'actual_overlap.x_max_px') ?? '—' }} px</strong></div>
+                                        <div class="detail-line"><span>Overlap real Y</span><strong>{{ data_get($tilingPreviewMetadata, 'actual_overlap.y_min_px') ?? '—' }}–{{ data_get($tilingPreviewMetadata, 'actual_overlap.y_max_px') ?? '—' }} px</strong></div>
+                                    </div>
+
+                                    <div class="technical-card">
+                                        <div class="technical-card-title">Cobertura e inspección</div>
+                                        <div class="detail-line"><span>Validez media</span><strong>{{ $meanValidFraction !== null ? number_format($meanValidFraction * 100, 1) . ' %' : '—' }}</strong></div>
+                                        <div class="detail-line"><span>Cobertura mínima</span><strong>{{ data_get($tilingPreviewMetadata, 'coverage.min_valid') ?? '—' }}×</strong></div>
+                                        <div class="detail-line"><span>Cobertura máxima</span><strong>{{ data_get($tilingPreviewMetadata, 'coverage.max_valid') ?? '—' }}×</strong></div>
+                                        <div class="detail-line"><span>Píxeles válidos sin cubrir</span><strong>{{ $uncoveredValidPixels ?? '—' }}</strong></div>
+                                        <div class="detail-line"><span>Vista previa</span><strong>{{ $hasPreview ? 'Disponible' : 'No disponible' }}</strong></div>
+                                        <div class="detail-line"><span>Resolución preview</span><strong>{{ $hasPreview ? ((data_get($previewMetadata, 'width') ?? '—') . ' × ' . (data_get($previewMetadata, 'height') ?? '—') . ' px') : '—' }}</strong></div>
+                                        <div class="detail-line"><span>Calidad JPEG</span><strong>{{ $hasPreview ? (data_get($previewMetadata, 'jpeg_quality') ?? '—') : '—' }}</strong></div>
+                                        <div class="detail-line"><span>Inspeccionado</span><strong>{{ $mosaic->inspected_at ? $mosaic->inspected_at->format('d/m/Y H:i') : '—' }}</strong></div>
+                                    </div>
+                                </div>
+
+                                @if($mosaic->checksum_sha256)
+                                    <div class="hash-line">
+                                        <div class="hash-value mono" title="{{ $mosaic->checksum_sha256 }}">SHA-256 · {{ $mosaic->checksum_sha256 }}</div>
+                                        <button type="button" class="btn btn-outline btn-small" data-copy="{{ $mosaic->checksum_sha256 }}">Copiar hash</button>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+
+            <div id="noResults" class="no-results">No hay ortomosaicos que coincidan con la búsqueda o el filtro seleccionado.</div>
+        @endif
+    </section>
+
+    <section class="card section-card">
+        <div class="section-header">
+            <div>
+                <div class="section-kicker">Trazabilidad del insumo</div>
+                <h2 class="section-title">Integridad geoespacial</h2>
+                <div class="section-desc">Separación explícita entre fuente científica, productos de control y etapa de inferencia.</div>
             </div>
         </div>
-
-        <div class="map-statusbar">
-            <span class="statusbar-item"><strong>CRS</strong> {{ $mosaic->crs ?? '—' }}</span>
-            <span class="statusbar-item"><strong>X</strong> <span id="coord-x">—</span></span>
-            <span class="statusbar-item"><strong>Y</strong> <span id="coord-y">—</span></span>
-            <span class="statusbar-item"><strong>Escala aprox.</strong> <span id="map-scale">—</span></span>
-            <span class="statusbar-item"><strong>Resolución</strong> <span id="map-resolution">—</span></span>
-            <span class="statusbar-item"><strong>Objetos visibles</strong> <span id="status-visible-count">0</span></span>
+        <div class="section-body">
+            <div class="integrity-grid">
+                <div class="integrity-step">
+                    <div class="integrity-index">01 · FUENTE</div>
+                    <div class="integrity-title">GeoTIFF original</div>
+                    <div class="integrity-copy">Raster georreferenciado conservado sin modificaciones como insumo principal, junto con CRS, GSD, transformación espacial y huella SHA-256.</div>
+                </div>
+                <div class="integrity-step">
+                    <div class="integrity-index">02 · QA/QC</div>
+                    <div class="integrity-title">Productos de inspección</div>
+                    <div class="integrity-copy">Vista JPG, footprints y mapa de cobertura permiten revisar visualmente el raster y comprobar la distribución de las ventanas de inferencia.</div>
+                </div>
+                <div class="integrity-step">
+                    <div class="integrity-index">03 · ANÁLISIS</div>
+                    <div class="integrity-title">Inferencia IA</div>
+                    <div class="integrity-copy">YOLO-Seg y Mask R-CNN operan posteriormente sobre el flujo definido para el análisis, sin convertir los productos QA/QC en evidencia de exactitud.</div>
+                </div>
+            </div>
+            <div class="method-note">
+                <strong>Alcance del QA/QC:</strong> estas comprobaciones describen preparación técnica y cobertura del insumo. No constituyen validación científica del ortomosaico ni confianza de los modelos de IA. La correspondencia de los objetos detectados con árboles reales requiere contraste posterior con verdad de campo.
+            </div>
         </div>
-    </main>
+    </section>
+</main>
 
-    {{-- =========================================================
-         INSPECTOR
-    ========================================================== --}}
+@if(\Illuminate\Support\Facades\Route::has('mosaics.destroy'))
+    <div
+        id="deleteMosaicModal"
+        class="delete-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deleteMosaicTitle"
+        aria-describedby="deleteMosaicDescription"
+        hidden
+    >
+        <div class="delete-modal-backdrop" data-delete-close></div>
 
-    <aside id="right-panel" class="side-panel right-panel">
-        <div class="panel-heading">
-            <div class="panel-heading-row">
+        <div class="delete-modal-card">
+            <div class="delete-modal-head">
+                <div class="delete-modal-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5M14 11v5"
+                              stroke="currentColor"
+                              stroke-width="1.8"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
                 <div>
-                    <div class="panel-kicker">Inspector</div>
-                    <h2 class="panel-title">Lectura científica</h2>
-                </div>
-
-                <button id="close-inspector-mobile" class="panel-close" type="button">×</button>
-            </div>
-
-            <p class="panel-description">
-                Examina geometría, evidencia intermodelo, estabilidad y diagnóstico operativo del objeto seleccionado.
-            </p>
-        </div>
-
-        <div class="inspector-tabs">
-            <button class="inspector-tab active" type="button" data-inspector-tab="object">Objeto</button>
-            <button class="inspector-tab" type="button" data-inspector-tab="analysis">Análisis</button>
-        </div>
-
-        <div id="inspector-object" class="inspector-body">
-            <div class="inspector-empty">
-                <strong style="color:var(--text-soft);">Ningún objeto seleccionado.</strong><br><br>
-                Haz clic sobre una geometría del mapa o selecciona un registro del explorador. La ficha mostrará atributos del objeto operativo; no implica confirmación contra verdad de campo.
-            </div>
-        </div>
-
-        <div id="inspector-analysis" class="inspector-body" hidden>
-            <div class="section-block">
-                <div class="section-label">Trazabilidad del pipeline</div>
-
-                <div class="analysis-flow">
-                    <div class="flow-step">
-                        <div class="flow-value">{{ data_get($summary, 'raw_predictions', 0) }}</div>
-                        <div class="flow-label">Predicciones RAW</div>
-                    </div>
-                    <div class="flow-step">
-                        <div class="flow-value">{{ data_get($summary, 'unique_predictions', 0) }}</div>
-                        <div class="flow-label">Candidatos únicos</div>
-                    </div>
-                    <div class="flow-step">
-                        <div class="flow-value">{{ data_get($summary, 'catalog_groups', 0) }}</div>
-                        <div class="flow-label">Grupos evidencia</div>
-                    </div>
-                    <div class="flow-step">
-                        <div class="flow-value">{{ data_get($summary, 'primary_objects', 0) }}</div>
-                        <div class="flow-label">Objetos operativos</div>
+                    <h3 id="deleteMosaicTitle" class="delete-modal-title">
+                        Eliminar ortomosaico
+                    </h3>
+                    <div id="deleteMosaicDescription" class="delete-modal-subtitle">
+                        Esta operación elimina el insumo y sus productos derivados asociados.
                     </div>
                 </div>
             </div>
 
-            <div class="section-block">
-                <div class="section-label">Composición operacional</div>
-                <div class="analysis-kpis">
-                    <div class="analysis-kpi">
-                        <div class="analysis-kpi-label">Mask R-CNN primario</div>
-                        <div class="analysis-kpi-value" style="color:#aeeac8;">{{ data_get($summary, 'primary_maskrcnn', 0) }}</div>
-                    </div>
-                    <div class="analysis-kpi">
-                        <div class="analysis-kpi-label">YOLO fallback</div>
-                        <div class="analysis-kpi-value" style="color:#ddc3ff;">{{ data_get($summary, 'primary_yolo_fallback', 0) }}</div>
-                    </div>
-                    <div class="analysis-kpi">
-                        <div class="analysis-kpi-label">Requieren revisión</div>
-                        <div class="analysis-kpi-value" style="color:#f7cf8c;">{{ data_get($summary, 'requires_review', 0) }}</div>
-                    </div>
-                    <div class="analysis-kpi">
-                        <div class="analysis-kpi-label">Matches primarios</div>
-                        <div class="analysis-kpi-value">{{ data_get($summary, 'primary_matches', 0) }}</div>
-                    </div>
+            <div class="delete-modal-body">
+                <div class="delete-target">
+                    <div class="delete-target-label">Archivo seleccionado</div>
+                    <div id="deleteMosaicName" class="delete-target-name">—</div>
+                    <div id="deleteMosaicUuid" class="delete-target-name mono" style="color:var(--muted); font-weight:600;">—</div>
+                </div>
+
+                <ul class="delete-warning-list">
+                    <li>Se eliminará el GeoTIFF original almacenado en R2.</li>
+                    <li>También se eliminarán preview, COG, QA/QC y demás derivados del mosaico.</li>
+                    <li>Los AnalysisJobs y artifacts asociados al mosaico también serán eliminados.</li>
+                </ul>
+
+                <div class="delete-warning-final">
+                    Esta acción es irreversible. No elimina otros ortomosaicos ni otros proyectos.
                 </div>
             </div>
 
-            <div class="section-block">
-                <div class="section-label">Contexto técnico</div>
-                <div class="property-list">
-                    <div class="property-row">
-                        <div class="property-key">Proyecto</div>
-                        <div class="property-value">{{ $mosaic->project->name ?? '—' }}</div>
-                    </div>
-                    <div class="property-row">
-                        <div class="property-key">Ortomosaico</div>
-                        <div class="property-value">{{ $mosaic->original_name ?? $mosaic->uuid }}</div>
-                    </div>
-                    <div class="property-row">
-                        <div class="property-key">CRS</div>
-                        <div class="property-value">{{ $mosaic->crs ?? '—' }}</div>
-                    </div>
-                    <div class="property-row">
-                        <div class="property-key">Método científico</div>
-                        <div class="property-value">{{ $scientificMethodVersion }}</div>
-                    </div>
-                    <div class="property-row">
-                        <div class="property-key">Pipeline</div>
-                        <div class="property-value">{{ $pipelineVersion }}</div>
-                    </div>
-                    <div class="property-row">
-                        <div class="property-key">Analysis UUID</div>
-                        <div class="property-value">{{ $job->uuid }}</div>
-                    </div>
-                </div>
-            </div>
+            <div class="delete-modal-actions">
+                <button
+                    type="button"
+                    class="btn btn-outline"
+                    data-delete-close
+                >
+                    Cancelar
+                </button>
 
-            <div class="section-block">
-                <div class="section-label">Alcance del visor</div>
-                <div class="info-note">
-                    Esta pantalla es una herramienta de inspección espacial y QA/QC. Los objetos mostrados son geometrías operativas producidas por el pipeline y todavía no constituyen un conteo validado de individuos arbóreos mediante verdad de campo.
-                </div>
-            </div>
+                <form
+                    id="deleteMosaicForm"
+                    method="POST"
+                    action=""
+                >
+                    @csrf
+                    @method('DELETE')
 
-            <div class="section-block">
-                <div class="section-label">Interpretación metodológica</div>
-                <div class="method-note">
-                    Mask R-CNN se representa como fuente geométrica primaria provisional cuando el pipeline la conserva. YOLO-Seg aparece como evidencia secundaria o fallback de acuerdo con la regla de consolidación ya ejecutada. El visor no modifica esas decisiones.
-                </div>
+                    <button
+                        id="confirmDeleteMosaic"
+                        type="submit"
+                        class="btn btn-danger"
+                    >
+                        Eliminar definitivamente
+                    </button>
+                </form>
             </div>
         </div>
-    </aside>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/proj4@2.15.0/dist/proj4.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/geotiff@3.1.0-beta.0/dist-browser/geotiff.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ol@10.10.0/dist/ol.js"></script>
+    </div>
+@endif
 
 <script>
-(() => {
-    'use strict';
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+    const button = document.getElementById('uploadButton');
+    const fileInput = document.getElementById('mosaicFile');
+    const project = document.getElementById('project');
+    const progress = document.getElementById('uploadProgress');
+    const progressWrapper = document.getElementById('progressWrapper');
+    const progressLabel = document.getElementById('progressLabel');
+    const progressPercent = document.getElementById('progressPercent');
+    const progressBytes = document.getElementById('progressBytes');
+    const progressState = document.getElementById('progressState');
+    const statusBox = document.getElementById('uploadStatus');
+    const dropzone = document.getElementById('dropzone');
+    const selectedFileCard = document.getElementById('selectedFileCard');
+    const selectedFileName = document.getElementById('selectedFileName');
+    const selectedFileSize = document.getElementById('selectedFileSize');
+    const stagePrepare = document.getElementById('stagePrepare');
+    const stageTransfer = document.getElementById('stageTransfer');
+    const stageVerify = document.getElementById('stageVerify');
 
-    const mapBounds = @json($mapBounds);
-    const mosaicProjection = @json($mosaic->crs);
-    const previewAvailable = @json($previewAvailable);
-    const cogAvailable = @json($cogAvailable ?? false);
-
-    const geojsonUrl = @json(
-        route('analysis.map.geojson', ['analysisUuid' => $job->uuid])
-    );
-
-    const previewUrl = previewAvailable
-        ? @json(route('analysis.map.preview', ['analysisUuid' => $job->uuid]))
-        : null;
-
-    const cogUrlEndpoint = cogAvailable
-        ? @json(route('analysis.map.cog-url', ['analysisUuid' => $job->uuid]))
-        : null;
-
-    const summaryExpected = {
-        total: Number(@json(data_get($summary, 'primary_objects', 0))),
-        mrcnn: Number(@json(data_get($summary, 'primary_maskrcnn', 0))),
-        yolo: Number(@json(data_get($summary, 'primary_yolo_fallback', 0))),
-        review: Number(@json(data_get($summary, 'requires_review', 0))),
-    };
-
-    const els = {
-        workspace: document.getElementById('workspace'),
-        leftPanel: document.getElementById('left-panel'),
-        rightPanel: document.getElementById('right-panel'),
-        drawerBackdrop: document.getElementById('drawer-backdrop'),
-        openExplorerMobile: document.getElementById('open-explorer-mobile'),
-        openInspectorMobile: document.getElementById('open-inspector-mobile'),
-        closeExplorerMobile: document.getElementById('close-explorer-mobile'),
-        closeInspectorMobile: document.getElementById('close-inspector-mobile'),
-
-        search: document.getElementById('object-search'),
-        quickFilters: Array.from(document.querySelectorAll('.filter-chip')),
-        evidenceFilter: document.getElementById('evidence-filter'),
-        conflictFilter: document.getElementById('conflict-filter'),
-        resetFilters: document.getElementById('reset-filters'),
-        filterFeedback: document.getElementById('filter-feedback'),
-        objectList: document.getElementById('object-list'),
-        explorerCount: document.getElementById('explorer-count'),
-
-        togglePreview: document.getElementById('toggle-preview'),
-        toggleMrcnn: document.getElementById('toggle-mrcnn'),
-        toggleYolo: document.getElementById('toggle-yolo'),
-        toggleReviewHighlight: document.getElementById('toggle-review-highlight'),
-        opacityPopover: document.getElementById('opacity-popover'),
-        opacityToggle: document.getElementById('opacity-toggle'),
-        previewOpacity: document.getElementById('preview-opacity'),
-        previewOpacityValue: document.getElementById('preview-opacity-value'),
-        segOpacity: document.getElementById('seg-opacity'),
-        segOpacityValue: document.getElementById('seg-opacity-value'),
-        fitExtent: document.getElementById('fit-extent'),
-        clearSelection: document.getElementById('clear-selection'),
-        fullscreenMap: document.getElementById('fullscreen-map'),
-        gpsToggle: document.getElementById('gps-toggle'),
-        gpsToggleText: document.getElementById('gps-toggle-text'),
-        gpsFollow: document.getElementById('gps-follow'),
-        gpsIndicator: document.getElementById('gps-indicator'),
-        gpsStatusText: document.getElementById('gps-status-text'),
-        gpsAccuracy: document.getElementById('gps-accuracy'),
-        gpsAge: document.getElementById('gps-age'),
-        gpsTarget: document.getElementById('gps-target'),
-        fieldSelected: document.getElementById('field-selected'),
-        fieldSelectedName: document.getElementById('field-selected-name'),
-        fieldSelectedDistance: document.getElementById('field-selected-distance'),
-        fieldShowInspector: document.getElementById('field-show-inspector'),
-
-        visibleCount: document.getElementById('visible-count'),
-        visibleMrcnnCount: document.getElementById('visible-mrcnn-count'),
-        visibleYoloCount: document.getElementById('visible-yolo-count'),
-        visibleReviewCount: document.getElementById('visible-review-count'),
-        statusVisibleCount: document.getElementById('status-visible-count'),
-
-        coordX: document.getElementById('coord-x'),
-        coordY: document.getElementById('coord-y'),
-        mapScale: document.getElementById('map-scale'),
-        mapResolution: document.getElementById('map-resolution'),
-        tooltip: document.getElementById('map-tooltip'),
-
-        mapLoading: document.getElementById('map-loading'),
-        mapError: document.getElementById('map-error'),
-        mapErrorText: document.getElementById('map-error-text'),
-        retryGeojson: document.getElementById('retry-geojson'),
-
-        inspectorTabs: Array.from(document.querySelectorAll('.inspector-tab')),
-        inspectorObject: document.getElementById('inspector-object'),
-        inspectorAnalysis: document.getElementById('inspector-analysis'),
-    };
-
-    let allFeatures = [];
-    let filteredFeatures = [];
-    let activeQuickFilter = 'all';
-    let currentSegOpacity = Number(els.segOpacity?.value || 82) / 100;
-    let highlightReview = true;
-    let showMrcnn = true;
-    let showYolo = true;
-    let selectedFeature = null;
-    let selectedFilteredIndex = -1;
-
-    /* =========================================================
-       PROYECCIÓN
-    ========================================================= */
-
-    const utmMatch = /^EPSG:(326|327)(\d{2})$/.exec(mosaicProjection || '');
-
-    if (utmMatch) {
-        const hemisphereCode = utmMatch[1];
-        const zone = Number(utmMatch[2]);
-        const south = hemisphereCode === '327';
-
-        proj4.defs(
-            mosaicProjection,
-            `+proj=utm +zone=${zone} ${south ? '+south ' : ''}+datum=WGS84 +units=m +no_defs +type=crs`
-        );
-
-        ol.proj.proj4.register(proj4);
-    }
-
-    const mapProjection = ol.proj.get(mosaicProjection);
-
-    if (!mapProjection) {
-        throw new Error(`OpenLayers no pudo resolver ${mosaicProjection}.`);
-    }
-
-    /* =========================================================
-       HELPERS DE DATOS
-    ========================================================= */
-
-    function toBool(value) {
-        return (
-            value === true
-            || value === 1
-            || value === '1'
-            || String(value).toLowerCase() === 'true'
-        );
-    }
-
-    function cleanText(value) {
-        if (value === null || value === undefined) {
-            return '';
+    function setSelectedFile(file) {
+        if (!file) {
+            selectedFileCard?.classList.remove('visible');
+            if (selectedFileName) selectedFileName.textContent = '—';
+            if (selectedFileSize) selectedFileSize.textContent = '—';
+            return;
         }
-
-        return String(value).trim();
+        selectedFileCard?.classList.add('visible');
+        if (selectedFileName) selectedFileName.textContent = file.name;
+        if (selectedFileSize) selectedFileSize.textContent = formatBytes(file.size);
     }
 
-    function getPrimaryModel(feature) {
-        return cleanText(feature.get('primary_model'));
-    }
+    fileInput?.addEventListener('change', () => setSelectedFile(fileInput.files?.[0]));
 
-    function isMrcnn(feature) {
-        return getPrimaryModel(feature) === 'Mask R-CNN';
-    }
-
-    function isYolo(feature) {
-        return getPrimaryModel(feature) === 'YOLO-Seg';
-    }
-
-    function requiresReview(feature) {
-        return toBool(feature.get('requires_review'));
-    }
-
-    function getOperationalId(feature) {
-        return cleanText(feature.get('operational_id')) || 'Objeto operativo';
-    }
-
-    function getEvidenceStatus(feature) {
-        return cleanText(feature.get('evidence_status'));
-    }
-
-    function getConflictRole(feature) {
-        return cleanText(feature.get('conflict_role'));
-    }
-
-    function escapeHtml(value) {
-        if (value === null || value === undefined || value === '') {
-            return '—';
-        }
-
-        return String(value)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#039;');
-    }
-
-    function formatNumber(value, digits = 3) {
-        const num = Number(value);
-
-        if (!Number.isFinite(num)) {
-            return '—';
-        }
-
-        return num.toLocaleString('es-MX', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: digits,
+    if (dropzone && fileInput) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, event => {
+                event.preventDefault();
+                dropzone.classList.add('dragging');
+            });
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, event => {
+                event.preventDefault();
+                dropzone.classList.remove('dragging');
+            });
+        });
+        dropzone.addEventListener('drop', event => {
+            const files = event.dataTransfer?.files;
+            if (!files?.length) return;
+            const transfer = new DataTransfer();
+            transfer.items.add(files[0]);
+            fileInput.files = transfer.files;
+            setSelectedFile(files[0]);
         });
     }
 
-    function formatMetric(value, unit = '', digits = 3) {
-        const formatted = formatNumber(value, digits);
-        return formatted === '—' ? '—' : `${formatted}${unit ? ` ${unit}` : ''}`;
-    }
-
-    function readableValue(value) {
-        const text = cleanText(value);
-        return text || '—';
-    }
-
-    function modelClass(feature) {
-        if (isMrcnn(feature)) return 'mrcnn';
-        if (isYolo(feature)) return 'yolo';
-        return 'unknown';
-    }
-
-    function modelLabel(feature) {
-        return getPrimaryModel(feature) || 'Modelo no identificado';
-    }
-
-    /* =========================================================
-       FILTROS
-    ========================================================= */
-
-    function passesQuickFilter(feature) {
-        switch (activeQuickFilter) {
-            case 'mrcnn':
-                return isMrcnn(feature);
-            case 'yolo':
-                return isYolo(feature);
-            case 'review':
-                return requiresReview(feature);
-            case 'no-review':
-                return !requiresReview(feature);
-            default:
-                return true;
+    button?.addEventListener('click', async () => {
+        if (!fileInput?.files?.length) {
+            showUploadMessage('Selecciona un archivo .tif o .tiff.', 'error');
+            return;
         }
-    }
-
-    function passesAdvancedFilters(feature) {
-        const evidence = els.evidenceFilter?.value || '';
-        const conflict = els.conflictFilter?.value || '';
-
-        if (evidence && getEvidenceStatus(feature) !== evidence) {
-            return false;
+        if (!project?.value) {
+            showUploadMessage('Selecciona un proyecto.', 'error');
+            return;
         }
 
-        if (conflict && getConflictRole(feature) !== conflict) {
-            return false;
-        }
-
-        return true;
-    }
-
-    function passesSearch(feature) {
-        const query = cleanText(els.search?.value).toLowerCase();
-
-        if (!query) {
-            return true;
-        }
-
-        const haystack = [
-            feature.get('operational_id'),
-            feature.get('candidate_id'),
-            feature.get('source_cluster'),
-            feature.get('candidate_type'),
-        ]
-            .map(value => cleanText(value).toLowerCase())
-            .join(' ');
-
-        return haystack.includes(query);
-    }
-
-    function passesLayerVisibility(feature) {
-        if (isMrcnn(feature) && !showMrcnn) {
-            return false;
-        }
-
-        if (isYolo(feature) && !showYolo) {
-            return false;
-        }
-
-        return true;
-    }
-
-    function isFeatureVisible(feature) {
-        return (
-            passesLayerVisibility(feature)
-            && passesQuickFilter(feature)
-            && passesAdvancedFilters(feature)
-            && passesSearch(feature)
-        );
-    }
-
-    function populateSelect(select, values, placeholder) {
-        const current = select.value;
-        select.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>`;
-
-        values.forEach(value => {
-            const option = document.createElement('option');
-            option.value = value;
-            option.textContent = value;
-            select.appendChild(option);
-        });
-
-        if (values.includes(current)) {
-            select.value = current;
-        }
-    }
-
-    function populateAttributeFilters() {
-        const evidenceValues = [...new Set(
-            allFeatures
-                .map(getEvidenceStatus)
-                .filter(Boolean)
-        )].sort((a, b) => a.localeCompare(b, 'es'));
-
-        const conflictValues = [...new Set(
-            allFeatures
-                .map(getConflictRole)
-                .filter(Boolean)
-        )].sort((a, b) => a.localeCompare(b, 'es'));
-
-        populateSelect(els.evidenceFilter, evidenceValues, 'Toda evidencia');
-        populateSelect(els.conflictFilter, conflictValues, 'Todo conflicto');
-    }
-
-    function applyFilters() {
-        filteredFeatures = allFeatures.filter(isFeatureVisible);
-
-        if (selectedFeature && !isFeatureVisible(selectedFeature)) {
-            clearSelection();
-        }
-
-        renderObjectList();
-        vectorLayer.changed();
-        updateVisibleCounters();
-    }
-
-    function resetFilters() {
-        activeQuickFilter = 'all';
-
-        els.quickFilters.forEach(button => {
-            button.classList.toggle('active', button.dataset.filter === 'all');
-        });
-
-        if (els.search) els.search.value = '';
-        if (els.evidenceFilter) els.evidenceFilter.value = '';
-        if (els.conflictFilter) els.conflictFilter.value = '';
-
-        applyFilters();
-    }
-
-    /* =========================================================
-       CAPAS Y ESTILOS
-    ========================================================= */
-
-    // =========================================================
-    // V0.8A.WEB.3 - RASTER COG DE ALTA RESOLUCIÓN
-    // =========================================================
-    // El preview funciona como fallback. Cuando el COG queda
-    // listo, OpenLayers usa el raster nativo por bloques/rangos.
-
-    let orthomosaicVisible = true;
-    let currentRasterOpacity = Number(els.previewOpacity?.value || 100) / 100;
-
-    const previewLayer = previewAvailable
-        ? new ol.layer.Image({
-            source: new ol.source.ImageStatic({
-                url: previewUrl,
-                imageExtent: mapBounds,
-                projection: mapProjection,
-                interpolate: true,
-            }),
-            opacity: currentRasterOpacity,
-            visible: orthomosaicVisible,
-            zIndex: 0,
-        })
-        : null;
-
-    let cogLayer = null;
-    let cogSource = null;
-    let cogReady = false;
-    let cogFailed = false;
-
-    function syncRasterLayers() {
-        if (cogLayer) {
-            cogLayer.setOpacity(currentRasterOpacity);
-            cogLayer.setVisible(orthomosaicVisible && !cogFailed);
-        }
-
-        if (previewLayer) {
-            previewLayer.setOpacity(currentRasterOpacity);
-            previewLayer.setVisible(
-                orthomosaicVisible
-                && (!cogReady || cogFailed)
-            );
-        }
-    }
-
-    async function initializeCogLayer() {
-        if (!cogAvailable || !cogUrlEndpoint) {
-            syncRasterLayers();
+        const file = fileInput.files[0];
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!['tif', 'tiff'].includes(extension)) {
+            showUploadMessage('El archivo debe ser .tif o .tiff.', 'error');
             return;
         }
 
         try {
-            if (
-                typeof GeoTIFF === 'undefined'
-                || !ol?.source?.GeoTIFF
-                || !ol?.layer?.WebGLTile
-            ) {
+            button.disabled = true;
+            if (progressWrapper) progressWrapper.hidden = false;
+            setStage('prepare');
+            updateProgress(0, 'Preparando transferencia...', 0, file.size, 'Preparación');
+
+            const presignResponse = await fetch('{{ route('mosaics.presign') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    project_id: project.value,
+                    filename: file.name,
+                    size_bytes: file.size,
+                    mime_type: file.type || 'image/tiff'
+                })
+            });
+
+            const presign = await presignResponse.json();
+            if (!presignResponse.ok) {
                 throw new Error(
-                    'GeoTIFF/OpenLayers WebGLTile no está disponible en el navegador.'
+                    presign.message
+                    || (presign.errors ? Object.values(presign.errors).flat().join(' ') : null)
+                    || 'No se pudo preparar la subida.'
                 );
             }
 
-            const response = await fetch(cogUrlEndpoint, {
+            setStage('transfer');
+            updateProgress(0, 'Transfiriendo ortomosaico...', 0, file.size, 'Transferencia');
+            await uploadToR2(file, presign.upload_url, presign.headers);
+
+            setStage('verify');
+            updateProgress(100, 'Verificando archivo almacenado...', file.size, file.size, 'Verificación');
+
+            const completeResponse = await fetch('{{ route('mosaics.complete') }}', {
+                method: 'POST',
                 headers: {
-                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json'
                 },
-                credentials: 'same-origin',
-                cache: 'no-store',
+                body: JSON.stringify({ mosaic_uuid: presign.mosaic_uuid })
             });
 
-            if (!response.ok) {
-                throw new Error(
-                    `No fue posible obtener URL COG (HTTP ${response.status}).`
-                );
+            const complete = await completeResponse.json();
+            if (!completeResponse.ok) {
+                throw new Error(complete.message || 'No se pudo confirmar la subida.');
             }
 
-            const payload = await response.json();
+            setStage('done');
+            updateProgress(100, 'Ortomosaico almacenado correctamente.', file.size, file.size, 'Completado');
+            if (statusBox) statusBox.style.color = '#177245';
 
-            if (
-                payload?.status !== 'ok'
-                || payload?.available !== true
-                || !payload?.url
-            ) {
-                throw new Error('Laravel no devolvió una URL COG válida.');
-            }
-
-            cogSource = new ol.source.GeoTIFF({
-                sources: [
-                    {
-                        url: payload.url,
-                    },
-                ],
-                projection: mapProjection,
-                convertToRGB: 'auto',
-                normalize: true,
-                interpolate: true,
-                wrapX: false,
-                transition: 120,
-            });
-
-            cogLayer = new ol.layer.WebGLTile({
-                source: cogSource,
-                opacity: currentRasterOpacity,
-                visible: orthomosaicVisible,
-                zIndex: 1,
-                preload: 0,
-            });
-
-            map.addLayer(cogLayer);
-
-            cogSource.on('change', () => {
-                const state = cogSource.getState();
-
-                if (state === 'ready') {
-                    cogReady = true;
-                    cogFailed = false;
-                    syncRasterLayers();
-
-                    console.info('COG web listo:', {
-                        crs: payload.crs,
-                        width: payload.width,
-                        height: payload.height,
-                        overviews: payload.overviews,
-                        expires_at: payload.expires_at,
-                    });
-                } else if (state === 'error') {
-                    cogReady = false;
-                    cogFailed = true;
-                    syncRasterLayers();
-                    console.error(
-                        'GeoTIFFSource entró en estado error. Se mantiene el preview como fallback.'
-                    );
-                }
-            });
-
-            syncRasterLayers();
+            setTimeout(() => window.location.reload(), 900);
         } catch (error) {
-            cogReady = false;
-            cogFailed = true;
-            syncRasterLayers();
-
-            console.error(
-                'No fue posible inicializar el COG. Se usará el preview como fallback.',
-                error
-            );
-        }
-    }
-
-    const vectorSource = new ol.source.Vector();
-
-    function createStroke(color, width, lineDash = null) {
-        return new ol.style.Stroke({
-            color,
-            width,
-            lineDash,
-            lineJoin: 'round',
-            lineCap: 'round',
-        });
-    }
-
-    function createFill(color) {
-        return new ol.style.Fill({ color });
-    }
-
-    function getFeatureStyle(feature) {
-        if (!isFeatureVisible(feature)) {
-            return null;
-        }
-
-        const review = requiresReview(feature);
-        const useReviewStyle = review && highlightReview;
-
-        let strokeColor = 'rgba(159, 176, 167, .98)';
-        let fillColor = `rgba(159, 176, 167, ${Math.max(currentSegOpacity * .20, .08)})`;
-
-        if (isMrcnn(feature)) {
-            strokeColor = 'rgba(53, 199, 123, .98)';
-            fillColor = `rgba(53, 199, 123, ${Math.max(currentSegOpacity * .27, .09)})`;
-        } else if (isYolo(feature)) {
-            strokeColor = 'rgba(165, 107, 244, .98)';
-            fillColor = `rgba(165, 107, 244, ${Math.max(currentSegOpacity * .24, .09)})`;
-        }
-
-        if (useReviewStyle) {
-            strokeColor = 'rgba(242, 173, 61, .98)';
-            fillColor = `rgba(242, 173, 61, ${Math.max(currentSegOpacity * .17, .08)})`;
-        }
-
-        const baseStyle = new ol.style.Style({
-            stroke: createStroke(
-                strokeColor,
-                useReviewStyle ? 3 : 2.2,
-                useReviewStyle ? [9, 6] : null
-            ),
-            fill: createFill(fillColor),
-        });
-
-        if (!useReviewStyle) {
-            return baseStyle;
-        }
-
-        return [
-            baseStyle,
-            new ol.style.Style({
-                stroke: createStroke('rgba(255, 241, 214, .9)', 1, [2, 6]),
-            }),
-        ];
-    }
-
-    const vectorLayer = new ol.layer.Vector({
-        source: vectorSource,
-        style: getFeatureStyle,
-        zIndex: 10,
-        declutter: true,
-    });
-
-    const selectedStyle = [
-        new ol.style.Style({
-            stroke: createStroke('rgba(255,255,255,1)', 4.4),
-            fill: createFill('rgba(255,255,255,.035)'),
-        }),
-        new ol.style.Style({
-            stroke: createStroke('rgba(239,106,98,1)', 2.4),
-            fill: createFill('rgba(239,106,98,.09)'),
-        }),
-    ];
-
-    /* =========================================================
-       MAPA
-    ========================================================= */
-
-    const map = new ol.Map({
-        target: 'map',
-        layers: [
-            ...(previewLayer ? [previewLayer] : []),
-            vectorLayer,
-        ],
-        view: new ol.View({
-            projection: mapProjection,
-            center: ol.extent.getCenter(mapBounds),
-            zoom: 19,
-        }),
-        controls: ol.control.defaults.defaults().extend([
-            new ol.control.ScaleLine({
-                units: 'metric',
-                bar: true,
-                steps: 4,
-                text: true,
-                minWidth: 110,
-            }),
-        ]),
-    });
-
-    function fitMap() {
-        map.getView().fit(mapBounds, {
-            padding: [74, 48, 72, 48],
-            duration: 260,
-            maxZoom: 24,
-        });
-    }
-
-    fitMap();
-
-    const selected = new ol.Collection();
-
-    const selectInteraction = new ol.interaction.Select({
-        layers: [vectorLayer],
-        features: selected,
-        style: selectedStyle,
-        hitTolerance: 6,
-        filter: feature => isFeatureVisible(feature),
-    });
-
-    map.addInteraction(selectInteraction);
-
-
-    /* =========================================================
-       WEB.6 — GEOLOCALIZACIÓN GPS LOCAL
-       - Solicitud exclusivamente tras interacción del usuario.
-       - Posición WGS84 -> CRS proyectado del mapa.
-       - No se envían ni persisten posiciones GPS en el servidor.
-       - Coordenada/precisión no constituyen verdad de campo.
-    ========================================================= */
-    const gpsSource = new ol.source.Vector();
-    const gpsAccuracyFeature = new ol.Feature({
-        geometry: new ol.geom.Circle([0, 0], 0),
-        gps_kind: 'accuracy',
-    });
-    const gpsPositionFeature = new ol.Feature({
-        geometry: new ol.geom.Point([0, 0]),
-        gps_kind: 'position',
-    });
-    gpsSource.addFeatures([gpsAccuracyFeature, gpsPositionFeature]);
-
-    const gpsLayer = new ol.layer.Vector({
-        source: gpsSource,
-        visible: false,
-        zIndex: 40,
-        updateWhileAnimating: false,
-        updateWhileInteracting: false,
-        style: feature => feature.get('gps_kind') === 'accuracy'
-            ? new ol.style.Style({
-                stroke: new ol.style.Stroke({ color: 'rgba(97,184,255,.75)', width: 1.4 }),
-                fill: new ol.style.Fill({ color: 'rgba(69,162,247,.12)' }),
-            })
-            : [
-                new ol.style.Style({
-                    image: new ol.style.Circle({
-                        radius: 11,
-                        fill: new ol.style.Fill({ color: '#ffffff' }),
-                        stroke: new ol.style.Stroke({ color: 'rgba(25,50,90,.30)', width: 1.3 }),
-                    }),
-                }),
-                new ol.style.Style({
-                    image: new ol.style.Circle({
-                        radius: 7,
-                        fill: new ol.style.Fill({ color: '#278cf2' }),
-                        stroke: new ol.style.Stroke({ color: '#ffffff', width: 1.4 }),
-                    }),
-                }),
-            ],
-    });
-    map.addLayer(gpsLayer);
-
-    let gpsWatchId = null;
-    let gpsActive = false;
-    let gpsFollow = false;
-    let gpsCoordinate = null;
-    let gpsAccuracy = null;
-    let gpsTimestamp = 0;
-    let gpsHasFix = false;
-
-    function gpsUpdateStatus(message, state = 'idle', label = 'GPS') {
-        els.gpsStatusText.textContent = message;
-        els.gpsIndicator.textContent = label;
-        els.gpsIndicator.dataset.state = state;
-    }
-
-    function gpsUpdateButtons() {
-        els.gpsToggleText.textContent = gpsActive ? 'Detener GPS' : 'Mi ubicación';
-        els.gpsToggle.setAttribute('aria-label', gpsActive ? 'Detener seguimiento GPS' : 'Iniciar GPS');
-        els.gpsFollow.disabled = !gpsHasFix;
-        els.gpsFollow.classList.toggle('is-following', gpsActive && gpsFollow);
-        els.gpsFollow.setAttribute('aria-pressed', (gpsActive && gpsFollow) ? 'true' : 'false');
-        els.gpsFollow.title = gpsFollow ? 'Siguiendo tu posición' : 'Centrar y seguir mi posición';
-    }
-
-    function gpsDistanceToSelected() {
-        if (!gpsHasFix || !gpsCoordinate || !selectedFeature) {
-            els.gpsTarget.hidden = !selectedFeature;
-            if (selectedFeature) {
-                els.gpsTarget.textContent = 'Distancia: pendiente de ubicación GPS.';
-            }
-            if (els.fieldSelectedDistance) {
-                els.fieldSelectedDistance.textContent = 'Activa GPS para estimar distancia';
-            }
-            return;
-        }
-
-        const geometry = selectedFeature.getGeometry();
-        if (!geometry) return;
-        const center = ol.extent.getCenter(geometry.getExtent());
-        // Ambas coordenadas están en UTM, por lo que la distancia es euclidiana métrica.
-        const meters = Math.hypot(center[0] - gpsCoordinate[0], center[1] - gpsCoordinate[1]);
-        const label = Number.isFinite(meters) ? `${meters.toFixed(1)} m` : '—';
-        els.gpsTarget.hidden = false;
-        els.gpsTarget.textContent = `Hasta centro aproximado de ${getOperationalId(selectedFeature)}: ${label} (línea recta).`;
-        els.fieldSelectedDistance.textContent = `${label} aprox. · No identifica el fuste`;
-        const inspectorDistance = document.getElementById('gps-distance-inspector');
-        if (inspectorDistance) inspectorDistance.textContent = `Distancia GPS aproximada al centro geométrico: ${label}. La incertidumbre GNSS puede superar esta distancia.`;
-    }
-
-    function gpsSyncSelected() {
-        els.fieldSelected.hidden = !selectedFeature;
-        if (selectedFeature) {
-            els.fieldSelectedName.textContent = getOperationalId(selectedFeature);
-        }
-        gpsDistanceToSelected();
-    }
-
-    function gpsStop(silent = false) {
-        if (gpsWatchId !== null && navigator.geolocation) {
-            navigator.geolocation.clearWatch(gpsWatchId);
-        }
-        gpsWatchId = null;
-        gpsActive = false;
-        gpsFollow = false;
-        gpsHasFix = false;
-        gpsCoordinate = null;
-        gpsAccuracy = null;
-        gpsLayer.setVisible(false);
-        els.gpsAccuracy.textContent = '—';
-        els.gpsAge.textContent = '—';
-        if (!silent) gpsUpdateStatus('GPS detenido. Tu ubicación no se guarda en el sistema.', 'idle', 'APAGADO');
-        gpsUpdateButtons();
-        gpsDistanceToSelected();
-    }
-
-    function gpsCenterOnCurrent() {
-        if (!gpsCoordinate) return;
-        const view = map.getView();
-        const options = { center: gpsCoordinate, duration: 280 };
-        // Al entrar desde fuera del área, mantener una escala razonable.
-        if (!gpsHasFix || (view.getZoom() ?? 0) < 18) options.zoom = 19;
-        view.animate(options);
-    }
-
-    function gpsSuccess(result) {
-        if (!gpsActive) return;
-        const longitude = Number(result.coords.longitude);
-        const latitude = Number(result.coords.latitude);
-        const accuracy = Number(result.coords.accuracy);
-        if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return;
-        const projected = ol.proj.fromLonLat([longitude, latitude], mapProjection);
-        if (!projected.every(Number.isFinite)) return;
-        const firstFix = !gpsHasFix;
-        gpsCoordinate = projected;
-        gpsAccuracy = Number.isFinite(accuracy) && accuracy >= 0 ? accuracy : null;
-        gpsTimestamp = result.timestamp || Date.now();
-        gpsHasFix = true;
-        gpsPositionFeature.getGeometry().setCoordinates(projected);
-        gpsAccuracyFeature.getGeometry().setCenterAndRadius(projected, Math.min(gpsAccuracy ?? 0, 1000));
-        gpsLayer.setVisible(true);
-
-        const withinMosaic = ol.extent.containsCoordinate(mapBounds, projected);
-        const accuracyText = gpsAccuracy !== null ? `± ${Math.round(gpsAccuracy)} m` : 'No disponible';
-        els.gpsAccuracy.textContent = accuracyText;
-        const lowConfidence = gpsAccuracy === null || gpsAccuracy > 15;
-        gpsUpdateStatus(
-            !withinMosaic
-                ? 'Estás fuera de la extensión del mosaico o existe desplazamiento GPS. Comprueba el área y la precisión.'
-                : lowConfidence
-                    ? 'Posición obtenida con incertidumbre alta; úsala solo como orientación.'
-                    : 'Posición recibida. Puedes seleccionar una copa y consultar su distancia aproximada.',
-            !withinMosaic || lowConfidence ? 'warning' : 'good',
-            (!withinMosaic || lowConfidence) ? 'REVISAR GPS' : 'GPS ACTIVO'
-        );
-        gpsUpdateButtons();
-        gpsDistanceToSelected();
-        if (gpsFollow && ol.extent.containsCoordinate(ol.extent.buffer(mapBounds, 60), projected)) {
-            if (firstFix) {
-                gpsCenterOnCurrent();
-            } else {
-                // No animar si el movimiento es menor a la propia incertidumbre.
-                const viewCenter = map.getView().getCenter();
-                const d = viewCenter ? Math.hypot(viewCenter[0]-projected[0],viewCenter[1]-projected[1]) : Infinity;
-                if (d > Math.max(2, Math.min(gpsAccuracy ?? 5, 12))) gpsCenterOnCurrent();
-            }
-        }
-    }
-
-    function gpsError(err) {
-        const message = err?.code === 1
-            ? 'Permiso de ubicación denegado. Habilítalo en la configuración del navegador.'
-            : err?.code === 2
-                ? 'El teléfono no consigue una posición GPS. Verifica señal y servicios de ubicación.'
-                : 'La posición tardó demasiado. Prueba al aire libre y vuelve a intentar.';
-        gpsUpdateStatus(message, 'error', 'SIN SEÑAL');
-        if (err?.code === 1) {
-            gpsStop(true);
-            gpsUpdateStatus(message, 'error', 'SIN PERMISO');
-        }
-    }
-
-    function gpsStart() {
-        if (!window.isSecureContext || !('geolocation' in navigator)) {
-            gpsUpdateStatus('Se requiere HTTPS y un navegador con geolocalización.', 'error', 'NO DISPONIBLE');
-            return;
-        }
-        gpsActive = true;
-        gpsFollow = true;
-        gpsUpdateStatus('Solicitando permiso y primera posición…', 'warning', 'BUSCANDO');
-        gpsUpdateButtons();
-        try {
-            gpsWatchId = navigator.geolocation.watchPosition(gpsSuccess, gpsError, {
-                enableHighAccuracy: true,
-                maximumAge: 3000,
-                timeout: 18000,
-            });
-        } catch (err) {
-            gpsStop(true);
-            gpsUpdateStatus('No fue posible iniciar el GPS: ' + (err.message || 'error inesperado'), 'error', 'ERROR');
-        }
-    }
-
-    els.gpsToggle.addEventListener('click', () => gpsActive ? gpsStop() : gpsStart());
-    els.gpsFollow.addEventListener('click', () => {
-        if (!gpsHasFix) return;
-        gpsFollow = true;
-        gpsUpdateButtons();
-        gpsCenterOnCurrent();
-    });
-    els.fieldShowInspector?.addEventListener('click', () => {
-        if (selectedFeature && window.innerWidth <= 1080) openDrawer(els.rightPanel);
-    });
-    map.on('pointerdrag', () => {
-        if (gpsFollow) {
-            gpsFollow = false;
-            gpsUpdateButtons();
+            console.error(error);
+            showUploadMessage(error.message, 'error');
+        } finally {
+            button.disabled = false;
         }
     });
-    window.addEventListener('pagehide', () => gpsStop(true));
-    window.setInterval(() => {
-        if (!gpsActive || !gpsHasFix) return;
-        const age = Math.max(0, Math.round((Date.now() - gpsTimestamp) / 1000));
-        els.gpsAge.textContent = age < 60 ? `${age} s` : `${Math.floor(age / 60)} min`;
-        if (age > 45) gpsUpdateStatus('Posición antigua: esperando una nueva lectura GPS.', 'warning', 'GPS ANTIGUO');
-    }, 5000);
-    gpsUpdateButtons();
 
-
-    /* =========================================================
-       LISTA DE OBJETOS
-    ========================================================= */
-
-    function renderObjectList() {
-        els.explorerCount.textContent = filteredFeatures.length;
-        els.filterFeedback.textContent = `${filteredFeatures.length} de ${allFeatures.length} objetos visibles`;
-
-        if (!filteredFeatures.length) {
-            els.objectList.innerHTML = `
-                <div class="object-list-empty">
-                    No hay objetos que coincidan con los filtros actuales.
-                </div>
-            `;
-            return;
-        }
-
-        const fragment = document.createDocumentFragment();
-
-        filteredFeatures.forEach((feature, index) => {
-            const row = document.createElement('button');
-            row.type = 'button';
-            row.className = `object-row${selectedFeature === feature ? ' selected' : ''}`;
-            row.dataset.featureIndex = String(index);
-
-            const review = requiresReview(feature);
-            const area = formatMetric(feature.get('area_m2'), 'm²', 2);
-            const evidence = getEvidenceStatus(feature);
-
-            row.innerHTML = `
-                <div class="object-row-top">
-                    <div class="object-id">${escapeHtml(getOperationalId(feature))}</div>
-                    <span class="model-mark ${modelClass(feature)}" title="${escapeHtml(modelLabel(feature))}"></span>
-                </div>
-                <div class="object-row-meta">
-                    <span>${escapeHtml(modelLabel(feature))}</span>
-                    <span>Área ${escapeHtml(area)}</span>
-                    <span class="mini-status${review ? ' review' : ''}">${review ? 'Revisión' : 'Sin revisión'}</span>
-                    ${evidence ? `<span>${escapeHtml(evidence)}</span>` : ''}
-                </div>
-            `;
-
-            row.addEventListener('click', () => selectFeature(feature, true));
-            fragment.appendChild(row);
-        });
-
-        els.objectList.replaceChildren(fragment);
-    }
-
-    function syncSelectedRow() {
-        els.objectList.querySelectorAll('.object-row').forEach((row, index) => {
-            row.classList.toggle('selected', filteredFeatures[index] === selectedFeature);
-        });
-
-        if (selectedFeature) {
-            selectedFilteredIndex = filteredFeatures.indexOf(selectedFeature);
-        } else {
-            selectedFilteredIndex = -1;
-        }
-    }
-
-    /* =========================================================
-       INSPECTOR
-    ========================================================= */
-
-    function propertyRow(label, value) {
-        return `
-            <div class="property-row">
-                <div class="property-key">${escapeHtml(label)}</div>
-                <div class="property-value">${escapeHtml(value)}</div>
-            </div>
-        `;
-    }
-
-    function activateInspectorTab(tabName) {
-        els.inspectorTabs.forEach(button => {
-            button.classList.toggle('active', button.dataset.inspectorTab === tabName);
-        });
-
-        els.inspectorObject.hidden = tabName !== 'object';
-        els.inspectorAnalysis.hidden = tabName !== 'analysis';
-    }
-
-    function renderSelected(feature) {
-        if (!feature) {
-            els.inspectorObject.innerHTML = `
-                <div class="inspector-empty">
-                    <strong style="color:var(--text-soft);">Ningún objeto seleccionado.</strong><br><br>
-                    Haz clic sobre una geometría del mapa o selecciona un registro del explorador. La ficha mostrará atributos del objeto operativo; no implica confirmación contra verdad de campo.
-                </div>
-            `;
-            return;
-        }
-
-        const review = requiresReview(feature);
-        const model = modelLabel(feature);
-        const evidence = readableValue(feature.get('evidence_status'));
-        const conflict = readableValue(feature.get('conflict_role'));
-        const operationalId = getOperationalId(feature);
-        const score = formatNumber(feature.get('representative_score'), 4);
-
-        const modelBadge = isMrcnn(feature)
-            ? '<span class="badge badge-mrcnn">Mask R-CNN · geometría primaria</span>'
-            : isYolo(feature)
-                ? '<span class="badge badge-yolo">YOLO-Seg · fallback</span>'
-                : `<span class="badge badge-neutral">${escapeHtml(model)}</span>`;
-
-        const reviewBadge = review
-            ? '<span class="badge badge-review">Requiere revisión</span>'
-            : '<span class="badge badge-ok">Sin revisión operativa</span>';
-
-        const conflictAlert = (
-            conflict !== '—'
-            && !['none', 'null', 'no_conflict', 'sin conflicto'].includes(conflict.toLowerCase())
-        )
-            ? `
-                <div class="section-block">
-                    <div class="warning-note">
-                        <strong>Condición estructural registrada:</strong> ${escapeHtml(conflict)}.<br>
-                        Esta marca orienta la revisión QA/QC y no debe interpretarse automáticamente como error confirmado.
-                    </div>
-                </div>
-            `
-            : '';
-
-        els.inspectorObject.innerHTML = `
-            <div class="selected-header">
-                <div>
-                    <div class="selected-kicker">Objeto operativo</div>
-                    <div class="selected-id">${escapeHtml(operationalId)}</div>
-                </div>
-            </div>
-
-            <div class="badges">
-                ${modelBadge}
-                ${reviewBadge}
-            </div>
-
-            <div class="inspector-actions">
-                <button id="previous-object" class="small-action" type="button" ${selectedFilteredIndex <= 0 ? 'disabled' : ''}>← Anterior</button>
-                <button id="next-object" class="small-action" type="button" ${selectedFilteredIndex < 0 || selectedFilteredIndex >= filteredFeatures.length - 1 ? 'disabled' : ''}>Siguiente →</button>
-                <button id="zoom-selected" class="small-action" type="button">Centrar</button>
-                <button id="copy-object-id" class="small-action" type="button">Copiar ID</button>
-            </div>
-
-            <div class="section-block">
-                <div class="section-label">Geometría</div>
-                <div class="metric-grid">
-                    <div class="metric-box">
-                        <div class="metric-label">Área segmentada</div>
-                        <div class="metric-value">${escapeHtml(formatMetric(feature.get('area_m2'), 'm²', 3))}</div>
-                    </div>
-                    <div class="metric-box">
-                        <div class="metric-label">Diámetro equivalente</div>
-                        <div class="metric-value">${escapeHtml(formatMetric(feature.get('eq_crown_d_m'), 'm', 3))}</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section-block">
-                <div class="section-label">Evidencia IA</div>
-                <div class="property-list">
-                    ${propertyRow('Modelo primario', model)}
-                    ${propertyRow('Estado de evidencia', evidence)}
-                    ${propertyRow('IoU intermodelo máximo', formatNumber(feature.get('max_intermodel_iou'), 4))}
-                    ${propertyRow('Overlap mínimo máximo', formatNumber(feature.get('max_overlap_min'), 4))}
-                    ${propertyRow('Distancia mínima centroides', formatMetric(feature.get('min_centroid_distance_m'), 'm', 3))}
-                    ${propertyRow('Score representativo', score)}
-                </div>
-                <div class="method-note" style="margin-top:8px;">
-                    El score representativo es un valor interno del modelo asociado a la observación representativa. No equivale a probabilidad de corrección ni a validación frente a campo.
-                </div>
-            </div>
-
-            <div class="section-block">
-                <div class="section-label">Estabilidad espacial</div>
-                <div class="property-list">
-                    ${propertyRow('Observaciones', readableValue(feature.get('n_observations')))}
-                    ${propertyRow('CV de área', formatMetric(feature.get('area_cv_pct'), '%', 3))}
-                    ${propertyRow('Pair IoU mean', formatNumber(feature.get('pair_iou_mean'), 4))}
-                    ${propertyRow('Pair IoU min', formatNumber(feature.get('pair_iou_min'), 4))}
-                    ${propertyRow('Distancia máxima centroides', formatMetric(feature.get('centroid_dist_max_m'), 'm', 3))}
-                    ${propertyRow('Observaciones de borde', readableValue(feature.get('edge_observations')))}
-                    ${propertyRow('Máscara representativa válida', formatNumber(feature.get('representative_mask_valid'), 4))}
-                </div>
-            </div>
-
-            <div class="section-block">
-                <div class="section-label">Diagnóstico operativo</div>
-                <div class="property-list">
-                    ${propertyRow('Candidate ID', readableValue(feature.get('candidate_id')))}
-                    ${propertyRow('Tipo de candidato', readableValue(feature.get('candidate_type')))}
-                    ${propertyRow('Cluster origen', readableValue(feature.get('source_cluster')))}
-                    ${propertyRow('Estado geométrico', readableValue(feature.get('geometry_status')))}
-                    ${propertyRow('Rol de conflicto', conflict)}
-                    ${propertyRow('Regla de decisión', readableValue(feature.get('decision_rule')))}
-                </div>
-            </div>
-
-            ${conflictAlert}
-
-            <div class="section-block">
-                <div class="info-note">
-                    Esta ficha describe un objeto operativo de copa. La correspondencia con un árbol individual requiere la fase posterior de contraste con verdad de campo.
-                    <div id="gps-distance-inspector" style="margin-top:7px;">La distancia GPS es solo orientativa.</div>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('previous-object')?.addEventListener('click', () => navigateSelection(-1));
-        document.getElementById('next-object')?.addEventListener('click', () => navigateSelection(1));
-        document.getElementById('zoom-selected')?.addEventListener('click', () => zoomToFeature(feature));
-        document.getElementById('copy-object-id')?.addEventListener('click', async event => {
-            try {
-                await navigator.clipboard.writeText(operationalId);
-                event.currentTarget.textContent = 'ID copiado';
-                setTimeout(() => {
-                    event.currentTarget.textContent = 'Copiar ID';
-                }, 1200);
-            } catch (error) {
-                console.warn('No fue posible copiar el ID.', error);
-            }
-        });
-    }
-
-    function navigateSelection(direction) {
-        if (!filteredFeatures.length || selectedFilteredIndex < 0) {
-            return;
-        }
-
-        const nextIndex = selectedFilteredIndex + direction;
-
-        if (nextIndex < 0 || nextIndex >= filteredFeatures.length) {
-            return;
-        }
-
-        selectFeature(filteredFeatures[nextIndex], true);
-    }
-
-    function zoomToFeature(feature) {
-        const geometry = feature?.getGeometry();
-
-        if (!geometry) {
-            return;
-        }
-
-        map.getView().fit(geometry.getExtent(), {
-            padding: [100, 100, 100, 100],
-            duration: 260,
-            maxZoom: 23,
-        });
-    }
-
-    function selectFeature(feature, zoom = false) {
-        if (!feature || !isFeatureVisible(feature)) {
-            return;
-        }
-
-        selected.clear();
-        selected.push(feature);
-        selectedFeature = feature;
-        selectedFilteredIndex = filteredFeatures.indexOf(feature);
-
-        renderSelected(feature);
-        activateInspectorTab('object');
-        syncSelectedRow();
-        gpsSyncSelected();
-
-        if (zoom) {
-            zoomToFeature(feature);
-        }
-
-        if (window.innerWidth <= 1080) {
-            closeDrawers();
-        }
-    }
-
-    function clearSelection() {
-        selected.clear();
-        selectedFeature = null;
-        selectedFilteredIndex = -1;
-        renderSelected(null);
-        syncSelectedRow();
-        gpsSyncSelected();
-    }
-
-    /* =========================================================
-       CONTADORES Y ESTADO GIS
-    ========================================================= */
-
-    function updateVisibleCounters() {
-        const visible = allFeatures.filter(isFeatureVisible);
-
-        let mrcnn = 0;
-        let yolo = 0;
-        let review = 0;
-
-        visible.forEach(feature => {
-            if (isMrcnn(feature)) mrcnn += 1;
-            if (isYolo(feature)) yolo += 1;
-            if (requiresReview(feature)) review += 1;
-        });
-
-        els.visibleCount.textContent = visible.length;
-        els.visibleMrcnnCount.textContent = mrcnn;
-        els.visibleYoloCount.textContent = yolo;
-        els.visibleReviewCount.textContent = review;
-        els.statusVisibleCount.textContent = visible.length;
-    }
-
-    function updateViewStatus() {
-        const view = map.getView();
-        const resolution = view.getResolution();
-        const center = view.getCenter();
-
-        if (!Number.isFinite(resolution) || !center) {
-            return;
-        }
-
-        let metersPerPixel = resolution;
-
-        try {
-            metersPerPixel = ol.proj.getPointResolution(
-                mapProjection,
-                resolution,
-                center,
-                'm'
-            );
-        } catch (error) {
-            console.warn('No fue posible calcular resolución métrica.', error);
-        }
-
-        const scaleDenominator = metersPerPixel * 96 * 39.3700787402;
-
-        els.mapResolution.textContent = `${formatNumber(metersPerPixel, 3)} m/px`;
-        els.mapScale.textContent = Number.isFinite(scaleDenominator)
-            ? `1:${Math.max(1, Math.round(scaleDenominator)).toLocaleString('es-MX')}`
-            : '—';
-    }
-
-    /* =========================================================
-       GEOJSON
-    ========================================================= */
-
-    async function loadGeoJson() {
-        els.mapLoading.hidden = false;
-        els.mapError.hidden = true;
-
-        try {
-            const response = await fetch(geojsonUrl, {
-                headers: {
-                    'Accept': 'application/geo+json, application/json',
-                },
-                credentials: 'same-origin',
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const json = await response.json();
-
-            const features = new ol.format.GeoJSON().readFeatures(json, {
-                dataProjection: 'EPSG:4326',
-                featureProjection: mapProjection,
-            });
-
-            vectorSource.clear(true);
-            vectorSource.addFeatures(features);
-
-            allFeatures = features;
-
-            if (features.length !== summaryExpected.total) {
-                console.warn('Conteo visual distinto al summary:', {
-                    expected: summaryExpected.total,
-                    actual: features.length,
+    function uploadToR2(file, url, signedHeaders) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', url, true);
+
+            if (signedHeaders) {
+                Object.entries(signedHeaders).forEach(([key, value]) => {
+                    if (key.toLowerCase() !== 'host') xhr.setRequestHeader(key, value);
                 });
             }
 
-            populateAttributeFilters();
-            applyFilters();
-            clearSelection();
-        } catch (error) {
-            console.error(error);
+            xhr.upload.onprogress = event => {
+                if (!event.lengthComputable) return;
+                const percent = Math.round((event.loaded / event.total) * 100);
+                updateProgress(percent, 'Transfiriendo ortomosaico...', event.loaded, event.total, 'Transferencia');
+            };
 
-            els.mapErrorText.textContent =
-                `La capa GeoJSON no pudo cargarse (${error.message}). `
-                + 'El ortomosaico puede seguir visible, pero los objetos operativos no están disponibles.';
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) resolve();
+                else reject(new Error('El almacenamiento respondió HTTP ' + xhr.status));
+            };
 
-            els.mapError.hidden = false;
-            els.objectList.innerHTML = `
-                <div class="object-list-empty">
-                    No fue posible cargar el catálogo espacial del análisis.
-                </div>
-            `;
-        } finally {
-            els.mapLoading.hidden = true;
+            xhr.onerror = () => reject(new Error('Error de red o CORS durante la subida.'));
+            xhr.onabort = () => reject(new Error('La subida fue cancelada.'));
+            xhr.send(file);
+        });
+    }
+
+    function updateProgress(percent, text, loaded = 0, total = 0, state = '') {
+        if (progress) progress.value = percent;
+        if (progressPercent) progressPercent.textContent = percent + ' %';
+        if (progressLabel) progressLabel.textContent = text;
+        if (progressBytes) progressBytes.textContent = formatBytes(loaded) + ' / ' + formatBytes(total);
+        if (progressState) progressState.textContent = state;
+        if (statusBox) {
+            statusBox.textContent = text;
+            statusBox.style.color = '#176b4d';
         }
     }
 
-    /* =========================================================
-       INTERACCIÓN MAPA
-    ========================================================= */
-
-    selectInteraction.on('select', event => {
-        const feature = event.selected[0] || null;
-
-        selectedFeature = feature;
-        selectedFilteredIndex = feature ? filteredFeatures.indexOf(feature) : -1;
-        renderSelected(feature);
-        syncSelectedRow();
-        gpsSyncSelected();
-
-        if (feature) {
-            activateInspectorTab('object');
+    function setStage(stage) {
+        [stagePrepare, stageTransfer, stageVerify].forEach(chip => chip?.classList.remove('active', 'done'));
+        if (stage === 'prepare') stagePrepare?.classList.add('active');
+        if (stage === 'transfer') {
+            stagePrepare?.classList.add('done');
+            stageTransfer?.classList.add('active');
         }
-    });
-
-    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-    if (finePointer) map.on('pointermove', event => {
-        if (event.coordinate) {
-            els.coordX.textContent = formatNumber(event.coordinate[0], 2);
-            els.coordY.textContent = formatNumber(event.coordinate[1], 2);
+        if (stage === 'verify') {
+            stagePrepare?.classList.add('done');
+            stageTransfer?.classList.add('done');
+            stageVerify?.classList.add('active');
         }
-
-        if (event.dragging) {
-            els.tooltip.classList.remove('active');
-            return;
+        if (stage === 'done') {
+            stagePrepare?.classList.add('done');
+            stageTransfer?.classList.add('done');
+            stageVerify?.classList.add('done');
         }
-
-        const feature = map.forEachFeatureAtPixel(
-            event.pixel,
-            candidate => isFeatureVisible(candidate) ? candidate : null,
-            {
-                layerFilter: layer => layer === vectorLayer,
-                hitTolerance: 5,
-            }
-        );
-
-        map.getTargetElement().style.cursor = feature ? 'pointer' : '';
-
-        if (!feature) {
-            els.tooltip.classList.remove('active');
-            return;
-        }
-
-        const review = requiresReview(feature);
-
-        els.tooltip.innerHTML = `
-            <div class="tooltip-title">${escapeHtml(getOperationalId(feature))}</div>
-            <div class="tooltip-meta">
-                ${escapeHtml(modelLabel(feature))}<br>
-                Área: ${escapeHtml(formatMetric(feature.get('area_m2'), 'm²', 2))}<br>
-                Evidencia: ${escapeHtml(readableValue(feature.get('evidence_status')))}
-            </div>
-            ${review ? '<div class="tooltip-status">Requiere revisión operativa</div>' : ''}
-        `;
-
-        els.tooltip.style.left = `${event.pixel[0]}px`;
-        els.tooltip.style.top = `${event.pixel[1]}px`;
-        els.tooltip.classList.add('active');
-    });
-
-    map.getViewport().addEventListener('mouseleave', () => {
-        els.tooltip.classList.remove('active');
-        map.getTargetElement().style.cursor = '';
-    });
-
-    map.getView().on('change:resolution', updateViewStatus);
-    map.getView().on('change:center', updateViewStatus);
-
-    /* =========================================================
-       TOOLBAR
-    ========================================================= */
-
-    function setToolActive(button, active, reviewStyle = false) {
-        if (!button) return;
-
-        button.classList.toggle('active', active && !reviewStyle);
-        button.classList.toggle('review-active', active && reviewStyle);
-        button.setAttribute('aria-pressed', active ? 'true' : 'false');
     }
 
-    els.togglePreview?.addEventListener('click', () => {
-        orthomosaicVisible = !orthomosaicVisible;
-        syncRasterLayers();
-        setToolActive(els.togglePreview, orthomosaicVisible);
-    });
-
-    els.toggleMrcnn.addEventListener('click', () => {
-        showMrcnn = !showMrcnn;
-        setToolActive(els.toggleMrcnn, showMrcnn);
-        applyFilters();
-    });
-
-    els.toggleYolo.addEventListener('click', () => {
-        showYolo = !showYolo;
-        setToolActive(els.toggleYolo, showYolo);
-        applyFilters();
-    });
-
-    els.toggleReviewHighlight.addEventListener('click', () => {
-        highlightReview = !highlightReview;
-        setToolActive(els.toggleReviewHighlight, highlightReview, true);
-        vectorLayer.changed();
-    });
-
-    els.opacityToggle.addEventListener('click', event => {
-        event.stopPropagation();
-        els.opacityPopover.classList.toggle('open');
-    });
-
-    els.opacityPopover.addEventListener('click', event => {
-        event.stopPropagation();
-    });
-
-    document.addEventListener('click', () => {
-        els.opacityPopover.classList.remove('open');
-    });
-
-    els.previewOpacity?.addEventListener('input', () => {
-        currentRasterOpacity = Number(els.previewOpacity.value) / 100;
-        syncRasterLayers();
-        els.previewOpacityValue.textContent = `${els.previewOpacity.value}%`;
-    });
-
-    els.segOpacity.addEventListener('input', () => {
-        currentSegOpacity = Number(els.segOpacity.value) / 100;
-        els.segOpacityValue.textContent = `${els.segOpacity.value}%`;
-        vectorLayer.changed();
-    });
-
-    els.fitExtent.addEventListener('click', fitMap);
-    els.clearSelection.addEventListener('click', clearSelection);
-
-    els.fullscreenMap.addEventListener('click', async () => {
-        try {
-            if (!document.fullscreenElement) {
-                await els.workspace.requestFullscreen();
-            } else {
-                await document.exitFullscreen();
-            }
-        } catch (error) {
-            console.warn('No fue posible activar pantalla completa.', error);
+    function showUploadMessage(message, type = 'info') {
+        if (progressWrapper) progressWrapper.hidden = false;
+        if (statusBox) {
+            statusBox.textContent = message;
+            statusBox.style.color = type === 'error' ? '#b42318' : '#176b4d';
         }
+    }
+
+    function formatBytes(bytes) {
+        if (!bytes) return '0 B';
+        const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+        const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+        const value = bytes / Math.pow(1024, index);
+        return value.toFixed(index === 0 ? 0 : 2) + ' ' + units[index];
+    }
+
+    /* Explorer filters */
+    const searchInput = document.getElementById('mosaicSearch');
+    const filterButtons = document.querySelectorAll('[data-filter]');
+    const rows = Array.from(document.querySelectorAll('[data-mosaic-row]'));
+    const resultsCount = document.getElementById('resultsCount');
+    const noResults = document.getElementById('noResults');
+    let currentFilter = 'all';
+
+    function applyExplorerFilters() {
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        let visible = 0;
+        rows.forEach(row => {
+            const matchesQuery = !query || (row.dataset.search || '').includes(query);
+            const matchesStatus = currentFilter === 'all' || row.dataset.status === currentFilter;
+            const show = matchesQuery && matchesStatus;
+            row.hidden = !show;
+            if (show) visible++;
+        });
+        if (resultsCount) resultsCount.textContent = `Mostrando ${visible} de ${rows.length} ortomosaicos`;
+        if (noResults) noResults.style.display = visible === 0 ? 'block' : 'none';
+    }
+
+    searchInput?.addEventListener('input', applyExplorerFilters);
+    filterButtons.forEach(buttonFilter => {
+        buttonFilter.addEventListener('click', () => {
+            currentFilter = buttonFilter.dataset.filter;
+            filterButtons.forEach(item => item.classList.remove('active'));
+            buttonFilter.classList.add('active');
+            applyExplorerFilters();
+        });
     });
 
-    document.addEventListener('fullscreenchange', () => {
-        setTimeout(() => map.updateSize(), 80);
-    });
-
-    /* =========================================================
-       FILTROS / BUSCADOR
-    ========================================================= */
-
-    els.quickFilters.forEach(button => {
-        button.addEventListener('click', () => {
-            activeQuickFilter = button.dataset.filter || 'all';
-
-            els.quickFilters.forEach(item => {
-                item.classList.toggle('active', item === button);
+    /* Action menus */
+    document.querySelectorAll('[data-menu-toggle]').forEach(toggle => {
+        toggle.addEventListener('click', event => {
+            event.stopPropagation();
+            const menu = toggle.closest('.action-menu');
+            document.querySelectorAll('.action-menu.open').forEach(openMenu => {
+                if (openMenu !== menu) openMenu.classList.remove('open');
             });
+            menu?.classList.toggle('open');
+        });
+    });
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.action-menu.open').forEach(menu => menu.classList.remove('open'));
+    });
+    document.querySelectorAll('.menu-panel').forEach(panel => panel.addEventListener('click', event => event.stopPropagation()));
 
-            applyFilters();
+    /* Delete mosaic modal */
+    const deleteModal = document.getElementById('deleteMosaicModal');
+    const deleteForm = document.getElementById('deleteMosaicForm');
+    const deleteName = document.getElementById('deleteMosaicName');
+    const deleteUuid = document.getElementById('deleteMosaicUuid');
+    const confirmDeleteButton = document.getElementById('confirmDeleteMosaic');
+
+    function closeDeleteModal() {
+        if (!deleteModal) return;
+
+        deleteModal.classList.remove('open');
+        deleteModal.hidden = true;
+        document.body.classList.remove('modal-open');
+
+        if (deleteForm) deleteForm.action = '';
+        if (deleteName) deleteName.textContent = '—';
+        if (deleteUuid) deleteUuid.textContent = '—';
+        if (confirmDeleteButton) {
+            confirmDeleteButton.disabled = false;
+            confirmDeleteButton.textContent = 'Eliminar definitivamente';
+        }
+    }
+
+    document.querySelectorAll('[data-delete-mosaic]').forEach(deleteButton => {
+        deleteButton.addEventListener('click', () => {
+            if (!deleteModal || !deleteForm) return;
+
+            const action = deleteButton.dataset.deleteAction || '';
+            const name = deleteButton.dataset.deleteName || 'Ortomosaico';
+            const uuid = deleteButton.dataset.deleteUuid || '—';
+
+            if (!action) return;
+
+            deleteForm.action = action;
+            if (deleteName) deleteName.textContent = name;
+            if (deleteUuid) deleteUuid.textContent = uuid;
+
+            deleteButton.closest('.action-menu')?.classList.remove('open');
+
+            deleteModal.hidden = false;
+            deleteModal.classList.add('open');
+            document.body.classList.add('modal-open');
         });
     });
 
-    // Reducir reconstrucciones del listado al teclear en móviles.
-    let searchDebounce = null;
-    els.search.addEventListener('input', () => {
-        if (searchDebounce !== null) clearTimeout(searchDebounce);
-        searchDebounce = setTimeout(applyFilters, 130);
-    });
-    els.evidenceFilter.addEventListener('change', applyFilters);
-    els.conflictFilter.addEventListener('change', applyFilters);
-    els.resetFilters.addEventListener('click', resetFilters);
-
-    /* =========================================================
-       TABS INSPECTOR
-    ========================================================= */
-
-    els.inspectorTabs.forEach(button => {
-        button.addEventListener('click', () => {
-            activateInspectorTab(button.dataset.inspectorTab || 'object');
-        });
+    document.querySelectorAll('[data-delete-close]').forEach(closeDeleteButton => {
+        closeDeleteButton.addEventListener('click', closeDeleteModal);
     });
 
-    /* =========================================================
-       DRAWERS MÓVILES
-    ========================================================= */
-
-    function closeDrawers() {
-        els.leftPanel.classList.remove('open');
-        els.rightPanel.classList.remove('open');
-        els.drawerBackdrop.classList.remove('active');
-    }
-
-    function openDrawer(panel) {
-        closeDrawers();
-        panel.classList.add('open');
-        els.drawerBackdrop.classList.add('active');
-    }
-
-    els.openExplorerMobile?.addEventListener('click', () => openDrawer(els.leftPanel));
-    els.openInspectorMobile?.addEventListener('click', () => openDrawer(els.rightPanel));
-    els.closeExplorerMobile?.addEventListener('click', closeDrawers);
-    els.closeInspectorMobile?.addEventListener('click', closeDrawers);
-    els.drawerBackdrop.addEventListener('click', closeDrawers);
-
-    let resizeRaf = null;
-    function updateMapViewport() {
-        if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
-        resizeRaf = requestAnimationFrame(() => {
-            map.updateSize();
-            resizeRaf = null;
-        });
-    }
-
-    window.visualViewport?.addEventListener('resize', updateMapViewport);
-    if (window.ResizeObserver) {
-        const mapResizeObserver = new ResizeObserver(updateMapViewport);
-        mapResizeObserver.observe(document.querySelector('.map-pane'));
-    }
-    window.addEventListener('resize', () => {
-        updateMapViewport();
-
-        if (window.innerWidth > 1080) {
-            closeDrawers();
+    deleteForm?.addEventListener('submit', () => {
+        if (confirmDeleteButton) {
+            confirmDeleteButton.disabled = true;
+            confirmDeleteButton.textContent = 'Eliminando...';
         }
     });
 
-    /* =========================================================
-       INICIO
-    ========================================================= */
+    document.addEventListener('keydown', event => {
+        if (
+            event.key === 'Escape'
+            && deleteModal?.classList.contains('open')
+        ) {
+            closeDeleteModal();
+        }
+    });
 
-    els.retryGeojson.addEventListener('click', loadGeoJson);
+    /* Technical panels */
+    document.querySelectorAll('[data-details-toggle]').forEach(buttonDetails => {
+        buttonDetails.addEventListener('click', () => {
+            const panel = document.getElementById(buttonDetails.dataset.detailsToggle);
+            panel?.classList.toggle('open');
+            buttonDetails.closest('.action-menu')?.classList.remove('open');
+            if (panel?.classList.contains('open')) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+    });
+    document.querySelectorAll('[data-close-details]').forEach(closeButton => {
+        closeButton.addEventListener('click', () => {
+            document.getElementById(closeButton.dataset.closeDetails)?.classList.remove('open');
+        });
+    });
 
-    updateViewStatus();
-    initializeCogLayer();
-    loadGeoJson();
-})();
+    /* Copy checksum */
+    document.querySelectorAll('[data-copy]').forEach(copyButton => {
+        copyButton.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(copyButton.dataset.copy);
+                const original = copyButton.textContent;
+                copyButton.textContent = 'Copiado';
+                setTimeout(() => copyButton.textContent = original, 1200);
+            } catch (error) {
+                console.error(error);
+            }
+        });
+    });
 </script>
-
 </body>
 </html>
