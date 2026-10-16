@@ -1332,7 +1332,7 @@
             }
         }
 
-        @media (max-width: 1080px) {
+        @media (max-width: 1279px) {
             body {
                 overflow: hidden;
             }
@@ -1631,6 +1631,329 @@
             .side-panel { transition: none !important; }
         }
 
+    
+
+        /* =========================================================
+           V0.8A.WEB.7 · RESPONSIVE FIELD WORKSPACE
+           Ajustes visuales no destructivos. NO cambia la fuente GIS.
+        ========================================================= */
+        :root {
+            --left-w: 284px;
+            --right-w: 326px;
+            --topbar-h: 64px;
+            --field-control: 42px;
+        }
+        html, body { height: 100%; }
+        body { overscroll-behavior: none; }
+        button, input, select { touch-action: manipulation; }
+        button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid #7ad4a4;
+            outline-offset: 2px;
+        }
+        .topbar {
+            padding: 0 clamp(12px, 1.45vw, 24px);
+            gap: clamp(8px, 1.2vw, 18px);
+            background: #0d1812;
+        }
+        .topbar-left { flex: 1 1 auto; overflow: hidden; gap: 11px; }
+        .topbar-right { flex: 0 0 auto; gap: 8px; }
+        .brand-copy { min-width: 0; }
+        .brand-name { font-size: 13px; white-space: nowrap; }
+        .context-path { flex: 1 1 auto; }
+        .context-path strong { max-width: clamp(100px, 13vw, 235px); }
+        .top-action { min-height: 38px; height: 38px; border-radius: 10px; }
+        .workspace {
+            grid-template-columns: minmax(0, var(--left-w)) minmax(0, 1fr) minmax(0, var(--right-w));
+            overflow: hidden;
+        }
+        .side-panel { background: #111d16; }
+        .panel-heading { padding: 18px 17px 15px; }
+        .panel-title { font-size: 17px; }
+        .panel-description { font-size: 11px; line-height: 1.6; }
+        .explorer-controls { padding: 14px 13px; gap: 11px; }
+        .search-input { height: 43px; font-size: 12px; }
+        .quick-filters { gap: 6px; }
+        .filter-chip { min-height: 33px; padding: 6px 10px; font-size: 10.5px; }
+        .compact-select { height: 38px; font-size: 10.5px; }
+        .filter-feedback, .filter-reset { font-size: 10px; }
+        .object-list { padding: 9px; overscroll-behavior: contain; }
+        .object-row { padding: 12px; margin-bottom: 5px; border-radius: 12px; }
+        .object-id { font-size: 12px; }
+        .object-row-meta { font-size: 10px; line-height: 1.55; }
+        .explorer-footer { padding: 13px 15px; font-size: 10px; }
+        .inspector-body { padding: 15px; overscroll-behavior: contain; }
+        .metric-box { padding: 13px; }
+        .metric-value { font-size: 17px; }
+        .property-row { padding: 10px 11px; }
+        .property-key { font-size: 10px; }
+        .property-value { font-size: 10.5px; }
+        .inspector-tabs { padding: 9px; }
+        .inspector-tab { min-height: 38px; font-size: 11px; }
+        .small-action { min-height: 35px; font-size: 10px; }
+        .section-label { font-size: 10px; }
+        .section-help { font-size: 9px; }
+        .method-note, .warning-note, .info-note { font-size: 10.5px; }
+
+        /* Compact toolbars with predictable width and separated GPS. */
+        .map-toolbar { top: 13px; left: 13px; right: 13px; gap: 9px; }
+        .toolbar-left { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; }
+        .toolbar-right { flex: 0 0 auto; gap: 7px; }
+        .tool-group { min-height: 43px; gap: 3px; padding: 5px; border-radius: 12px; }
+        .map-tool { min-height: 33px; height: 33px; padding: 0 8px; font-size: 10.5px; }
+        .tool-label-short { display: none; }
+        .opacity-panel { z-index: 110; }
+        .map-statusbar { justify-content: space-between; }
+        .statusbar-item { font-size: 10px; }
+        .map-summary { bottom: 47px; }
+        .summary-item { padding: 7px 10px; }
+        .summary-value { font-size: 14px; }
+        .ol-zoom { top: 72px !important; }
+        .ol-zoom button { width: 32px !important; height: 32px !important; }
+
+        /* GPS visually independent from map layers. */
+        .field-gps {
+            top: auto;
+            bottom: 52px;
+            right: 14px;
+            width: min(254px, calc(100% - 28px));
+            gap: 8px;
+        }
+        .gps-button { min-height: 43px; min-width: 43px; font-size: 11px; padding: 0 11px; }
+        .gps-status { display: none; border-radius: 13px; padding: 11px 12px; font-size: 10.5px; }
+        .gps-status.is-visible { display: grid; gap: 3px; }
+        .gps-status-text { font-size: 10.5px; }
+        .gps-metrics { font-size: 10px; }
+        .gps-field-note { font-size: 9.5px; line-height: 1.5; }
+        .field-selected { pointer-events: auto; }
+
+        @media (min-width: 1600px) {
+            :root { --left-w: 298px; --right-w: 354px; }
+            .map-toolbar { left: 18px; right: 18px; top: 16px; }
+            .panel-heading { padding: 19px; }
+            .inspector-body { padding: 18px; }
+        }
+        @media (min-width: 1280px) and (max-width: 1599px) {
+            :root { --left-w: 270px; --right-w: 312px; }
+            .map-toolbar { left: 10px; right: 10px; top: 10px; }
+            .tool-label { display: none; }
+            .tool-label-short { display: inline; }
+            .map-tool { padding: 0 7px; font-size: 10px; }
+            .toolbar-left .tool-group { flex: 0 1 auto; min-width: 0; }
+            .toolbar-right .tool-group { flex: 0 0 auto; }
+            .toolbar-right .map-tool .tool-label-short { display: none; }
+            .toolbar-right .map-tool { width: 33px; padding: 0; }
+        }
+        @media (min-width: 1280px) and (max-width: 1349px) {
+            :root { --left-w: 259px; --right-w: 298px; }
+            .toolbar-left .tool-group { gap: 1px; }
+            .toolbar-left .map-tool { padding: 0 5px; }
+        }
+
+        /* Laptop compacto/tablet: priorizar el mapa sobre paneles estrechos. */
+        @media (max-width: 1279px) {
+            .workspace { grid-template-columns: minmax(0, 1fr); }
+            .side-panel { z-index: 125; box-shadow: 0 16px 56px rgba(0,0,0,.36); }
+            .left-panel, .right-panel { width: min(370px, calc(100vw - 34px)); }
+            .left-panel { border-right-color: var(--border-strong); }
+            .right-panel { border-left-color: var(--border-strong); }
+            .drawer-backdrop.active { display: block; z-index: 115; background: rgba(2,10,6,.56); }
+            .panel-close { width: 36px; height: 36px; font-size: 20px; }
+            .mobile-panel-button { display: inline-flex; }
+            .context-path, .breadcrumb-divider { display: none; }
+            .topbar-right { margin-left: auto; }
+            .field-gps { bottom: 54px; }
+            .map-toolbar { left: 11px; right: 11px; }
+            .tool-label { display: none; }
+            .tool-label-short { display: inline; }
+            .toolbar-left { overflow: hidden; }
+            .toolbar-left .tool-group { flex-wrap: nowrap; }
+            .toolbar-right .tool-label-short { display: none; }
+        }
+        @media (min-width: 761px) and (max-width: 1279px) {
+            .topbar .top-pill.version-pill { display: none; }
+            .topbar .top-action { min-width: 40px; }
+            .map-toolbar { max-width: calc(100% - 22px); }
+            .toolbar-left { flex: 0 1 auto; }
+            .toolbar-right { margin-left: auto; }
+            .side-panel { max-height: 100%; }
+        }
+
+        /* Teléfono: mapa amplio + barra de capas clara + ficha inferior. */
+        @media (max-width: 760px) {
+            :root { --topbar-h: 56px; }
+            .topbar {
+                gap: 7px;
+                padding-left: max(9px, env(safe-area-inset-left, 0px));
+                padding-right: max(9px, env(safe-area-inset-right, 0px));
+            }
+            .topbar-left { gap: 6px; }
+            .topbar-right { gap: 6px; }
+            .brand-mark { width: 32px; height: 32px; flex-basis: 32px; border-radius: 9px; }
+            .brand-mark svg { width: 19px; height: 19px; }
+            .brand-name { font-size: 11.5px; }
+            .brand-mode { display: none; }
+            .top-pill, .json-action { display: none; }
+            .top-action { width: 38px; height: 38px; min-height: 38px; padding: 0; border-radius: 10px; }
+            .top-action svg { width: 17px; height: 17px; }
+            .top-action .action-text { display: none; }
+            .topbar .top-action:last-child { background: rgba(255,255,255,.055); }
+
+            .workspace {
+                height: calc(100dvh - var(--topbar-h) - env(safe-area-inset-top, 0px));
+            }
+            #map { bottom: calc(36px + env(safe-area-inset-bottom, 0px)); }
+            .map-toolbar { top: 8px; left: 8px; right: 8px; display: block; pointer-events: none; }
+            .toolbar-left { display: flex; width: 100%; overflow: visible; pointer-events: none; }
+            .toolbar-left > .tool-group {
+                pointer-events: auto;
+                display: flex;
+                width: 100%;
+                padding: 5px;
+                justify-content: space-between;
+                gap: 2px;
+                border: 1px solid rgba(201,229,211,.24);
+                border-radius: 13px;
+                background: rgba(11,23,16,.96);
+            }
+            .toolbar-left .map-tool {
+                min-width: 0;
+                flex: 1 1 0;
+                padding: 0 5px;
+                height: 35px;
+                min-height: 35px;
+                border-radius: 9px;
+                font-size: 10px;
+            }
+            .toolbar-left .tool-label-short { display: inline; }
+            .toolbar-left .layer-dot { width: 6px; height: 6px; flex: 0 0 auto; }
+            .toolbar-right {
+                position: absolute;
+                top: 55px;
+                right: 0;
+                display: flex;
+                justify-content: flex-end;
+                pointer-events: auto;
+                gap: 6px;
+            }
+            .toolbar-right > .tool-group:last-child { display: inline-flex; }
+            .toolbar-right .map-tool { height: 35px; min-height: 35px; min-width: 36px; width: 36px; }
+            .toolbar-right .map-tool .tool-label, .toolbar-right .map-tool .tool-label-short { display: none; }
+            .toolbar-right .tool-group { padding: 4px; min-height: 43px; border-radius: 11px; }
+            .opacity-panel {
+                top: calc(100% + 8px);
+                right: 0;
+                width: min(260px, calc(100vw - 20px));
+                padding: 15px;
+            }
+            .ol-zoom { display: none !important; }
+            .ol-scale-line { display: none !important; }
+            .ol-attribution { bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important; }
+            .map-summary { display: none; }
+            .map-tooltip { display: none !important; }
+
+            .field-gps {
+                top: auto;
+                right: max(10px, env(safe-area-inset-right, 0px));
+                bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+                width: min(226px, calc(100% - 20px));
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 6px;
+            }
+            body.has-field-selection .field-gps {
+                bottom: calc(119px + env(safe-area-inset-bottom, 0px));
+            }
+            .field-gps-actions { gap: 7px; }
+            .gps-button { width: 45px; min-width: 45px; height: 45px; min-height: 45px; padding: 0; border-radius: 13px; }
+            .gps-button.primary #gps-toggle-text { display: none; }
+            .gps-status.is-visible {
+                min-width: 0;
+                width: auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 8px 11px;
+                background: rgba(13,22,18,.96);
+                border-radius: 10px;
+                font-size: 10px;
+            }
+            .gps-status-title, .gps-status-text, .gps-field-note, .gps-target { display: none !important; }
+            .gps-status-top { gap: 0; }
+            .gps-metrics { margin: 0; gap: 0; }
+            .gps-metrics span:nth-child(2) { display: none; }
+            .gps-status-indicator { white-space: nowrap; }
+
+            .field-selected:not([hidden]) {
+                bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+                left: 9px; right: 9px;
+                padding: 11px 12px;
+                min-height: 59px;
+                border-radius: 14px;
+                gap: 8px;
+            }
+            .field-selected-title { font-size: 12px; }
+            .field-selected-sub { font-size: 10px; line-height: 1.3; }
+            .field-selected .gps-button { width: auto; min-width: 0; height: 38px; min-height: 38px; padding: 0 13px; font-size: 11px; }
+
+            .map-statusbar {
+                height: calc(36px + env(safe-area-inset-bottom, 0px));
+                padding: 0 max(7px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(7px, env(safe-area-inset-left, 0px));
+                justify-content: space-between;
+                overflow: hidden;
+            }
+            .statusbar-item { min-height: 35px; padding: 0 7px; font-size: 10px; border-right: 0; }
+            .statusbar-item:nth-child(2), .statusbar-item:nth-child(3),
+            .statusbar-item:nth-child(4), .statusbar-item:nth-child(5) { display: none; }
+            .map-loading, .map-error { inset: 0 0 calc(36px + env(safe-area-inset-bottom, 0px)); }
+
+            .left-panel {
+                width: min(370px, calc(100vw - 27px));
+                padding-left: env(safe-area-inset-left, 0px);
+                background: #111c16;
+            }
+            .right-panel {
+                top: auto; left: 0; right: 0; bottom: 0;
+                width: 100%;
+                height: min(76dvh, 700px);
+                max-height: calc(100% - 25px);
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+                border-radius: 21px 21px 0 0;
+                background: #111c16;
+                border-top: 1px solid rgba(206,236,218,.26);
+                border-left: 0;
+                transform: translateY(105%);
+                overscroll-behavior-y: contain;
+            }
+            .right-panel.open { transform: translateY(0); }
+            .right-panel .panel-heading { padding: 12px 17px 13px; }
+            .right-panel .panel-heading::before { margin: -2px auto 13px; width: 44px; background: #718778; }
+            .right-panel .panel-description { display: none; }
+            .right-panel .inspector-body { padding: 14px 15px; }
+            .panel-title { font-size: 16px; }
+            .panel-heading { padding: 16px; }
+            .panel-description { font-size: 11px; }
+            .filter-chip { min-height: 38px; }
+            .object-row { min-height: 65px; }
+            .drawer-backdrop.active { background: rgba(0,9,4,.58); }
+        }
+        @media (max-width: 370px) {
+            .brand-mark { width: 30px; height: 30px; flex-basis: 30px; }
+            .brand-name { font-size: 11px; }
+            .toolbar-left .map-tool { gap: 4px; font-size: 9px; padding: 0 3px; }
+            .toolbar-right { top: 54px; }
+        }
+        @media (max-width: 760px) and (max-height: 610px) {
+            .right-panel { height: min(87dvh, 550px); }
+            .field-gps { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); }
+            body.has-field-selection .field-gps { bottom: calc(115px + env(safe-area-inset-bottom, 0px)); }
+            .toolbar-right { top: 54px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .side-panel, .map-tool, .object-row, .gps-button { transition: none !important; }
+        }
+
     </style>
 </head>
 
@@ -1699,6 +2022,7 @@
 
         <button
             id="open-explorer-mobile"
+            aria-label="Abrir catálogo de objetos operativos"
             class="top-action mobile-panel-button"
             type="button"
             title="Abrir explorador de objetos"
@@ -1711,6 +2035,7 @@
 
         <button
             id="open-inspector-mobile"
+            aria-label="Abrir información del objeto"
             class="top-action mobile-panel-button"
             type="button"
             title="Abrir inspector"
@@ -1832,34 +2157,34 @@
                     @if(($cogAvailable ?? false) || $previewAvailable)
                         <button id="toggle-preview" class="map-tool active" type="button" aria-pressed="true">
                             <span class="layer-dot preview"></span>
-                            <span class="tool-label">Ortomosaico</span>
+                            <span class="tool-label">Ortomosaico</span><span class="tool-label-short">Base</span>
                         </button>
                     @endif
 
                     <button id="toggle-mrcnn" class="map-tool active" type="button" aria-pressed="true">
                         <span class="layer-dot mrcnn"></span>
-                        <span class="tool-label">Mask R-CNN</span>
+                        <span class="tool-label">Mask R-CNN</span><span class="tool-label-short">Mask</span>
                     </button>
 
                     <button id="toggle-yolo" class="map-tool active" type="button" aria-pressed="true">
                         <span class="layer-dot yolo"></span>
-                        <span class="tool-label">YOLO fallback</span>
+                        <span class="tool-label">YOLO fallback</span><span class="tool-label-short">YOLO</span>
                     </button>
 
                     <button id="toggle-review-highlight" class="map-tool review-active" type="button" aria-pressed="true">
                         <span class="layer-dot review"></span>
-                        <span class="tool-label">Resaltar revisión</span>
+                        <span class="tool-label">Resaltar revisión</span><span class="tool-label-short">Revisión</span>
                     </button>
                 </div>
             </div>
 
             <div class="toolbar-right">
                 <div id="opacity-popover" class="tool-group opacity-popover">
-                    <button id="opacity-toggle" class="map-tool" type="button">
+                    <button id="opacity-toggle" class="map-tool" type="button" title="Ajustar opacidad" aria-label="Ajustar opacidad de las capas" aria-expanded="false">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <path d="M12 3s6 6.2 6 11a6 6 0 1 1-12 0c0-4.8 6-11 6-11Z"/>
                         </svg>
-                        <span class="tool-label">Opacidad</span>
+                        <span class="tool-label">Opacidad</span><span class="tool-label-short">Opacidad</span>
                     </button>
 
                     <div class="opacity-panel">
@@ -1912,7 +2237,7 @@
         {{-- WEB.6 — GPS local: el navegador solicita permiso al pulsar el botón. --}}
         <section class="field-gps" aria-label="Navegación GPS del trabajo de campo">
             <div class="field-gps-actions">
-                <button id="gps-toggle" class="gps-button primary" type="button" aria-label="Iniciar mi ubicación en tiempo real" title="Activar / detener GPS">
+                <button id="gps-toggle" class="gps-button primary" aria-pressed="false" type="button" aria-label="Iniciar mi ubicación en tiempo real" title="Activar / detener GPS">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/>
                         <path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke-linecap="round"/>
@@ -2648,6 +2973,8 @@
         return new ol.style.Fill({ color });
     }
 
+    const crownStyleCache = new Map();
+
     function getFeatureStyle(feature) {
         if (!isFeatureVisible(feature)) {
             return null;
@@ -2655,6 +2982,8 @@
 
         const review = requiresReview(feature);
         const useReviewStyle = review && highlightReview;
+        const styleKey = `${modelClass(feature)}:${useReviewStyle ? 1 : 0}:${Math.round(currentSegOpacity * 100)}`;
+        if (crownStyleCache.has(styleKey)) return crownStyleCache.get(styleKey);
 
         let strokeColor = 'rgba(159, 176, 167, .98)';
         let fillColor = `rgba(159, 176, 167, ${Math.max(currentSegOpacity * .20, .08)})`;
@@ -2682,15 +3011,18 @@
         });
 
         if (!useReviewStyle) {
+            crownStyleCache.set(styleKey, baseStyle);
             return baseStyle;
         }
 
-        return [
+        const reviewStyles = [
             baseStyle,
             new ol.style.Style({
                 stroke: createStroke('rgba(255, 241, 214, .9)', 1, [2, 6]),
             }),
         ];
+        crownStyleCache.set(styleKey, reviewStyles);
+        return reviewStyles;
     }
 
     const vectorLayer = new ol.layer.Vector({
@@ -2738,8 +3070,9 @@
     });
 
     function fitMap() {
+        const compact = window.innerWidth <= 760;
         map.getView().fit(mapBounds, {
-            padding: [74, 48, 72, 48],
+            padding: compact ? [66, 18, 76, 18] : [74, 42, 68, 42],
             duration: 260,
             maxZoom: 24,
         });
@@ -2824,6 +3157,8 @@
 
     function gpsUpdateButtons() {
         els.gpsToggleText.textContent = gpsActive ? 'Detener GPS' : 'Mi ubicación';
+        document.body.classList.toggle('gps-active', gpsActive);
+        els.gpsToggle.setAttribute('aria-pressed', gpsActive ? 'true' : 'false');
         els.gpsToggle.setAttribute('aria-label', gpsActive ? 'Detener seguimiento GPS' : 'Iniciar GPS');
         els.gpsFollow.disabled = !gpsHasFix;
         els.gpsFollow.classList.toggle('is-following', gpsActive && gpsFollow);
@@ -2858,6 +3193,7 @@
 
     function gpsSyncSelected() {
         els.fieldSelected.hidden = !selectedFeature;
+        document.body.classList.toggle('has-field-selection', !!selectedFeature);
         if (selectedFeature) {
             els.fieldSelectedName.textContent = getOperationalId(selectedFeature);
         }
@@ -2977,7 +3313,7 @@
         gpsCenterOnCurrent();
     });
     els.fieldShowInspector?.addEventListener('click', () => {
-        if (selectedFeature && window.innerWidth <= 1080) openDrawer(els.rightPanel);
+        if (selectedFeature && window.innerWidth <= 1279) openDrawer(els.rightPanel);
     });
     map.on('pointerdrag', () => {
         if (gpsFollow) {
@@ -3241,8 +3577,9 @@
             return;
         }
 
+        const compact = window.innerWidth <= 760;
         map.getView().fit(geometry.getExtent(), {
-            padding: [100, 100, 100, 100],
+            padding: compact ? [112, 46, 142, 46] : [96, 96, 96, 96],
             duration: 260,
             maxZoom: 23,
         });
@@ -3267,7 +3604,7 @@
             zoomToFeature(feature);
         }
 
-        if (window.innerWidth <= 1080) {
+        if (window.innerWidth <= 1279) {
             closeDrawers();
         }
     }
@@ -3498,13 +3835,15 @@
 
     els.toggleReviewHighlight.addEventListener('click', () => {
         highlightReview = !highlightReview;
+        crownStyleCache.clear();
         setToolActive(els.toggleReviewHighlight, highlightReview, true);
         vectorLayer.changed();
     });
 
     els.opacityToggle.addEventListener('click', event => {
         event.stopPropagation();
-        els.opacityPopover.classList.toggle('open');
+        const opened = els.opacityPopover.classList.toggle('open');
+        els.opacityToggle.setAttribute('aria-expanded', opened ? 'true' : 'false');
     });
 
     els.opacityPopover.addEventListener('click', event => {
@@ -3513,6 +3852,7 @@
 
     document.addEventListener('click', () => {
         els.opacityPopover.classList.remove('open');
+        els.opacityToggle.setAttribute('aria-expanded', 'false');
     });
 
     els.previewOpacity?.addEventListener('input', () => {
@@ -3523,6 +3863,7 @@
 
     els.segOpacity.addEventListener('input', () => {
         currentSegOpacity = Number(els.segOpacity.value) / 100;
+        crownStyleCache.clear();
         els.segOpacityValue.textContent = `${els.segOpacity.value}%`;
         vectorLayer.changed();
     });
@@ -3596,6 +3937,8 @@
         closeDrawers();
         panel.classList.add('open');
         els.drawerBackdrop.classList.add('active');
+        els.opacityPopover.classList.remove('open');
+        els.opacityToggle.setAttribute('aria-expanded', 'false');
     }
 
     els.openExplorerMobile?.addEventListener('click', () => openDrawer(els.leftPanel));
@@ -3603,6 +3946,13 @@
     els.closeExplorerMobile?.addEventListener('click', closeDrawers);
     els.closeInspectorMobile?.addEventListener('click', closeDrawers);
     els.drawerBackdrop.addEventListener('click', closeDrawers);
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            closeDrawers();
+            els.opacityPopover.classList.remove('open');
+            els.opacityToggle.setAttribute('aria-expanded', 'false');
+        }
+    });
 
     let resizeRaf = null;
     function updateMapViewport() {
@@ -3621,7 +3971,7 @@
     window.addEventListener('resize', () => {
         updateMapViewport();
 
-        if (window.innerWidth > 1080) {
+        if (window.innerWidth > 1279) {
             closeDrawers();
         }
     });
@@ -3633,6 +3983,7 @@
     els.retryGeojson.addEventListener('click', loadGeoJson);
 
     updateViewStatus();
+    requestAnimationFrame(() => map.updateSize());
     initializeCogLayer();
     loadGeoJson();
 })();
