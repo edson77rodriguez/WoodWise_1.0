@@ -1954,6 +1954,270 @@
             .side-panel, .map-tool, .object-row, .gps-button { transition: none !important; }
         }
 
+
+
+        /* ===================================================================
+           UAV FOREST AI — FOREST PREMIUM WEBGIS
+           CAPA VISUAL: las capas GIS, rutas, datos y reglas permanecen intactos.
+           =================================================================== */
+        :root {
+            --bg:#f3f8f5; --surface:#fff; --surface-2:#f6faf8;
+            --surface-3:#edf5f0; --surface-hover:#edf6f0;
+            --panel:#fff; --panel-soft:#f9fcfa;
+            --text:#172b25; --text-soft:#2f4a3f; --muted:#526960; --faint:#7f9689;
+            --border:#dce8e1; --border-strong:#c9dacf;
+            --forest:#107a57; --forest-strong:#13865f; --forest-soft:#e1f2e9;
+            --mrcnn:#13af73; --mrcnn-soft:#e0f7ea;
+            --yolo:#9b56e5; --yolo-soft:#f3e9ff;
+            --review:#e79b16; --review-soft:#fff2d9;
+            --info:#2d74c5; --info-soft:#ebf3ff;
+            --danger:#c63838; --danger-soft:#ffeaea;
+            --neutral-model:#859a8e;
+            --topbar-h:70px; --left-w:294px; --right-w:324px;
+            --shadow-panel:0 18px 46px rgba(12,53,31,.14);
+        }
+        html,body { color:var(--text); background:var(--bg); }
+        .topbar { background:linear-gradient(105deg,#082d23,#103f31 68%,#092b23); color:#fff; padding:0 26px; border:0; box-shadow:0 6px 22px rgba(13,57,39,.11); }
+        .brand-mark { width:45px; height:45px; flex-basis:45px; background:linear-gradient(145deg,#1c7654,#0c533c); border-color:rgba(255,255,255,.16); border-radius:13px; }
+        .brand-mark svg { width:25px; height:25px; }
+        .brand-name { font-size:17px; font-weight:800; color:white; }
+        .brand-mode { font-size:11px; color:#c1dfd0; }
+        .breadcrumb-divider { background:rgba(255,255,255,.19); }
+        .context-path { color:#c5dcd0; font-size:11px; }
+        .context-path strong { color:#f0faf3; }
+        .context-chevron { color:#94b3a4; }
+        .top-pill { min-height:35px; border-color:rgba(255,255,255,.13); background:rgba(255,255,255,.06); color:#f0faf3; font-size:10px; }
+        .job-status .status-dot { background:#98a79e; box-shadow:none; }
+        .job-status.is-completed .status-dot { background:#24d58c; box-shadow:0 0 0 3px rgba(36,213,140,.1); }
+        .job-status.is-processing .status-dot, .job-status.is-queued .status-dot { background:#f6c15f; }
+        .job-status.is-failed .status-dot { background:#f47474; }
+        .top-action { background:rgba(255,255,255,.065); color:#f1fbf5; border-color:rgba(255,255,255,.12); border-radius:11px; }
+        .top-action:hover { background:rgba(255,255,255,.13); border-color:rgba(255,255,255,.23); }
+        .workspace { background:#eaf1ec; gap:0; }
+        .workspace.explorer-collapsed { grid-template-columns:0px minmax(0,1fr) var(--right-w); }
+        .workspace.inspector-collapsed { grid-template-columns:var(--left-w) minmax(0,1fr) 0px; }
+        .workspace.explorer-collapsed.inspector-collapsed { grid-template-columns:0px minmax(0,1fr) 0px; }
+        .workspace.explorer-collapsed>.left-panel, .workspace.inspector-collapsed>.right-panel { visibility:hidden; pointer-events:none; }
+        .side-panel { background:white; border-color:#dce8e1; }
+        .left-panel { border-right:1px solid var(--border); }
+        .right-panel { border-left:1px solid var(--border); }
+        .panel-heading { padding:21px 20px 16px; background:linear-gradient(#fff,#fcfefd); }
+        .panel-kicker { color:#08734d; font-size:10px; letter-spacing:.11em; }
+        .panel-title { color:#102e24; font-size:21px; letter-spacing:-.035em; }
+        .panel-description { color:#64786e; font-size:11.5px; line-height:1.62; }
+        .panel-count { min-width:43px; height:34px; background:#096e50; color:white; border:0; font-size:14px; }
+        .explorer-controls { background:white; padding:15px 17px 14px; gap:14px; }
+        .search-input { background:#f8fbfa; border-color:var(--border); color:#172b25; border-radius:11px; font-size:12px; min-height:43px; }
+        .search-input::placeholder { color:#899b91; }
+        .search-box svg { color:#35584a; width:17px; height:17px; }
+        .search-input:focus,.compact-select:focus { border-color:#14845f; box-shadow:0 0 0 3px rgba(20,132,95,.10); }
+        .filter-group { display:grid; gap:9px; }
+        .filter-heading { color:#203a2e; font-size:11px; font-weight:800; }
+        .quick-filters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
+        .filter-chip { min-width:0; min-height:37px; display:inline-flex; justify-content:center; align-items:center; gap:4px; padding:5px 5px; white-space:nowrap; font-size:10px; color:#3c5d4d; background:#fbfdfc; border:1px solid #dce8e1; border-radius:9px; }
+        .filter-chip:hover { color:#0d694d; background:#eef7f2; }
+        .filter-chip.active { color:white; background:#087254; border-color:#087254; }
+        .filter-number { font-size:9px; opacity:.82; }
+        .filter-dot { display:inline-block; flex:none; width:8px; height:8px; border-radius:50%; }
+        .filter-dot.mrcnn {background:#1cb781;} .filter-dot.yolo {background:#9957e8;}
+        .filter-dot.review {background:#f0a21c;} .filter-dot.ok {background:#27bf7d;}
+        .filter-chip.active .filter-dot { box-shadow:0 0 0 2px rgba(255,255,255,.35); }
+        .advanced-filters { display:grid; gap:7px; }
+        .compact-select { background:#f9fcfa; color:#3e6050; height:39px; border-color:var(--border); font-size:10.5px; border-radius:9px; }
+        .filter-feedback { color:#5c7468; font-size:10.5px; }
+        .filter-reset { color:#087954; font-size:10.5px; }
+        .object-list { background:white; padding:7px 12px; scrollbar-color:#c8d9ce transparent; }
+        .object-row { display:flex; flex-direction:row; align-items:center; gap:11px; min-height:77px; margin:0; padding:11px 7px; border:0; border-bottom:1px solid #eaf1eb; border-radius:0; background:white; }
+        .object-row:hover { background:#f2f9f5; }
+        .object-row.selected { position:relative; border-color:#d0eadc; background:#ecf8f1; border-radius:9px; }
+        .object-row.selected::before { content:""; width:3px; position:absolute; left:0; top:9px; bottom:9px; background:#0c8158; border-radius:4px; }
+        .object-geometry-icon { width:54px; height:54px; flex:0 0 54px; display:grid; place-items:center; border:1px solid #c9e6d6; border-radius:11px; background:radial-gradient(circle at 34% 27%,#c6e9d6,#ebf5ec 66%); color:#15a86f; }
+        .object-geometry-icon.yolo { border-color:#e4d3f3; background:#f5effa; color:#9654db; }
+        .object-geometry-icon.unknown { color:#718c7e; }
+        .object-geometry-icon svg { width:42px; height:42px; }
+        .object-row-content { display:block; flex:1; min-width:0; }
+        .object-id { color:#122d22; font-size:13px; }
+        .model-mark { width:8px; height:8px; }
+        .object-row-meta { display:flex; gap:3px 8px; color:#5d7267; font-size:10px; margin-top:5px; }
+        .mini-status { color:#087b51; font-weight:650; }
+        .mini-status.review { color:#aa6908; }
+        .evidence-name { display:block; width:100%; color:#587567; overflow-wrap:anywhere; }
+        .object-list-empty { color:#5c7868; border-color:#cbded3; }
+        .explorer-footer { background:#fbfdfa; color:#708479; font-size:10px; padding:13px 16px; }
+        .map-pane { margin:13px 12px; border-radius:18px; border:1px solid #d2e1d7; box-shadow:0 7px 22px rgba(27,67,45,.09); background:#dbe7df; isolation:isolate; }
+        #map { background:#dde7df; inset:0 0 37px; background-image:linear-gradient(45deg,rgba(90,125,101,.035) 25%,transparent 25%),linear-gradient(-45deg,rgba(90,125,101,.035) 25%,transparent 25%),linear-gradient(45deg,transparent 75%,rgba(90,125,101,.035) 75%),linear-gradient(-45deg,transparent 75%,rgba(90,125,101,.035) 75%); background-size:24px 24px; }
+        .map-toolbar { left:12px; right:12px; top:12px; justify-content:space-between; align-items:flex-start; gap:8px; }
+        .toolbar-left { display:flex; flex:0 1 auto; flex-wrap:wrap; align-items:flex-start; gap:7px; max-width:calc(100% - 50px); }
+        .toolbar-right { gap:6px; }
+        .view-switch,.layer-switch { background:rgba(10,39,30,.92); color:white; padding:5px; border-radius:13px; border:1px solid rgba(255,255,255,.18); backdrop-filter:blur(12px); box-shadow:0 6px 17px rgba(0,0,0,.15); }
+        .toolbar-caption { color:#cfecdc; font-size:9px; font-weight:800; margin:2px 6px 5px; }
+        .view-options { display:flex; gap:4px; }
+        .view-option { display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 10px; background:transparent; border:1px solid transparent; border-radius:10px; min-height:43px; color:#d6e6dc; cursor:pointer; font-size:10px; font-weight:750; }
+        .view-option svg { width:15px; height:15px; flex:none; }
+        .view-option small { display:block; font-size:9px; opacity:.8; font-weight:500; }
+        .view-option.active { background:linear-gradient(125deg,#138562,#076549); color:#fff; border-color:#339779; }
+        .view-option:hover { color:#fff; background:rgba(255,255,255,.14); }
+        .view-option.active:hover { background:#096d50; }
+        .layer-switch .tool-group { border:0; background:transparent; box-shadow:none; min-height:43px; padding:0; gap:2px; }
+        .tool-group { background:rgba(9,38,29,.92); border-color:rgba(242,255,247,.15); }
+        .map-tool { color:#e2f1e8; min-height:34px; font-size:10px; }
+        .map-tool.active { background:#115b47; color:#f8fffb; }
+        .map-tool.review-active { background:rgba(220,136,4,.20); color:#ffe0a0; }
+        .layer-dot.preview { background:#fff; } .layer-dot.mrcnn {background:#2dd395;}
+        .layer-dot.yolo {background:#b776ff;} .layer-dot.review {background:#f6ab2d;}
+        .desktop-panel-tools { display:inline-flex; }
+        .opacity-panel { background:#143b2c; color:#e3f2e9; border-color:#386654; }
+        .opacity-row-head { color:#c5dfd1; } .opacity-row-head strong {color:#fff;}
+        .map-summary { left:13px; bottom:52px; padding:7px; border-radius:14px; background:rgba(8,40,31,.94); border-color:rgba(255,255,255,.10); }
+        .summary-item { min-width:74px; padding:5px 11px; }
+        .summary-label { color:#b6d1c1; font-size:9px; }
+        .summary-value { color:white; font-size:23px; font-weight:850; }
+        .summary-item:nth-child(2) .summary-value { color:#2bde9a; }
+        .summary-item:nth-child(3) .summary-value { color:#bd82ff; }
+        .summary-item:nth-child(4) .summary-value { color:#ffbd43; }
+        .map-statusbar { height:37px; background:#0d3529; border:0; color:#bddecf; }
+        .statusbar-item { font-size:10px; border-color:rgba(255,255,255,.13); }
+        .statusbar-item strong { color:white; }
+        .map-tooltip { background:#123b2e; border-color:#306350; }
+        .tooltip-title { color:#fff; }.tooltip-meta { color:#d0e0d7; }
+        .map-loading,.map-error { inset:0 0 37px; background:rgba(18,47,32,.40); }
+        .loading-card,.error-card { background:white; border:1px solid #dce8e1; color:#172b25; }
+        .loading-text,.error-text { color:#5d7367; }
+        .error-action { color:#fff; background:#0c7855; }
+        .ol-control button { background:rgba(9,49,37,.91)!important; }
+        .ol-zoom { top:auto!important; right:13px!important; bottom:130px!important; }
+        .ol-scale-line { background:rgba(9,45,35,.85)!important; bottom:52px!important; }
+        .ol-attribution { background:rgba(11,42,32,.9)!important; }
+        .focus-source { position:absolute; z-index:30; bottom:143px; left:13px; max-width:300px; padding:6px 9px; border-radius:9px; background:rgba(8,43,32,.83); color:#d1e6d9; font-size:10px; pointer-events:none; }
+        .center-focused { position:absolute; z-index:42; bottom:57px; right:13px; display:flex; gap:7px; align-items:center; padding:10px 12px; border:1px solid #bbded0; border-radius:12px; background:#f7fffa; color:#056c4c; box-shadow:0 6px 16px rgba(9,49,37,.12); font-size:11px; font-weight:800; cursor:pointer; }
+        .center-focused svg { width:18px; height:18px; }
+        .center-focused:hover { background:#eaf8f0; }
+        .field-gps { bottom:112px; right:13px; }
+        .gps-status { background:rgba(13,53,39,.94); color:#effff4; }
+        .gps-button { background:rgba(10,54,40,.95); color:#fff; border-color:rgba(255,255,255,.18); }
+        .gps-button.primary { background:#0c7e58; border-color:#48c08d; }
+        .inspector-tabs { background:#f6faf8; border-color:var(--border); }
+        .inspector-tab { color:#5e7568; font-size:11px; }
+        .inspector-tab.active { background:#0d7755; color:#fff; }
+        .inspector-body { background:white; color:#172b25; scrollbar-color:#c5d9cb transparent; }
+        .inspector-empty { border:1px solid #e5eee7; color:#5e7469; }
+        .empty-science { text-align:center; padding:31px 21px; background:#fbfdfc; }
+        .empty-science-icon { display:grid; place-items:center; width:78px; height:78px; border-radius:50%; background:#e9f2ed; margin:0 auto 17px; color:#527e68; font-size:46px; }
+        .empty-science strong { display:block; color:#19392b; font-size:15px; }
+        .empty-science p { font-size:11px; line-height:1.6; }
+        .empty-science small { display:block; margin-top:15px; color:#879a8d; font-size:10px; }
+        .selected-kicker { color:#688576; }.selected-id { color:#183528; }
+        .badge { border-radius:8px; font-size:10px; }
+        .badge-mrcnn { background:#e0f7e9; color:#087044; border-color:#b3e9c9; }
+        .badge-yolo { background:#f2e7fd; color:#7836b1; border-color:#dfc4f8; }
+        .badge-review { background:#fff0d5; color:#9d6109; border-color:#f4d9a7; }
+        .badge-ok { background:#e4f7eb; color:#15734c; border-color:#c4e7d0; }
+        .badge-neutral { background:#f0f5f2; color:#596c60; }
+        .small-action { border-color:var(--border); background:#f9fcfa; color:#315342; font-size:10px; }
+        .small-action:hover { background:#eaf4ee; }
+        .metric-box,.analysis-kpi,.flow-step { background:#f8fbf9; border-color:#dce8e1; }
+        .metric-label,.analysis-kpi-label { color:#708879; font-size:9px; }
+        .metric-value,.analysis-kpi-value,.flow-value { color:#15362a; }
+        .section-label { color:#1a4f37; font-size:10px; }
+        .section-help { color:#789280; }
+        #inspector-analysis .analysis-kpi:nth-child(1) .analysis-kpi-value {color:#08764b!important;}
+        #inspector-analysis .analysis-kpi:nth-child(2) .analysis-kpi-value {color:#8241bd!important;}
+        #inspector-analysis .analysis-kpi:nth-child(3) .analysis-kpi-value {color:#b16e0d!important;}
+        .property-list { border-color:#dce8e1; }
+        .property-row { background:#fcfefd; border-color:#e4eee8; }
+        .property-key { color:#687e70; }.property-value { color:#2c4839; }
+        .method-note { color:#3d5d4a; background:#f2f8f4; border-color:#d9e9dc; }
+        .warning-note { color:#8b5c14; background:#fff6e6; border-color:#f2ddba; }
+        .info-note { color:#375b82; background:#edf5fe; border-color:#d4e6fa; }
+        .filter-reset:focus-visible,.map-tool:focus-visible,.filter-chip:focus-visible,.view-option:focus-visible,.center-focused:focus-visible { outline:3px solid #46ba86; outline-offset:2px; }
+        .mobile-bottom-nav { display:none; }
+
+        @media (min-width:1600px) { :root {--left-w:314px;--right-w:350px;} .map-toolbar{left:16px;right:16px;} }
+        @media (min-width:1280px) and (max-width:1540px) {
+            :root {--left-w:282px;--right-w:306px;}
+            .topbar {padding:0 16px;}
+            .view-option {padding:8px 7px;font-size:9px;}
+            .toolbar-left {gap:5px;max-width:calc(100% - 45px);}
+            .toolbar-caption {font-size:8px;}
+            .toolbar-right .desktop-panel-tools {display:none;}
+            .map-toolbar {left:9px;right:9px;}
+            .layer-switch {flex:0 0 auto;}
+            .map-tool {padding:0 6px;}
+            .summary-item {min-width:62px;padding:5px 7px;}
+        }
+        @media (max-width:1279px) {
+            .workspace, .workspace.explorer-collapsed, .workspace.inspector-collapsed, .workspace.explorer-collapsed.inspector-collapsed {grid-template-columns:minmax(0,1fr);}
+            .workspace>.side-panel {visibility:visible!important;pointer-events:auto!important;}
+            .left-panel,.right-panel {width:min(370px,calc(100vw - 24px));position:absolute;}
+            .right-panel {border-left:1px solid var(--border);}
+            .map-pane {margin:9px;}
+            .desktop-panel-tools {display:none!important;}
+            .toolbar-left {max-width:calc(100% - 60px);}
+            .view-option {padding:8px 11px;}
+            .panel-heading {padding:20px;}
+        }
+        @media (max-width:760px) {
+            :root {--topbar-h:58px;}
+            body {background:#f1f7f2;}
+            .topbar {height:calc(var(--topbar-h) + env(safe-area-inset-top,0px)); padding:env(safe-area-inset-top,0px) 11px 0;}
+            .brand-name {font-size:13px;} .brand-mark {width:36px;height:36px;flex-basis:36px;}
+            .mobile-panel-button {display:none!important;}
+            .topbar .top-action:last-child {display:inline-flex;}
+            .workspace {height:calc(100dvh - var(--topbar-h) - env(safe-area-inset-top,0px) - 60px - env(safe-area-inset-bottom,0px));}
+            .map-pane {margin:0;border:0;border-radius:0;box-shadow:none;}
+            #map {bottom:32px;}
+            .map-statusbar {height:32px;padding:0 8px;}
+            .map-toolbar {top:8px;left:8px;right:8px;display:flex;flex-direction:column;pointer-events:none;gap:6px;}
+            .toolbar-left {max-width:none;width:100%;display:flex;flex-direction:column;gap:5px;pointer-events:auto;}
+            .view-switch,.layer-switch {width:100%;padding:4px;border-radius:11px;}
+            .toolbar-caption {display:none;}
+            .view-options {width:100%;}
+            .view-option {flex:1 1 50%;min-width:0;min-height:43px;padding:5px 7px;font-size:10px;}
+            .view-option small {font-size:9px;}
+            .layer-switch .tool-group {width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));min-height:37px;gap:1px;}
+            .layer-switch .map-tool {width:100%;min-width:0;min-height:35px;padding:0 3px;justify-content:center;}
+            .layer-switch .tool-label-short {display:inline;font-size:10px;}
+            .toolbar-right {top:101px;right:0;position:absolute;gap:5px;}
+            .toolbar-right .tool-group {background:rgba(12,57,43,.95);}
+            .toolbar-right>.tool-group:last-child {display:flex;}
+            .toolbar-right .map-tool {width:35px;min-height:36px;}
+            .opacity-panel {top:calc(100% + 8px);}
+            .field-gps {bottom:70px;right:10px;width:200px;}
+            body.has-field-selection .field-gps {bottom:148px;}
+            .gps-button {min-width:41px;min-height:41px;width:41px;height:41px;}
+            .center-focused {bottom:47px;right:10px;padding:8px;border-radius:10px;}
+            .center-focused span {display:none;}
+            .focus-source {left:9px;bottom:171px;max-width:calc(100% - 72px);font-size:9px;padding:5px 7px;}
+            .map-summary {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));bottom:111px;left:8px;right:8px;width:auto;padding:5px;gap:0;}
+            .summary-item {min-width:0;padding:3px 4px;border-right:1px solid rgba(255,255,255,.14);}
+            .summary-label {font-size:8px;letter-spacing:0;}
+            .summary-value {font-size:17px;}
+            .ol-zoom {display:none!important;}
+            .mobile-bottom-nav { display:grid;grid-template-columns:repeat(3,1fr);position:fixed;bottom:0;left:0;right:0;height:calc(60px + env(safe-area-inset-bottom,0px));padding:4px max(10px, env(safe-area-inset-left,0px)) env(safe-area-inset-bottom,0px) max(10px, env(safe-area-inset-right,0px));background:white;border-top:1px solid #dce8e1;z-index:210;box-shadow:0 -3px 20px rgba(18,61,35,.065); }
+            .mobile-bottom-nav button {min-width:0;min-height:48px;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;border:0;background:none;color:#718779;font-size:10px;cursor:pointer;}
+            .mobile-bottom-nav button svg {width:21px;height:21px;}
+            .mobile-bottom-nav button.is-active {color:#087956;font-weight:800;}
+            .left-panel {background:white;padding-left:0;max-height:100%;}
+            .right-panel {bottom:0;height:min(75dvh,680px);max-height:calc(100% - 24px);background:white;border-radius:18px 18px 0 0;padding-bottom:0;}
+            .left-panel,.right-panel {z-index:125;}
+            .right-panel .panel-heading::before {background:#b9cdc0;}
+            .drawer-backdrop.active {background:rgba(5,29,16,.52);}
+            .panel-heading {padding:16px;}
+            .inspector-body {background:#fff;}
+            .filter-chip {min-height:39px;}
+            .object-row {min-height:78px;}
+            .map-loading,.map-error {inset:0 0 32px;}
+        }
+        @media (max-width:390px) {
+            .brand-name {font-size:12px;}
+            .view-option {font-size:9px;}
+            .summary-label {font-size:7.5px;}
+            .toolbar-right {top:100px;}
+        }
+        @media (prefers-reduced-motion:reduce) {
+            .view-option,.filter-chip,.object-row,.map-tool,.side-panel {transition:none!important;}
+        }
+
     </style>
 </head>
 
@@ -1973,6 +2237,14 @@
         data_get($parameters, 'scientific_method_version')
         ?? data_get($models, 'scientific_method_version')
         ?? 'V0.6G';
+
+    $statusClass = match($job->status) {
+        'completed' => 'is-completed',
+        'processing' => 'is-processing',
+        'queued' => 'is-queued',
+        'failed' => 'is-failed',
+        default => 'is-unknown',
+    };
 
     $statusLabel = match($job->status) {
         'completed' => 'Completado',
@@ -2015,7 +2287,7 @@
             Método {{ $scientificMethodVersion }} · Pipeline {{ $pipelineVersion }}
         </span>
 
-        <span class="top-pill">
+        <span class="top-pill job-status {{ $statusClass }}" aria-label="Estado del análisis: {{ $statusLabel }}">
             <span class="status-dot"></span>
             {{ $statusLabel }}
         </span>
@@ -2071,7 +2343,7 @@
 
 <div id="workspace" class="workspace">
 
-    <div id="drawer-backdrop" class="drawer-backdrop"></div>
+    <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
 
     {{-- =========================================================
          EXPLORADOR DE OBJETOS
@@ -2087,7 +2359,7 @@
 
                 <div style="display:flex; align-items:center; gap:7px;">
                     <span id="explorer-count" class="panel-count">0</span>
-                    <button id="close-explorer-mobile" class="panel-close" type="button">×</button>
+                    <button id="close-explorer-mobile" class="panel-close" type="button" aria-label="Cerrar explorador">×</button>
                 </div>
             </div>
 
@@ -2111,13 +2383,26 @@
                 >
             </div>
 
-            <div class="quick-filters" role="group" aria-label="Filtros rápidos">
-                <button class="filter-chip active" type="button" data-filter="all">Todos</button>
-                <button class="filter-chip" type="button" data-filter="mrcnn">Mask R-CNN</button>
-                <button class="filter-chip" type="button" data-filter="yolo">YOLO</button>
-                <button class="filter-chip" type="button" data-filter="review">Revisión</button>
-                <button class="filter-chip" type="button" data-filter="no-review">Sin revisión</button>
+            <div class="filter-group">
+                <div class="filter-heading">Tipo de geometría</div>
+                <div class="quick-filters model-filters" role="group" aria-label="Filtrar por modelo geométrico">
+                    <button class="filter-chip active" type="button" data-model-filter="all" aria-pressed="true">Todos <span id="filter-total" class="filter-number">—</span></button>
+                    <button class="filter-chip" type="button" data-model-filter="mrcnn" aria-pressed="false"><span class="filter-dot mrcnn"></span>Mask <span id="filter-mask-total" class="filter-number">—</span></button>
+                    <button class="filter-chip" type="button" data-model-filter="yolo" aria-pressed="false"><span class="filter-dot yolo"></span>YOLO <span id="filter-yolo-total" class="filter-number">—</span></button>
+                </div>
             </div>
+
+            <div class="filter-group">
+                <div class="filter-heading">Estado de revisión</div>
+                <div class="quick-filters review-filters" role="group" aria-label="Filtrar por revisión">
+                    <button class="filter-chip active" type="button" data-review-filter="all" aria-pressed="true">Todos</button>
+                    <button class="filter-chip" type="button" data-review-filter="review" aria-pressed="false"><span class="filter-dot review"></span>Revisión <span id="filter-review-total" class="filter-number">—</span></button>
+                    <button class="filter-chip" type="button" data-review-filter="no-review" aria-pressed="false"><span class="filter-dot ok"></span>Sin revisión</button>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <div class="filter-heading">Filtros avanzados</div>
 
             <div class="advanced-filters">
                 <select id="evidence-filter" class="compact-select" aria-label="Filtrar por evidencia">
@@ -2127,6 +2412,8 @@
                 <select id="conflict-filter" class="compact-select" aria-label="Filtrar por conflicto">
                     <option value="">Todo conflicto</option>
                 </select>
+            </div>
+
             </div>
 
             <div class="filter-feedback">
@@ -2153,7 +2440,22 @@
 
         <div class="map-toolbar">
             <div class="toolbar-left">
-                <div class="tool-group">
+                <div class="view-switch" role="group" aria-label="Modo de visualización">
+                    <div class="toolbar-caption">Modo de visualización</div>
+                    <div class="view-options">
+                        <button id="view-focused" class="view-option active" type="button" aria-pressed="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 5 7v5c0 4 2.5 7.3 7 9 4.5-1.7 7-5 7-9V7l-7-4Z"/><path d="m8 12 3 3 5-6"/></svg>
+                            <span>Vista enfocada<small>Área de interés</small></span>
+                        </button>
+                        <button id="view-full" class="view-option" type="button" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/></svg>
+                            <span>Vista completa<small>Toda la extensión</small></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="layer-switch">
+                  <div class="toolbar-caption">Capas cartográficas</div>
+                  <div class="tool-group">
                     @if(($cogAvailable ?? false) || $previewAvailable)
                         <button id="toggle-preview" class="map-tool active" type="button" aria-pressed="true">
                             <span class="layer-dot preview"></span>
@@ -2175,10 +2477,19 @@
                         <span class="layer-dot review"></span>
                         <span class="tool-label">Resaltar revisión</span><span class="tool-label-short">Revisión</span>
                     </button>
+                  </div>
                 </div>
             </div>
 
             <div class="toolbar-right">
+                <div class="tool-group desktop-panel-tools">
+                    <button id="collapse-explorer" class="map-tool" type="button" aria-label="Contraer explorador" title="Mostrar u ocultar explorador" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+                    </button>
+                    <button id="collapse-inspector" class="map-tool" type="button" aria-label="Contraer inspector" title="Mostrar u ocultar inspector" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg>
+                    </button>
+                </div>
                 <div id="opacity-popover" class="tool-group opacity-popover">
                     <button id="opacity-toggle" class="map-tool" type="button" title="Ajustar opacidad" aria-label="Ajustar opacidad de las capas" aria-expanded="false">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -2233,6 +2544,14 @@
             </div>
         </div>
 
+
+        <div id="focus-source" class="focus-source" role="status" aria-live="polite">
+            Encuadre: preparando área de interés…
+        </div>
+        <button id="center-focused" class="center-focused" type="button" title="Centrar vista enfocada">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
+            <span>Centrar área de interés</span>
+        </button>
 
         {{-- WEB.6 — GPS local: el navegador solicita permiso al pulsar el botón. --}}
         <section class="field-gps" aria-label="Navegación GPS del trabajo de campo">
@@ -2332,7 +2651,7 @@
                     <h2 class="panel-title">Lectura científica</h2>
                 </div>
 
-                <button id="close-inspector-mobile" class="panel-close" type="button">×</button>
+                <button id="close-inspector-mobile" class="panel-close" type="button" aria-label="Cerrar inspector">×</button>
             </div>
 
             <p class="panel-description">
@@ -2346,9 +2665,11 @@
         </div>
 
         <div id="inspector-object" class="inspector-body">
-            <div class="inspector-empty">
-                <strong style="color:var(--text-soft);">Ningún objeto seleccionado.</strong><br><br>
-                Haz clic sobre una geometría del mapa o selecciona un registro del explorador. La ficha mostrará atributos del objeto operativo; no implica confirmación contra verdad de campo.
+            <div class="inspector-empty empty-science">
+                <div class="empty-science-icon" aria-hidden="true">♧</div>
+                <strong>Ningún objeto seleccionado</strong>
+                <p>Haz clic sobre una geometría del mapa o selecciona un registro del explorador para consultar sus atributos.</p>
+                <small>Una detección operativa no es un árbol confirmado mediante verdad de campo.</small>
             </div>
         </div>
 
@@ -2445,6 +2766,18 @@
     </aside>
 </div>
 
+<nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="Navegación del visor">
+    <button type="button" id="mobile-nav-explorer" aria-label="Mostrar explorador de objetos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h12"/><circle cx="17" cy="18" r="3"/></svg><span>Explorador</span>
+    </button>
+    <button type="button" id="mobile-nav-map" class="is-active" aria-current="page" aria-label="Mostrar mapa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5ZM9 3v16M15 5v16"/></svg><span>Mapa</span>
+    </button>
+    <button type="button" id="mobile-nav-inspector" aria-label="Mostrar inspector científico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><span>Inspector</span>
+    </button>
+</nav>
+
 <script src="https://cdn.jsdelivr.net/npm/proj4@2.15.0/dist/proj4.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/geotiff@3.1.0-beta.0/dist-browser/geotiff.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ol@10.10.0/dist/ol.js"></script>
@@ -2454,6 +2787,9 @@
     'use strict';
 
     const mapBounds = @json($mapBounds);
+    // OPCIONAL: extensión [minX, minY, maxX, maxY] de la huella válida,
+    // expresada en el mismo CRS del ortomosaico. NO pasar una huella inventada.
+    const validRasterBounds = @json($validRasterBounds ?? null);
     const mosaicProjection = @json($mosaic->crs);
     const previewAvailable = @json($previewAvailable);
     const cogAvailable = @json($cogAvailable ?? false);
@@ -2488,7 +2824,12 @@
         closeInspectorMobile: document.getElementById('close-inspector-mobile'),
 
         search: document.getElementById('object-search'),
-        quickFilters: Array.from(document.querySelectorAll('.filter-chip')),
+        modelFilters: Array.from(document.querySelectorAll('[data-model-filter]')),
+        reviewFilters: Array.from(document.querySelectorAll('[data-review-filter]')),
+        filterTotal: document.getElementById('filter-total'),
+        filterMaskTotal: document.getElementById('filter-mask-total'),
+        filterYoloTotal: document.getElementById('filter-yolo-total'),
+        filterReviewTotal: document.getElementById('filter-review-total'),
         evidenceFilter: document.getElementById('evidence-filter'),
         conflictFilter: document.getElementById('conflict-filter'),
         resetFilters: document.getElementById('reset-filters'),
@@ -2496,6 +2837,15 @@
         objectList: document.getElementById('object-list'),
         explorerCount: document.getElementById('explorer-count'),
 
+        viewFocused: document.getElementById('view-focused'),
+        viewFull: document.getElementById('view-full'),
+        centerFocused: document.getElementById('center-focused'),
+        focusSource: document.getElementById('focus-source'),
+        collapseExplorer: document.getElementById('collapse-explorer'),
+        collapseInspector: document.getElementById('collapse-inspector'),
+        mobileNavExplorer: document.getElementById('mobile-nav-explorer'),
+        mobileNavMap: document.getElementById('mobile-nav-map'),
+        mobileNavInspector: document.getElementById('mobile-nav-inspector'),
         togglePreview: document.getElementById('toggle-preview'),
         toggleMrcnn: document.getElementById('toggle-mrcnn'),
         toggleYolo: document.getElementById('toggle-yolo'),
@@ -2546,7 +2896,8 @@
 
     let allFeatures = [];
     let filteredFeatures = [];
-    let activeQuickFilter = 'all';
+    let activeModelFilter = 'all';
+    let activeReviewFilter = 'all';
     let currentSegOpacity = Number(els.segOpacity?.value || 82) / 100;
     let highlightReview = true;
     let showMrcnn = true;
@@ -2642,6 +2993,10 @@
     }
 
     function formatNumber(value, digits = 3) {
+        // null y string vacío NO son el número cero.
+        if (value === null || value === undefined || String(value).trim() === '') {
+            return '—';
+        }
         const num = Number(value);
 
         if (!Number.isFinite(num)) {
@@ -2679,18 +3034,13 @@
     ========================================================= */
 
     function passesQuickFilter(feature) {
-        switch (activeQuickFilter) {
-            case 'mrcnn':
-                return isMrcnn(feature);
-            case 'yolo':
-                return isYolo(feature);
-            case 'review':
-                return requiresReview(feature);
-            case 'no-review':
-                return !requiresReview(feature);
-            default:
-                return true;
-        }
+        const modelMatch = activeModelFilter === 'all'
+            || (activeModelFilter === 'mrcnn' && isMrcnn(feature))
+            || (activeModelFilter === 'yolo' && isYolo(feature));
+        const reviewMatch = activeReviewFilter === 'all'
+            || (activeReviewFilter === 'review' && requiresReview(feature))
+            || (activeReviewFilter === 'no-review' && !requiresReview(feature));
+        return modelMatch && reviewMatch;
     }
 
     function passesAdvancedFilters(feature) {
@@ -2793,18 +3143,30 @@
         updateVisibleCounters();
     }
 
-    function resetFilters() {
-        activeQuickFilter = 'all';
-
-        els.quickFilters.forEach(button => {
-            button.classList.toggle('active', button.dataset.filter === 'all');
+    function setFilterGroupState(buttons, attribute, selected) {
+        buttons.forEach(button => {
+            const active = button.dataset[attribute] === selected;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
+    }
 
+    function resetFilters() {
+        activeModelFilter = 'all';
+        activeReviewFilter = 'all';
+        setFilterGroupState(els.modelFilters, 'modelFilter', 'all');
+        setFilterGroupState(els.reviewFilters, 'reviewFilter', 'all');
         if (els.search) els.search.value = '';
         if (els.evidenceFilter) els.evidenceFilter.value = '';
         if (els.conflictFilter) els.conflictFilter.value = '';
-
         applyFilters();
+    }
+
+    function updateAllCounts() {
+        els.filterTotal.textContent = allFeatures.length;
+        els.filterMaskTotal.textContent = allFeatures.filter(isMrcnn).length;
+        els.filterYoloTotal.textContent = allFeatures.filter(isYolo).length;
+        els.filterReviewTotal.textContent = allFeatures.filter(requiresReview).length;
     }
 
     /* =========================================================
@@ -3069,16 +3431,89 @@
         ]),
     });
 
-    function fitMap() {
-        const compact = window.innerWidth <= 760;
-        map.getView().fit(mapBounds, {
-            padding: compact ? [66, 18, 76, 18] : [74, 42, 68, 42],
-            duration: 260,
-            maxZoom: 24,
-        });
+    /* =========================================================
+       DOS MODOS DE ENCUADRE — PRESENTACIÓN, NO MODIFICA DATOS
+       Prioridad: huella válida suministrada en CRS del mosaico.
+       Fallback: envolvente de detecciones (NO equivalente a huella válida).
+       Si no hay ninguna, volver a la extensión completa.
+    ========================================================= */
+    let viewMode = 'focused';
+    let focusedBounds = null;
+    let focusedSource = 'pending';
+
+    function validExtent(value) {
+        if (!Array.isArray(value) || value.length !== 4) return false;
+        if (!value.every(Number.isFinite)) return false;
+        if (!(value[0] < value[2] && value[1] < value[3])) return false;
+        const overlap = ol.extent.getIntersection(value, mapBounds);
+        return ol.extent.getWidth(overlap) > 0 && ol.extent.getHeight(overlap) > 0;
     }
 
-    fitMap();
+    function focusedTargetExtent() {
+        if (validExtent(validRasterBounds)) {
+            focusedSource = 'raster';
+            return ol.extent.getIntersection(validRasterBounds, mapBounds);
+        }
+        if (allFeatures.length) {
+            const detectedExtent = ol.extent.createEmpty();
+            allFeatures.forEach(feature => {
+                const geom = feature.getGeometry();
+                if (geom) ol.extent.extend(detectedExtent, geom.getExtent());
+            });
+            if (validExtent(detectedExtent)) {
+                focusedSource = 'detections';
+                const padded = ol.extent.buffer(detectedExtent,
+                    Math.max(ol.extent.getWidth(detectedExtent), ol.extent.getHeight(detectedExtent)) * .08);
+                return ol.extent.getIntersection(padded, mapBounds);
+            }
+        }
+        focusedSource = 'full';
+        return mapBounds;
+    }
+
+    function updateFocusLabel() {
+        if (!els.focusSource) return;
+        const text = viewMode === 'full'
+            ? 'Vista completa · extensión original del ortomosaico'
+            : focusedSource === 'raster'
+                ? 'Vista enfocada · huella válida del ráster'
+                : focusedSource === 'detections'
+                    ? 'Vista enfocada · encuadre provisional por detecciones'
+                    : focusedSource === 'pending'
+                        ? 'Vista enfocada · preparando el encuadre…'
+                        : 'Vista enfocada · sin huella disponible; extensión completa';
+        els.focusSource.textContent = text;
+        els.focusSource.title = focusedSource === 'detections'
+            ? 'La envolvente de detecciones no representa necesariamente la cobertura válida del ortomosaico.'
+            : text;
+    }
+
+    function fitView(targetMode = viewMode, animate = true) {
+        viewMode = targetMode;
+        const compact = window.innerWidth <= 760;
+        const extent = targetMode === 'full' ? mapBounds : (focusedBounds = focusedTargetExtent());
+        // Suspender seguimiento para que el GPS no revierta la decisión explícita del usuario.
+        if (gpsFollow) {
+            gpsFollow = false;
+            gpsUpdateButtons();
+        }
+        map.getView().fit(extent, {
+            padding: compact ? [145, 27, 142, 27] : [112, 45, 94, 45],
+            duration: animate ? 240 : 0,
+            maxZoom: 23,
+        });
+        els.viewFocused.classList.toggle('active', targetMode === 'focused');
+        els.viewFull.classList.toggle('active', targetMode === 'full');
+        els.viewFocused.setAttribute('aria-pressed', targetMode === 'focused' ? 'true' : 'false');
+        els.viewFull.setAttribute('aria-pressed', targetMode === 'full' ? 'true' : 'false');
+        els.centerFocused.hidden = targetMode !== 'focused';
+        updateFocusLabel();
+    }
+
+    function fitMap() { fitView(viewMode); }
+    // Vista predeterminada: enfocada. Se refina al terminar la carga GeoJSON.
+    map.getView().fit(mapBounds, {padding: [85, 35, 85, 35], duration: 0});
+    updateFocusLabel();
 
     const selected = new ol.Collection();
 
@@ -3336,7 +3771,8 @@
     ========================================================= */
 
     function renderObjectList() {
-        els.explorerCount.textContent = filteredFeatures.length;
+        // El indicador del encabezado es el TOTAL cargado, no el número filtrado.
+        els.explorerCount.textContent = allFeatures.length;
         els.filterFeedback.textContent = `${filteredFeatures.length} de ${allFeatures.length} objetos visibles`;
 
         if (!filteredFeatures.length) {
@@ -3360,17 +3796,22 @@
             const area = formatMetric(feature.get('area_m2'), 'm²', 2);
             const evidence = getEvidenceStatus(feature);
 
+            row.setAttribute('aria-label', `${getOperationalId(feature)}, ${modelLabel(feature)}, ${area}, ${review ? 'requiere revisión' : 'sin revisión operativa'}`);
             row.innerHTML = `
-                <div class="object-row-top">
-                    <div class="object-id">${escapeHtml(getOperationalId(feature))}</div>
-                    <span class="model-mark ${modelClass(feature)}" title="${escapeHtml(modelLabel(feature))}"></span>
-                </div>
-                <div class="object-row-meta">
-                    <span>${escapeHtml(modelLabel(feature))}</span>
-                    <span>Área ${escapeHtml(area)}</span>
-                    <span class="mini-status${review ? ' review' : ''}">${review ? 'Revisión' : 'Sin revisión'}</span>
-                    ${evidence ? `<span>${escapeHtml(evidence)}</span>` : ''}
-                </div>
+                <span class="object-geometry-icon ${modelClass(feature)}" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" fill="none"><path d="M24 6c7-2 9 6 14 9 5 4 0 9 2 15 1 6-8 5-11 10-4 4-10-1-16-3-7-2-3-9-6-15-3-7 6-9 8-13 2-4 5-1 9-3Z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M13 23c6-2 9 3 11 1 3-4 10 0 11 4" stroke="currentColor" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </span>
+                <span class="object-row-content">
+                    <span class="object-row-top">
+                        <span class="object-id">${escapeHtml(getOperationalId(feature))}</span>
+                        <span class="model-mark ${modelClass(feature)}" title="${escapeHtml(modelLabel(feature))}"></span>
+                    </span>
+                    <span class="object-row-meta">
+                        <span>${escapeHtml(modelLabel(feature))} · Área ${escapeHtml(area)}</span>
+                        <span class="mini-status${review ? ' review' : ''}">${review ? 'Revisión' : 'Sin revisión'}</span>
+                        ${evidence ? `<span class="evidence-name">${escapeHtml(evidence)}</span>` : ''}
+                    </span>
+                </span>
             `;
 
             row.addEventListener('click', () => selectFeature(feature, true));
@@ -3417,9 +3858,11 @@
     function renderSelected(feature) {
         if (!feature) {
             els.inspectorObject.innerHTML = `
-                <div class="inspector-empty">
-                    <strong style="color:var(--text-soft);">Ningún objeto seleccionado.</strong><br><br>
-                    Haz clic sobre una geometría del mapa o selecciona un registro del explorador. La ficha mostrará atributos del objeto operativo; no implica confirmación contra verdad de campo.
+                <div class="inspector-empty empty-science">
+                    <div class="empty-science-icon" aria-hidden="true">♧</div>
+                    <strong>Ningún objeto seleccionado</strong>
+                    <p>Haz clic sobre una geometría del mapa o selecciona un registro del explorador para consultar sus atributos.</p>
+                    <small>Una detección operativa no es un árbol confirmado mediante verdad de campo.</small>
                 </div>
             `;
             return;
@@ -3712,10 +4155,14 @@
             }
 
             populateAttributeFilters();
+            updateAllCounts();
             applyFilters();
             clearSelection();
+            if (viewMode === 'focused') fitView('focused', false);
+            else updateFocusLabel();
         } catch (error) {
             console.error(error);
+            if (viewMode === 'focused') fitView('focused', false);
 
             els.mapErrorText.textContent =
                 `La capa GeoJSON no pudo cargarse (${error.message}). `
@@ -3868,7 +4315,10 @@
         vectorLayer.changed();
     });
 
-    els.fitExtent.addEventListener('click', fitMap);
+    els.viewFocused.addEventListener('click', () => fitView('focused'));
+    els.viewFull.addEventListener('click', () => fitView('full'));
+    els.centerFocused.addEventListener('click', () => fitView('focused'));
+    els.fitExtent.addEventListener('click', () => fitView('full'));
     els.clearSelection.addEventListener('click', clearSelection);
 
     els.fullscreenMap.addEventListener('click', async () => {
@@ -3891,14 +4341,17 @@
        FILTROS / BUSCADOR
     ========================================================= */
 
-    els.quickFilters.forEach(button => {
+    els.modelFilters.forEach(button => {
         button.addEventListener('click', () => {
-            activeQuickFilter = button.dataset.filter || 'all';
-
-            els.quickFilters.forEach(item => {
-                item.classList.toggle('active', item === button);
-            });
-
+            activeModelFilter = button.dataset.modelFilter || 'all';
+            setFilterGroupState(els.modelFilters, 'modelFilter', activeModelFilter);
+            applyFilters();
+        });
+    });
+    els.reviewFilters.forEach(button => {
+        button.addEventListener('click', () => {
+            activeReviewFilter = button.dataset.reviewFilter || 'all';
+            setFilterGroupState(els.reviewFilters, 'reviewFilter', activeReviewFilter);
             applyFilters();
         });
     });
@@ -3931,16 +4384,53 @@
         els.leftPanel.classList.remove('open');
         els.rightPanel.classList.remove('open');
         els.drawerBackdrop.classList.remove('active');
+        els.drawerBackdrop.hidden = true;
+        els.openExplorerMobile?.setAttribute('aria-expanded','false');
+        els.openInspectorMobile?.setAttribute('aria-expanded','false');
+        syncMobileNavigation();
+        updateMapViewport();
     }
 
     function openDrawer(panel) {
         closeDrawers();
         panel.classList.add('open');
+        els.drawerBackdrop.hidden = false;
         els.drawerBackdrop.classList.add('active');
+        els.openExplorerMobile?.setAttribute('aria-expanded', panel === els.leftPanel ? 'true' : 'false');
+        els.openInspectorMobile?.setAttribute('aria-expanded', panel === els.rightPanel ? 'true' : 'false');
+        syncMobileNavigation();
         els.opacityPopover.classList.remove('open');
         els.opacityToggle.setAttribute('aria-expanded', 'false');
     }
 
+    function syncMobileNavigation() {
+        const selectedNav = els.leftPanel.classList.contains('open') ? 'explorer'
+            : els.rightPanel.classList.contains('open') ? 'inspector' : 'map';
+        [ ['explorer', els.mobileNavExplorer], ['map', els.mobileNavMap], ['inspector', els.mobileNavInspector] ]
+            .forEach(([key, button]) => {
+                if (!button) return;
+                const active = key === selectedNav;
+                button.classList.toggle('is-active', active);
+                if (active) button.setAttribute('aria-current','page');
+                else button.removeAttribute('aria-current');
+            });
+    }
+
+    els.mobileNavExplorer?.addEventListener('click', () => openDrawer(els.leftPanel));
+    els.mobileNavInspector?.addEventListener('click', () => openDrawer(els.rightPanel));
+    els.mobileNavMap?.addEventListener('click', closeDrawers);
+    els.collapseExplorer?.addEventListener('click', () => {
+        const closed = els.workspace.classList.toggle('explorer-collapsed');
+        els.collapseExplorer.setAttribute('aria-pressed', closed ? 'true' : 'false');
+        els.collapseExplorer.setAttribute('aria-label', closed ? 'Expandir explorador' : 'Contraer explorador');
+        updateMapViewport();
+    });
+    els.collapseInspector?.addEventListener('click', () => {
+        const closed = els.workspace.classList.toggle('inspector-collapsed');
+        els.collapseInspector.setAttribute('aria-pressed', closed ? 'true' : 'false');
+        els.collapseInspector.setAttribute('aria-label', closed ? 'Expandir inspector' : 'Contraer inspector');
+        updateMapViewport();
+    });
     els.openExplorerMobile?.addEventListener('click', () => openDrawer(els.leftPanel));
     els.openInspectorMobile?.addEventListener('click', () => openDrawer(els.rightPanel));
     els.closeExplorerMobile?.addEventListener('click', closeDrawers);
