@@ -2483,9 +2483,9 @@
                         <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     <span>Exportar coordenadas IA</span>
-                    <span class="export-ia-tag">CSV</span>
+                    <span class="export-ia-tag">XLSX</span>
                 </button>
-                <div class="export-ia-help">Todos los objetos · UTM · Listo para tu Excel de campo</div>
+                <div class="export-ia-help">Excel con 14 columnas separadas · UTM y WGS84 · Todos los objetos del análisis</div>
             </div>
         </div>
 
@@ -3138,73 +3138,160 @@
         };
     }
 
-    function escapeCsvCell(value) {
+    /* =========================================================
+       V0.8B.2 — EXCEL REAL PARA COORDENADAS DE IA
+       XLSX: números en columnas independientes, sin dependencia
+       del separador regional de Excel. CSV con "sep=;" de respaldo.
+       No modifica geometrías, modelos, filtros ni backend.
+    ========================================================= */
+    const IA_EXPORT_COLUMNS = [
+        'operational_id', 'primary_model', 'requires_review', 'evidence_status',
+        'area_m2', 'eq_crown_d_m', 'x_ai_utm', 'y_ai_utm',
+        'longitud_wgs84', 'latitud_wgs84', 'tipo_punto', 'crs',
+        'analysis_uuid', 'fecha_exportacion'
+    ];
+
+    function exportNumeric(value) {
+        if (value === undefined || value === null || String(value).trim() === '') return '';
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : '';
+    }
+
+    function collectAiCoordinateRows() {
+        const rows = [];
+        const ids = new Set();
+        let omitted = 0;
+        let duplicateIds = 0;
+        const exportDate = new Date().toISOString();
+        const analysisUuid = @json($job->uuid);
+
+        for (const feature of allFeatures) {
+            const location = crownCoordinateRecord(feature);
+            const id = cleanText(feature.get('operational_id'));
+            if (!location || !id) {
+                omitted++;
+                continue;
+            }
+            if (ids.has(id)) {
+                duplicateIds++;
+                console.warn('Operational ID repetido en GeoJSON:', id);
+            }
+            ids.add(id);
+            rows.push([
+                id,
+                getPrimaryModel(feature),
+                requiresReview(feature) ? 'Sí' : 'No',
+                getEvidenceStatus(feature),
+                exportNumeric(feature.get('area_m2')),
+                exportNumeric(feature.get('eq_crown_d_m')),
+                location.x, location.y,
+                location.longitude, location.latitude,
+                'punto_interior_copa', mosaicProjection,
+                analysisUuid, exportDate
+            ]);
+        }
+        return { rows, omitted, duplicateIds, analysisUuid };
+    }
+
+    // Cargamos la librería solo cuando se necesita, para mantener
+    // ligero el visor GIS en móviles. Versión fijada, sin autoactualizar.
+    let spreadsheetLibraryPromise = null;
+    function loadSpreadsheetLibrary() {
+        if (window.XLSX?.utils?.aoa_to_sheet) return Promise.resolve(window.XLSX);
+        if (spreadsheetLibraryPromise) return spreadsheetLibraryPromise;
+        spreadsheetLibraryPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+            script.async = true;
+            script.onload = () => {
+                if (window.XLSX?.utils?.aoa_to_sheet) resolve(window.XLSX);
+                else reject(new Error('SheetJS no se inicializó correctamente.'));
+            };
+            script.onerror = () => reject(new Error('No se pudo cargar la biblioteca Excel.'));
+            document.head.appendChild(script);
+        }).catch(error => {
+            spreadsheetLibraryPromise = null;
+            throw error;
+        });
+        return spreadsheetLibraryPromise;
+    }
+
+    function escapeExcelCsvCell(value) {
         if (value === null || value === undefined) return '';
         let text = String(value);
-        // No permitir que atributos de texto se interpreten como fórmulas en Excel.
         if (typeof value === 'string' && /^[\s\t\r\n]*[=+@\-]/.test(text)) text = "'" + text;
         return /[;"\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
     }
 
-    function exportAiCoordinatesCsv() {
-        if (!allFeatures.length || els.exportIaCoordinates?.disabled) return;
-        if (!/^EPSG:(326|327)\d{2}$/.test(mosaicProjection || '')) {
-            window.alert('Esta exportación requiere un mosaico proyectado en UTM (por ejemplo EPSG:32614).');
-            return;
-        }
-
-        // Orden idéntico a la hoja 06_Coordenadas_IA del Excel de validación.
-        const columns = [
-            'operational_id', 'primary_model', 'requires_review', 'evidence_status',
-            'area_m2', 'eq_crown_d_m', 'x_ai_utm', 'y_ai_utm',
-            'longitud_wgs84', 'latitud_wgs84', 'tipo_punto', 'crs',
-            'analysis_uuid', 'fecha_exportacion'
-        ];
-        const outputRows = [];
-        const exportDate = new Date().toISOString();
-        const analysisUuid = @json($job->uuid);
-        let omitted = 0;
-        const ids = new Set();
-        for (const feature of allFeatures) {
-            const location = crownCoordinateRecord(feature);
-            if (!location) { omitted++; continue; }
-            const id = cleanText(feature.get('operational_id'));
-            if (!id) { omitted++; continue; }
-            if (ids.has(id)) {
-                // No fusionar silenciosamente geometrías con el mismo ID.
-                console.warn('Operational ID repetido en GeoJSON:', id);
-            }
-            ids.add(id);
-            const values = [
-                id, getPrimaryModel(feature), requiresReview(feature) ? 'Sí' : 'No',
-                getEvidenceStatus(feature), feature.get('area_m2') ?? '',
-                feature.get('eq_crown_d_m') ?? '',
-                location.x, location.y, location.longitude, location.latitude,
-                'punto_interior_copa', mosaicProjection, analysisUuid, exportDate
-            ];
-            outputRows.push(values.map(escapeCsvCell).join(';'));
-        }
-        if (!outputRows.length) {
-            window.alert('No hay copas Polygon o MultiPolygon con coordenadas exportables.');
-            return;
-        }
-        // BOM UTF-8 y separador punto y coma: compatible con Excel es-MX.
-        const csv = '\uFEFF' + [columns.join(';'), ...outputRows].join('\r\n') + '\r\n';
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    function downloadBackupCsv(rows, analysisUuid) {
+        // Excel para Windows reconoce "sep=;" y distribuye columnas.
+        // No se añade al Excel XLSX porque allí no hacen falta separadores.
+        const lines = [IA_EXPORT_COLUMNS, ...rows]
+            .map(row => row.map(escapeExcelCsvCell).join(';'));
+        const csv = '\uFEFF' + 'sep=;\r\n' + lines.join('\r\n') + '\r\n';
+        const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `SIGMAD_coordenadas_IA_${analysisUuid}.csv`;
+        link.download = `SIGMAD_coordenadas_IA_${analysisUuid}_Excel.csv`;
         document.body.appendChild(link);
         link.click();
         link.remove();
-        window.setTimeout(() => URL.revokeObjectURL(url), 2500);
-        if (omitted > 0) {
-            window.alert(`${outputRows.length} objetos exportados; ${omitted} omitidos por geometría no compatible.`);
+        window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    async function exportAiCoordinatesExcel() {
+        const button = els.exportIaCoordinates;
+        if (!allFeatures.length || button?.disabled) return;
+        if (!/^EPSG:(326|327)\d{2}$/.test(mosaicProjection || '')) {
+            window.alert('La exportación requiere un CRS UTM (por ejemplo EPSG:32614).');
+            return;
+        }
+
+        const { rows, omitted, duplicateIds, analysisUuid } = collectAiCoordinateRows();
+        if (!rows.length) {
+            window.alert('No hay objetos Polygon o MultiPolygon con coordenadas exportables.');
+            return;
+        }
+        const label = button.querySelector('span:nth-child(2)');
+        const oldLabel = label?.textContent || 'Exportar coordenadas IA';
+        button.disabled = true;
+        if (label) label.textContent = 'Preparando Excel…';
+
+        try {
+            const XLSX = await loadSpreadsheetLibrary();
+            const sheet = XLSX.utils.aoa_to_sheet([IA_EXPORT_COLUMNS, ...rows]);
+            // Importante: área, diámetro, UTM y WGS84 permanecen como números.
+            sheet['!cols'] = [
+                {wch:17}, {wch:17}, {wch:16}, {wch:30},
+                {wch:13}, {wch:15}, {wch:17}, {wch:17},
+                {wch:19}, {wch:19}, {wch:21}, {wch:14},
+                {wch:40}, {wch:26}
+            ];
+            sheet['!autofilter'] = {ref: `A1:N${rows.length+1}`};
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, sheet, '06_Coordenadas_IA');
+            XLSX.writeFile(workbook, `SIGMAD_coordenadas_IA_${analysisUuid}.xlsx`, {
+                bookType: 'xlsx', compression: true
+            });
+        } catch (error) {
+            console.error('Excel XLSX no disponible; respaldo CSV con separador explícito:', error);
+            downloadBackupCsv(rows, analysisUuid);
+            window.alert('No se pudo generar XLSX. Se descargó un CSV con separador explícito compatible con Excel.');
+        } finally {
+            button.disabled = false;
+            if (label) label.textContent = oldLabel;
+        }
+        if (omitted || duplicateIds) {
+            window.alert(
+                `${rows.length} objetos exportados. ` +
+                `${omitted} omitidos sin geometría/ID válido. ` +
+                `${duplicateIds} ID duplicados: revisar antes de vincular con campo.`
+            );
         }
     }
 
-    els.exportIaCoordinates?.addEventListener('click', exportAiCoordinatesCsv);
+    els.exportIaCoordinates?.addEventListener('click', exportAiCoordinatesExcel);
 
     /* =========================================================
        FILTROS
