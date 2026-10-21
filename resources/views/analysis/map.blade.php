@@ -2218,6 +2218,55 @@
             .view-option,.filter-chip,.object-row,.map-tool,.side-panel {transition:none!important;}
         }
 
+
+        /* =========================================================
+           V0.8B.1 — Exportación de coordenadas de objetos IA
+           Estilo alineado al diseño actual SIGMAD.
+        ========================================================= */
+        .export-ia-panel {
+            display: grid;
+            gap: 5px;
+            min-width: 0;
+        }
+        .export-ia-button {
+            width: 100%;
+            min-height: 46px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 9px;
+            padding: 10px 12px;
+            border: 1px solid #0f7a59;
+            border-radius: 11px;
+            background: #0c7956;
+            color: white;
+            font-size: 11.5px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: background .15s ease, border-color .15s ease;
+            touch-action: manipulation;
+        }
+        .export-ia-button svg { width: 18px; height: 18px; flex: 0 0 18px; }
+        .export-ia-button span:nth-child(2) { min-width: 0; }
+        .export-ia-button:not(:disabled):hover { background: #075f43; border-color: #075f43; }
+        .export-ia-button:disabled { opacity: .55; cursor: not-allowed; }
+        .export-ia-tag {
+            margin-left: auto;
+            padding: 3px 6px;
+            border-radius: 5px;
+            background: rgba(255,255,255,.18);
+            color: white;
+            font-size: 9px;
+            letter-spacing: .05em;
+            font-weight: 850;
+        }
+        .export-ia-help { color: #687e70; font-size: 10px; line-height: 1.45; text-align: center; }
+        .export-ia-button:focus-visible { outline: 3px solid #46ba86; outline-offset: 3px; }
+        @media(max-width:760px) {
+            .export-ia-button { min-height: 48px; font-size: 12px; }
+            .export-ia-help { font-size: 10.5px; }
+        }
+
     </style>
 </head>
 
@@ -2419,6 +2468,24 @@
             <div class="filter-feedback">
                 <span id="filter-feedback">Cargando objetos...</span>
                 <button id="reset-filters" class="filter-reset" type="button">Restablecer</button>
+            </div>
+
+            {{-- V0.8B.1: exportar TODO el catálogo georreferenciado del análisis activo. --}}
+            <div class="export-ia-panel">
+                <button
+                    id="export-ia-coordinates"
+                    class="export-ia-button"
+                    type="button"
+                    disabled
+                    title="Descargar coordenadas de todos los objetos IA de este análisis, sin filtros"
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Exportar coordenadas IA</span>
+                    <span class="export-ia-tag">CSV</span>
+                </button>
+                <div class="export-ia-help">Todos los objetos · UTM · Listo para tu Excel de campo</div>
             </div>
         </div>
 
@@ -2824,6 +2891,7 @@
         closeInspectorMobile: document.getElementById('close-inspector-mobile'),
 
         search: document.getElementById('object-search'),
+        exportIaCoordinates: document.getElementById('export-ia-coordinates'),
         modelFilters: Array.from(document.querySelectorAll('[data-model-filter]')),
         reviewFilters: Array.from(document.querySelectorAll('[data-review-filter]')),
         filterTotal: document.getElementById('filter-total'),
@@ -3028,6 +3096,115 @@
     function modelLabel(feature) {
         return getPrimaryModel(feature) || 'Modelo no identificado';
     }
+
+    /* =========================================================
+       V0.8B.1 — COORDENADAS IA PARA VINCULAR CON CAMPO
+       Fuente: geometrías del GeoJSON oficial del AnalysisJob.
+       Un punto interior de copa NO representa el fuste real.
+       Operación local, sin cambios de IA ni escrituras en R2.
+    ========================================================= */
+    function representativePointInCrown(feature) {
+        const geometry = feature?.getGeometry();
+        if (!geometry) return null;
+
+        const type = geometry.getType();
+        if (type === 'Polygon') {
+            const coordinate = geometry.getInteriorPoint().getCoordinates();
+            return [coordinate[0], coordinate[1]];
+        }
+        if (type === 'MultiPolygon') {
+            const components = geometry.getPolygons();
+            if (!components.length) return null;
+            let main = components[0];
+            for (let i = 1; i < components.length; i++) {
+                if (components[i].getArea() > main.getArea()) main = components[i];
+            }
+            const coordinate = main.getInteriorPoint().getCoordinates();
+            return [coordinate[0], coordinate[1]];
+        }
+        return null;
+    }
+
+    function crownCoordinateRecord(feature) {
+        const utm = representativePointInCrown(feature);
+        if (!utm || !utm.every(Number.isFinite)) return null;
+        const wgs = ol.proj.transform(utm, mapProjection, 'EPSG:4326');
+        if (!wgs.every(Number.isFinite)) return null;
+        return {
+            x: Number(utm[0].toFixed(3)),
+            y: Number(utm[1].toFixed(3)),
+            longitude: Number(wgs[0].toFixed(8)),
+            latitude: Number(wgs[1].toFixed(8)),
+        };
+    }
+
+    function escapeCsvCell(value) {
+        if (value === null || value === undefined) return '';
+        let text = String(value);
+        // No permitir que atributos de texto se interpreten como fórmulas en Excel.
+        if (typeof value === 'string' && /^[\s\t\r\n]*[=+@\-]/.test(text)) text = "'" + text;
+        return /[;"\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+    }
+
+    function exportAiCoordinatesCsv() {
+        if (!allFeatures.length || els.exportIaCoordinates?.disabled) return;
+        if (!/^EPSG:(326|327)\d{2}$/.test(mosaicProjection || '')) {
+            window.alert('Esta exportación requiere un mosaico proyectado en UTM (por ejemplo EPSG:32614).');
+            return;
+        }
+
+        // Orden idéntico a la hoja 06_Coordenadas_IA del Excel de validación.
+        const columns = [
+            'operational_id', 'primary_model', 'requires_review', 'evidence_status',
+            'area_m2', 'eq_crown_d_m', 'x_ai_utm', 'y_ai_utm',
+            'longitud_wgs84', 'latitud_wgs84', 'tipo_punto', 'crs',
+            'analysis_uuid', 'fecha_exportacion'
+        ];
+        const outputRows = [];
+        const exportDate = new Date().toISOString();
+        const analysisUuid = @json($job->uuid);
+        let omitted = 0;
+        const ids = new Set();
+        for (const feature of allFeatures) {
+            const location = crownCoordinateRecord(feature);
+            if (!location) { omitted++; continue; }
+            const id = cleanText(feature.get('operational_id'));
+            if (!id) { omitted++; continue; }
+            if (ids.has(id)) {
+                // No fusionar silenciosamente geometrías con el mismo ID.
+                console.warn('Operational ID repetido en GeoJSON:', id);
+            }
+            ids.add(id);
+            const values = [
+                id, getPrimaryModel(feature), requiresReview(feature) ? 'Sí' : 'No',
+                getEvidenceStatus(feature), feature.get('area_m2') ?? '',
+                feature.get('eq_crown_d_m') ?? '',
+                location.x, location.y, location.longitude, location.latitude,
+                'punto_interior_copa', mosaicProjection, analysisUuid, exportDate
+            ];
+            outputRows.push(values.map(escapeCsvCell).join(';'));
+        }
+        if (!outputRows.length) {
+            window.alert('No hay copas Polygon o MultiPolygon con coordenadas exportables.');
+            return;
+        }
+        // BOM UTF-8 y separador punto y coma: compatible con Excel es-MX.
+        const csv = '\uFEFF' + [columns.join(';'), ...outputRows].join('\r\n') + '\r\n';
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `SIGMAD_coordenadas_IA_${analysisUuid}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 2500);
+        if (omitted > 0) {
+            window.alert(`${outputRows.length} objetos exportados; ${omitted} omitidos por geometría no compatible.`);
+        }
+    }
+
+    els.exportIaCoordinates?.addEventListener('click', exportAiCoordinatesCsv);
 
     /* =========================================================
        FILTROS
@@ -3874,6 +4051,7 @@
         const conflict = readableValue(feature.get('conflict_role'));
         const operationalId = getOperationalId(feature);
         const score = formatNumber(feature.get('representative_score'), 4);
+        const crownCoordinates = crownCoordinateRecord(feature);
 
         const modelBadge = isMrcnn(feature)
             ? '<span class="badge badge-mrcnn">Mask R-CNN · geometría primaria</span>'
@@ -3917,6 +4095,7 @@
                 <button id="next-object" class="small-action" type="button" ${selectedFilteredIndex < 0 || selectedFilteredIndex >= filteredFeatures.length - 1 ? 'disabled' : ''}>Siguiente →</button>
                 <button id="zoom-selected" class="small-action" type="button">Centrar</button>
                 <button id="copy-object-id" class="small-action" type="button">Copiar ID</button>
+                <button id="copy-crown-utm" class="small-action" type="button" ${!crownCoordinates ? 'disabled' : ''} title="Copia Este y Norte de un punto interior de la copa (no del fuste)">Copiar UTM</button>
             </div>
 
             <div class="section-block">
@@ -3930,6 +4109,20 @@
                         <div class="metric-label">Diámetro equivalente</div>
                         <div class="metric-value">${escapeHtml(formatMetric(feature.get('eq_crown_d_m'), 'm', 3))}</div>
                     </div>
+                </div>
+            </div>
+
+            <div class="section-block">
+                <div class="section-label">Ubicación de referencia de copa</div>
+                <div class="property-list">
+                    ${propertyRow('Este X · UTM (m)', crownCoordinates ? crownCoordinates.x.toFixed(3) : '—')}
+                    ${propertyRow('Norte Y · UTM (m)', crownCoordinates ? crownCoordinates.y.toFixed(3) : '—')}
+                    ${propertyRow('Longitud WGS84 (°)', crownCoordinates ? crownCoordinates.longitude.toFixed(8) : '—')}
+                    ${propertyRow('Latitud WGS84 (°)', crownCoordinates ? crownCoordinates.latitude.toFixed(8) : '—')}
+                    ${propertyRow('Sistema de coordenadas', mosaicProjection)}
+                </div>
+                <div class="info-note" style="margin-top:8px;">
+                    Referencia calculada dentro de la copa segmentada para navegación y cotejo espacial. No corresponde necesariamente a la base del tronco ni equivale a un árbol validado.
                 </div>
             </div>
 
@@ -3986,6 +4179,18 @@
         document.getElementById('previous-object')?.addEventListener('click', () => navigateSelection(-1));
         document.getElementById('next-object')?.addEventListener('click', () => navigateSelection(1));
         document.getElementById('zoom-selected')?.addEventListener('click', () => zoomToFeature(feature));
+        document.getElementById('copy-crown-utm')?.addEventListener('click', async event => {
+            if (!crownCoordinates) return;
+            try {
+                await navigator.clipboard.writeText(`${crownCoordinates.x};${crownCoordinates.y}`);
+                event.currentTarget.textContent = 'UTM copiada';
+                window.setTimeout(() => {
+                    if (event.currentTarget?.isConnected) event.currentTarget.textContent = 'Copiar UTM';
+                }, 1200);
+            } catch (error) {
+                console.warn('No fue posible copiar UTM:', error);
+            }
+        });
         document.getElementById('copy-object-id')?.addEventListener('click', async event => {
             try {
                 await navigator.clipboard.writeText(operationalId);
@@ -4120,6 +4325,7 @@
     ========================================================= */
 
     async function loadGeoJson() {
+        if (els.exportIaCoordinates) els.exportIaCoordinates.disabled = true;
         els.mapLoading.hidden = false;
         els.mapError.hidden = true;
 
@@ -4146,6 +4352,7 @@
             vectorSource.addFeatures(features);
 
             allFeatures = features;
+            if (els.exportIaCoordinates) els.exportIaCoordinates.disabled = features.length === 0;
 
             if (features.length !== summaryExpected.total) {
                 console.warn('Conteo visual distinto al summary:', {
@@ -4162,6 +4369,7 @@
             else updateFocusLabel();
         } catch (error) {
             console.error(error);
+            if (els.exportIaCoordinates) els.exportIaCoordinates.disabled = true;
             if (viewMode === 'focused') fitView('focused', false);
 
             els.mapErrorText.textContent =
