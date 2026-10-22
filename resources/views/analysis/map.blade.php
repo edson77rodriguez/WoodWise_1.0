@@ -2219,53 +2219,45 @@
         }
 
 
-        /* =========================================================
-           V0.8B.1 — Exportación de coordenadas de objetos IA
-           Estilo alineado al diseño actual SIGMAD.
-        ========================================================= */
-        .export-ia-panel {
-            display: grid;
-            gap: 5px;
-            min-width: 0;
-        }
-        .export-ia-button {
-            width: 100%;
-            min-height: 46px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 9px;
-            padding: 10px 12px;
-            border: 1px solid #0f7a59;
-            border-radius: 11px;
-            background: #0c7956;
-            color: white;
-            font-size: 11.5px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: background .15s ease, border-color .15s ease;
-            touch-action: manipulation;
-        }
-        .export-ia-button svg { width: 18px; height: 18px; flex: 0 0 18px; }
-        .export-ia-button span:nth-child(2) { min-width: 0; }
-        .export-ia-button:not(:disabled):hover { background: #075f43; border-color: #075f43; }
-        .export-ia-button:disabled { opacity: .55; cursor: not-allowed; }
-        .export-ia-tag {
-            margin-left: auto;
-            padding: 3px 6px;
-            border-radius: 5px;
-            background: rgba(255,255,255,.18);
-            color: white;
-            font-size: 9px;
-            letter-spacing: .05em;
-            font-weight: 850;
-        }
-        .export-ia-help { color: #687e70; font-size: 10px; line-height: 1.45; text-align: center; }
-        .export-ia-button:focus-visible { outline: 3px solid #46ba86; outline-offset: 3px; }
-        @media(max-width:760px) {
-            .export-ia-button { min-height: 48px; font-size: 12px; }
-            .export-ia-help { font-size: 10.5px; }
-        }
+/* V0.8B.4 · capa de verificación campo-IA: visibilidad local, NO cambia inferencias */
+.qa-field-loader{padding:12px 15px 13px;background:#f0f8f3;border-bottom:1px solid #cfe4d5;display:grid;gap:8px;}
+.qa-loader-head{display:flex;gap:9px;align-items:center;color:#12543b;font-size:12px;font-weight:850;}
+.qa-field-loader p{font-size:10px;line-height:1.45;color:#536d60;margin:0;}
+.qa-loader-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;}
+.qa-action{min-height:37px;border-radius:10px;padding:7px 11px;border:1px solid #c4decf;background:white;color:#14543b;font-size:11px;font-weight:780;cursor:pointer;}
+.qa-action:hover{background:#e2f2e9;}
+.qa-action.primary{background:#0a7954;color:#fff;border-color:#0a7954;}
+.qa-action.primary:hover{background:#056243;}
+.qa-action:disabled{opacity:.45;cursor:default;}
+.qa-field-status{font-size:10px;color:#476b59;line-height:1.45;overflow-wrap:anywhere;}
+.qa-file-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;}
+.qa-card{position:absolute;left:14px;bottom:55px;width:min(355px,calc(100% - 28px));z-index:82;border:1px solid #a6cfb8;border-radius:16px;box-shadow:0 16px 46px #092e203d;background:#ffffff;color:#19392b;padding:13px 14px 14px;max-height:min(69dvh,610px);overflow-y:auto;overscroll-behavior:contain;}
+.qa-card-head{display:flex;align-items:start;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.qa-card-head strong{font-size:15px;color:#0f3c29;display:block;}
+.qa-card-head small{display:block;color:#527263;font-size:10px;margin-top:3px;}
+.qa-close{border:none;background:#e9f2ec;color:#345c45;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:20px;}
+.qa-card-warning{font-size:10px;line-height:1.5;color:#755821;background:#fff7e7;border:1px solid #f0ddb7;padding:8px 9px;border-radius:9px;margin:8px 0;}
+.qa-card-kv{display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:11px;margin:9px 0;}
+.qa-card-kv>span{padding:7px;background:#f1f7f3;border-radius:8px;min-width:0;overflow-wrap:anywhere;}
+.qa-card-kv b{display:block;margin-bottom:2px;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#637b6e;}
+.qa-card-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+.qa-card-row>*{flex:1 1 auto;}
+.qa-label{display:block;color:#3b6350;font-size:10px;font-weight:800;margin:9px 0 5px;}
+.qa-input{display:block;width:100%;border:1px solid #cbded3;border-radius:9px;background:#fcfffd;padding:9px 10px;color:#19392b;font:inherit;font-size:12px;}
+.qa-input:focus{outline:2px solid #79c7a6;outline-offset:1px;}
+.qa-card footer{color:#6a8576;font-size:9px;line-height:1.4;margin-top:8px;}
+.qa-field-loader .qa-loader-row .qa-action{white-space:nowrap;}
+.qa-field-card-open .field-selected{display:none!important;}
+@media(max-width:760px){
+ .qa-field-loader{padding:12px 14px;}
+ .qa-card{bottom:9px;left:8px;width:calc(100% - 16px);max-height:min(46dvh,370px);padding:11px 12px;z-index:100;}
+ .qa-field-card-open .field-gps{display:none!important;}
+ .qa-card-head strong{font-size:13px;}
+ .qa-card-kv{gap:4px;}
+ .qa-card-kv>span{padding:6px;font-size:10px;}
+ .qa-action{min-height:39px;}
+}
+
 
     </style>
 </head>
@@ -2469,25 +2461,20 @@
                 <span id="filter-feedback">Cargando objetos...</span>
                 <button id="reset-filters" class="filter-reset" type="button">Restablecer</button>
             </div>
-
-            {{-- V0.8B.1: exportar TODO el catálogo georreferenciado del análisis activo. --}}
-            <div class="export-ia-panel">
-                <button
-                    id="export-ia-coordinates"
-                    class="export-ia-button"
-                    type="button"
-                    disabled
-                    title="Descargar coordenadas de todos los objetos IA de este análisis, sin filtros"
-                >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                        <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <span>Exportar coordenadas IA</span>
-                    <span class="export-ia-tag">XLSX</span>
-                </button>
-                <div class="export-ia-help">Excel con 14 columnas separadas · UTM y WGS84 · Todos los objetos del análisis</div>
-            </div>
         </div>
+
+
+        {{-- V0.8B.4: puntos GPS del inventario; GeoJSON se lee LOCALMENTE sin subir al servidor. --}}
+        <section class="qa-field-loader" aria-label="Validación de campo">
+            <div class="qa-loader-head">📍 Verificación campo–IA</div>
+            <p>Superpón los fustes medidos sobre el ortomosaico. Los vínculos son propuestas hasta revisar las copas.</p>
+            <input id="qa-field-file" class="qa-file-input" type="file" accept=".geojson,.json,application/geo+json,application/json">
+            <div class="qa-loader-row">
+                <button id="qa-field-open" class="qa-action primary" type="button">Cargar puntos</button>
+                <button id="qa-export" class="qa-action" type="button" title="Descargar dictámenes de este análisis">Exportar revisión</button>
+            </div>
+            <div id="qa-field-status" class="qa-field-status" role="status">Sin puntos cargados · Archivo V0.8B.4</div>
+        </section>
 
         <div id="object-list" class="object-list">
             <div class="object-list-empty">Cargando catálogo espacial...</div>
@@ -2656,6 +2643,37 @@
             </div>
             <button type="button" id="field-show-inspector" class="gps-button">Ver ficha</button>
         </div>
+
+
+        {{-- V0.8B.4: ficha flotante de comprobación, distinta al inspector de modelos --}}
+        <section id="qa-field-card" class="qa-card" aria-label="Revisión de correspondencia árbol-copa" hidden>
+            <div class="qa-card-head">
+                <div><strong id="qa-tree-name">Árbol de campo</strong><small id="qa-tree-sub">Punto GNSS del fuste</small></div>
+                <button id="qa-close" type="button" class="qa-close" aria-label="Cerrar revisión">×</button>
+            </div>
+            <div class="qa-card-kv">
+                <span><b>IA propuesta</b><span id="qa-proposed-id">—</span></span>
+                <span><b>Distancia de referencia</b><span id="qa-proposed-distance">—</span></span>
+                <span><b>Copa a revisar</b><span id="qa-current-id">—</span></span>
+                <span><b>Estado previo</b><span id="qa-previous-status">Pendiente</span></span>
+            </div>
+            <div id="qa-warning" class="qa-card-warning">El punto de fuste no es el centro de copa. La proximidad no confirma identidad.</div>
+            <div class="qa-card-row">
+                <button id="qa-zoom-proposed" class="qa-action" type="button">Ver copa propuesta</button>
+                <button id="qa-use-selected" class="qa-action" type="button">Usar copa seleccionada</button>
+            </div>
+            <label for="qa-dictamen" class="qa-label">Dictamen de revisión</label>
+            <select id="qa-dictamen" class="qa-input"></select>
+            <label for="qa-evidence" class="qa-label">Evidencia / fotografía / referencia</label>
+            <input id="qa-evidence" class="qa-input" type="text" maxlength="300" placeholder="Ej.: foto de copa, captura o nota de campo">
+            <label for="qa-notes" class="qa-label">Observaciones técnicas</label>
+            <textarea id="qa-notes" class="qa-input" rows="2" maxlength="900" placeholder="¿Qué justifica la asociación? ¿Hay solapamiento u otra copa candidata?"></textarea>
+            <div class="qa-card-row">
+                <button id="qa-save" class="qa-action primary" type="button">Guardar dictamen local</button>
+                <button id="qa-clear-choice" class="qa-action" type="button">Restaurar propuesta</button>
+            </div>
+            <footer>Solo se guarda el dictamen en este navegador. Exporta el archivo para conservar tu revisión; no se modifican los GeoJSON científicos ni el pipeline.</footer>
+        </section>
 
         <div class="map-summary" aria-label="Resumen de objetos visibles">
             <div class="summary-item">
@@ -2891,7 +2909,6 @@
         closeInspectorMobile: document.getElementById('close-inspector-mobile'),
 
         search: document.getElementById('object-search'),
-        exportIaCoordinates: document.getElementById('export-ia-coordinates'),
         modelFilters: Array.from(document.querySelectorAll('[data-model-filter]')),
         reviewFilters: Array.from(document.querySelectorAll('[data-review-filter]')),
         filterTotal: document.getElementById('filter-total'),
@@ -3096,202 +3113,6 @@
     function modelLabel(feature) {
         return getPrimaryModel(feature) || 'Modelo no identificado';
     }
-
-    /* =========================================================
-       V0.8B.1 — COORDENADAS IA PARA VINCULAR CON CAMPO
-       Fuente: geometrías del GeoJSON oficial del AnalysisJob.
-       Un punto interior de copa NO representa el fuste real.
-       Operación local, sin cambios de IA ni escrituras en R2.
-    ========================================================= */
-    function representativePointInCrown(feature) {
-        const geometry = feature?.getGeometry();
-        if (!geometry) return null;
-
-        const type = geometry.getType();
-        if (type === 'Polygon') {
-            const coordinate = geometry.getInteriorPoint().getCoordinates();
-            return [coordinate[0], coordinate[1]];
-        }
-        if (type === 'MultiPolygon') {
-            const components = geometry.getPolygons();
-            if (!components.length) return null;
-            let main = components[0];
-            for (let i = 1; i < components.length; i++) {
-                if (components[i].getArea() > main.getArea()) main = components[i];
-            }
-            const coordinate = main.getInteriorPoint().getCoordinates();
-            return [coordinate[0], coordinate[1]];
-        }
-        return null;
-    }
-
-    function crownCoordinateRecord(feature) {
-        const utm = representativePointInCrown(feature);
-        if (!utm || !utm.every(Number.isFinite)) return null;
-        const wgs = ol.proj.transform(utm, mapProjection, 'EPSG:4326');
-        if (!wgs.every(Number.isFinite)) return null;
-        return {
-            x: Number(utm[0].toFixed(3)),
-            y: Number(utm[1].toFixed(3)),
-            longitude: Number(wgs[0].toFixed(8)),
-            latitude: Number(wgs[1].toFixed(8)),
-        };
-    }
-
-    /* =========================================================
-       V0.8B.2 — EXCEL REAL PARA COORDENADAS DE IA
-       XLSX: números en columnas independientes, sin dependencia
-       del separador regional de Excel. CSV con "sep=;" de respaldo.
-       No modifica geometrías, modelos, filtros ni backend.
-    ========================================================= */
-    const IA_EXPORT_COLUMNS = [
-        'operational_id', 'primary_model', 'requires_review', 'evidence_status',
-        'area_m2', 'eq_crown_d_m', 'x_ai_utm', 'y_ai_utm',
-        'longitud_wgs84', 'latitud_wgs84', 'tipo_punto', 'crs',
-        'analysis_uuid', 'fecha_exportacion'
-    ];
-
-    function exportNumeric(value) {
-        if (value === undefined || value === null || String(value).trim() === '') return '';
-        const numeric = Number(value);
-        return Number.isFinite(numeric) ? numeric : '';
-    }
-
-    function collectAiCoordinateRows() {
-        const rows = [];
-        const ids = new Set();
-        let omitted = 0;
-        let duplicateIds = 0;
-        const exportDate = new Date().toISOString();
-        const analysisUuid = @json($job->uuid);
-
-        for (const feature of allFeatures) {
-            const location = crownCoordinateRecord(feature);
-            const id = cleanText(feature.get('operational_id'));
-            if (!location || !id) {
-                omitted++;
-                continue;
-            }
-            if (ids.has(id)) {
-                duplicateIds++;
-                console.warn('Operational ID repetido en GeoJSON:', id);
-            }
-            ids.add(id);
-            rows.push([
-                id,
-                getPrimaryModel(feature),
-                requiresReview(feature) ? 'Sí' : 'No',
-                getEvidenceStatus(feature),
-                exportNumeric(feature.get('area_m2')),
-                exportNumeric(feature.get('eq_crown_d_m')),
-                location.x, location.y,
-                location.longitude, location.latitude,
-                'punto_interior_copa', mosaicProjection,
-                analysisUuid, exportDate
-            ]);
-        }
-        return { rows, omitted, duplicateIds, analysisUuid };
-    }
-
-    // Cargamos la librería solo cuando se necesita, para mantener
-    // ligero el visor GIS en móviles. Versión fijada, sin autoactualizar.
-    let spreadsheetLibraryPromise = null;
-    function loadSpreadsheetLibrary() {
-        if (window.XLSX?.utils?.aoa_to_sheet) return Promise.resolve(window.XLSX);
-        if (spreadsheetLibraryPromise) return spreadsheetLibraryPromise;
-        spreadsheetLibraryPromise = new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
-            script.async = true;
-            script.onload = () => {
-                if (window.XLSX?.utils?.aoa_to_sheet) resolve(window.XLSX);
-                else reject(new Error('SheetJS no se inicializó correctamente.'));
-            };
-            script.onerror = () => reject(new Error('No se pudo cargar la biblioteca Excel.'));
-            document.head.appendChild(script);
-        }).catch(error => {
-            spreadsheetLibraryPromise = null;
-            throw error;
-        });
-        return spreadsheetLibraryPromise;
-    }
-
-    function escapeExcelCsvCell(value) {
-        if (value === null || value === undefined) return '';
-        let text = String(value);
-        if (typeof value === 'string' && /^[\s\t\r\n]*[=+@\-]/.test(text)) text = "'" + text;
-        return /[;"\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
-    }
-
-    function downloadBackupCsv(rows, analysisUuid) {
-        // Excel para Windows reconoce "sep=;" y distribuye columnas.
-        // No se añade al Excel XLSX porque allí no hacen falta separadores.
-        const lines = [IA_EXPORT_COLUMNS, ...rows]
-            .map(row => row.map(escapeExcelCsvCell).join(';'));
-        const csv = '\uFEFF' + 'sep=;\r\n' + lines.join('\r\n') + '\r\n';
-        const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `SIGMAD_coordenadas_IA_${analysisUuid}_Excel.csv`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.setTimeout(() => URL.revokeObjectURL(url), 5000);
-    }
-
-    async function exportAiCoordinatesExcel() {
-        const button = els.exportIaCoordinates;
-        if (!allFeatures.length || button?.disabled) return;
-        if (!/^EPSG:(326|327)\d{2}$/.test(mosaicProjection || '')) {
-            window.alert('La exportación requiere un CRS UTM (por ejemplo EPSG:32614).');
-            return;
-        }
-
-        const { rows, omitted, duplicateIds, analysisUuid } = collectAiCoordinateRows();
-        if (!rows.length) {
-            window.alert('No hay objetos Polygon o MultiPolygon con coordenadas exportables.');
-            return;
-        }
-        const label = button.querySelector('span:nth-child(2)');
-        const oldLabel = label?.textContent || 'Exportar coordenadas IA';
-        button.disabled = true;
-        if (label) label.textContent = 'Preparando Excel…';
-
-        try {
-            const XLSX = await loadSpreadsheetLibrary();
-            const sheet = XLSX.utils.aoa_to_sheet([IA_EXPORT_COLUMNS, ...rows]);
-            // Importante: área, diámetro, UTM y WGS84 permanecen como números.
-            sheet['!cols'] = [
-                {wch:17}, {wch:17}, {wch:16}, {wch:30},
-                {wch:13}, {wch:15}, {wch:17}, {wch:17},
-                {wch:19}, {wch:19}, {wch:21}, {wch:14},
-                {wch:40}, {wch:26}
-            ];
-            sheet['!autofilter'] = {ref: `A1:N${rows.length+1}`};
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, sheet, '06_Coordenadas_IA');
-            XLSX.writeFile(workbook, `SIGMAD_coordenadas_IA_${analysisUuid}.xlsx`, {
-                bookType: 'xlsx', compression: true
-            });
-        } catch (error) {
-            console.error('Excel XLSX no disponible; respaldo CSV con separador explícito:', error);
-            downloadBackupCsv(rows, analysisUuid);
-            window.alert('No se pudo generar XLSX. Se descargó un CSV con separador explícito compatible con Excel.');
-        } finally {
-            button.disabled = false;
-            if (label) label.textContent = oldLabel;
-        }
-        if (omitted || duplicateIds) {
-            window.alert(
-                `${rows.length} objetos exportados. ` +
-                `${omitted} omitidos sin geometría/ID válido. ` +
-                `${duplicateIds} ID duplicados: revisar antes de vincular con campo.`
-            );
-        }
-    }
-
-    els.exportIaCoordinates?.addEventListener('click', exportAiCoordinatesExcel);
 
     /* =========================================================
        FILTROS
@@ -4138,7 +3959,6 @@
         const conflict = readableValue(feature.get('conflict_role'));
         const operationalId = getOperationalId(feature);
         const score = formatNumber(feature.get('representative_score'), 4);
-        const crownCoordinates = crownCoordinateRecord(feature);
 
         const modelBadge = isMrcnn(feature)
             ? '<span class="badge badge-mrcnn">Mask R-CNN · geometría primaria</span>'
@@ -4182,7 +4002,6 @@
                 <button id="next-object" class="small-action" type="button" ${selectedFilteredIndex < 0 || selectedFilteredIndex >= filteredFeatures.length - 1 ? 'disabled' : ''}>Siguiente →</button>
                 <button id="zoom-selected" class="small-action" type="button">Centrar</button>
                 <button id="copy-object-id" class="small-action" type="button">Copiar ID</button>
-                <button id="copy-crown-utm" class="small-action" type="button" ${!crownCoordinates ? 'disabled' : ''} title="Copia Este y Norte de un punto interior de la copa (no del fuste)">Copiar UTM</button>
             </div>
 
             <div class="section-block">
@@ -4196,20 +4015,6 @@
                         <div class="metric-label">Diámetro equivalente</div>
                         <div class="metric-value">${escapeHtml(formatMetric(feature.get('eq_crown_d_m'), 'm', 3))}</div>
                     </div>
-                </div>
-            </div>
-
-            <div class="section-block">
-                <div class="section-label">Ubicación de referencia de copa</div>
-                <div class="property-list">
-                    ${propertyRow('Este X · UTM (m)', crownCoordinates ? crownCoordinates.x.toFixed(3) : '—')}
-                    ${propertyRow('Norte Y · UTM (m)', crownCoordinates ? crownCoordinates.y.toFixed(3) : '—')}
-                    ${propertyRow('Longitud WGS84 (°)', crownCoordinates ? crownCoordinates.longitude.toFixed(8) : '—')}
-                    ${propertyRow('Latitud WGS84 (°)', crownCoordinates ? crownCoordinates.latitude.toFixed(8) : '—')}
-                    ${propertyRow('Sistema de coordenadas', mosaicProjection)}
-                </div>
-                <div class="info-note" style="margin-top:8px;">
-                    Referencia calculada dentro de la copa segmentada para navegación y cotejo espacial. No corresponde necesariamente a la base del tronco ni equivale a un árbol validado.
                 </div>
             </div>
 
@@ -4266,18 +4071,6 @@
         document.getElementById('previous-object')?.addEventListener('click', () => navigateSelection(-1));
         document.getElementById('next-object')?.addEventListener('click', () => navigateSelection(1));
         document.getElementById('zoom-selected')?.addEventListener('click', () => zoomToFeature(feature));
-        document.getElementById('copy-crown-utm')?.addEventListener('click', async event => {
-            if (!crownCoordinates) return;
-            try {
-                await navigator.clipboard.writeText(`${crownCoordinates.x};${crownCoordinates.y}`);
-                event.currentTarget.textContent = 'UTM copiada';
-                window.setTimeout(() => {
-                    if (event.currentTarget?.isConnected) event.currentTarget.textContent = 'Copiar UTM';
-                }, 1200);
-            } catch (error) {
-                console.warn('No fue posible copiar UTM:', error);
-            }
-        });
         document.getElementById('copy-object-id')?.addEventListener('click', async event => {
             try {
                 await navigator.clipboard.writeText(operationalId);
@@ -4412,7 +4205,6 @@
     ========================================================= */
 
     async function loadGeoJson() {
-        if (els.exportIaCoordinates) els.exportIaCoordinates.disabled = true;
         els.mapLoading.hidden = false;
         els.mapError.hidden = true;
 
@@ -4439,7 +4231,6 @@
             vectorSource.addFeatures(features);
 
             allFeatures = features;
-            if (els.exportIaCoordinates) els.exportIaCoordinates.disabled = features.length === 0;
 
             if (features.length !== summaryExpected.total) {
                 console.warn('Conteo visual distinto al summary:', {
@@ -4456,7 +4247,6 @@
             else updateFocusLabel();
         } catch (error) {
             console.error(error);
-            if (els.exportIaCoordinates) els.exportIaCoordinates.disabled = true;
             if (viewMode === 'focused') fitView('focused', false);
 
             els.mapErrorText.textContent =
@@ -4760,6 +4550,248 @@
             closeDrawers();
         }
     });
+
+
+    /* =========================================================
+       V0.8B.4 — PUNTOS DE CAMPO Y DICTAMEN VISUAL
+       Se carga un GeoJSON LOCAL; no modifica GeoJSON IA, ni backend.
+       No calcula TP/FP/FN porque faltan verificaciones completas.
+    ========================================================= */
+    const qaEls = {
+        file: document.getElementById('qa-field-file'),
+        open: document.getElementById('qa-field-open'),
+        export: document.getElementById('qa-export'),
+        status: document.getElementById('qa-field-status'),
+        card: document.getElementById('qa-field-card'),
+        name: document.getElementById('qa-tree-name'),
+        sub: document.getElementById('qa-tree-sub'),
+        proposed: document.getElementById('qa-proposed-id'),
+        distance: document.getElementById('qa-proposed-distance'),
+        current: document.getElementById('qa-current-id'),
+        previous: document.getElementById('qa-previous-status'),
+        warning: document.getElementById('qa-warning'),
+        zoom: document.getElementById('qa-zoom-proposed'),
+        useSelected: document.getElementById('qa-use-selected'),
+        dictamen: document.getElementById('qa-dictamen'),
+        evidence: document.getElementById('qa-evidence'),
+        notes: document.getElementById('qa-notes'),
+        save: document.getElementById('qa-save'),
+        close: document.getElementById('qa-close'),
+        reset: document.getElementById('qa-clear-choice'),
+    };
+    const qaAnalysisUUID = @json($job->uuid);
+    const qaStoreKey = `sigmad_field_validation_v08b4:${qaAnalysisUUID}`;
+    let qaDecisions = {};
+    try { qaDecisions = JSON.parse(localStorage.getItem(qaStoreKey) || '{}') || {}; }
+    catch (err) { qaDecisions = {}; }
+    const qaSource = new ol.source.Vector();
+    const qaLinkSource = new ol.source.Vector();
+    let qaCurrent = null;
+    let qaChosenId = '';
+    let qaFieldFeatures = [];
+    const qaFieldLayer = new ol.layer.Vector({
+        source: qaSource, zIndex: 30, declutter: true,
+        style: (feature, resolution) => {
+            const isOak = (feature.get('especie') || '') === 'Quercus rugosa';
+            const isDead = (feature.get('estado_arbol') || '') === 'Muerto';
+            const active = feature === qaCurrent;
+            const fill = isDead ? '#83878a' : (isOak ? '#e6a143' : '#159fd1');
+            return new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: active ? 9 : 6.5,
+                    fill: new ol.style.Fill({color: fill}),
+                    stroke: new ol.style.Stroke({color:'#ffffff',width:active?3:2}),
+                }),
+                text: resolution < 0.38 ? new ol.style.Text({
+                    text: String(feature.get('field_key') || ''), offsetY:-17,
+                    font:'bold 11px sans-serif',
+                    fill:new ol.style.Fill({color:'#ffffff'}),
+                    stroke:new ol.style.Stroke({color:'#073622',width:3.5}),
+                }) : undefined,
+            });
+        }
+    });
+    const qaLineLayer = new ol.layer.Vector({
+        source: qaLinkSource,zIndex: 29,
+        style: new ol.style.Style({
+            stroke: new ol.style.Stroke({color:'rgba(255,182,37,.95)',width:2.3,lineDash:[8,5]})
+        }),
+    });
+    map.addLayer(qaLineLayer);
+    map.addLayer(qaFieldLayer);
+
+    function qaFeatureById(id) {
+        return allFeatures.find(feature => getOperationalId(feature) === id) || null;
+    }
+    function qaGetDecisionKey(feature) { return `${feature.get('grupo')}:${feature.get('field_key')}`; }
+    function qaGetChoice() { return qaChosenId || String(qaCurrent?.get('operational_id_propuesto') || ''); }
+    function qaRefreshLink() {
+        qaLinkSource.clear();
+        if (!qaCurrent) return;
+        const ai = qaFeatureById(qaGetChoice());
+        if (!ai || !ai.getGeometry()) return;
+        const start = qaCurrent.getGeometry().getCoordinates();
+        const end = ai.getGeometry().getClosestPoint(start);
+        qaLinkSource.addFeature(new ol.Feature({geometry:new ol.geom.LineString([start,end])}));
+    }
+    function qaSetOptions(group) {
+        const opts = group === 'A'
+            ? ['Pendiente','Confirmada','Corregida','Dudosa','Sin correspondencia','No evaluable']
+            : ['Pendiente','Copa asociada','Sin copa identificable','Dudosa','Excluido'];
+        qaEls.dictamen.replaceChildren(...opts.map(label => {
+            const option = document.createElement('option');
+            option.value = option.textContent = label;
+            return option;
+        }));
+    }
+    function qaSetCandidate(id) {
+        qaChosenId = id || '';
+        qaEls.current.textContent = qaChosenId || 'Sin asignar';
+        if (qaCurrent) {
+            const selected = qaFeatureById(qaChosenId);
+            const pos = qaCurrent.getGeometry().getCoordinates();
+            const point = selected?.getGeometry()?.getClosestPoint(pos);
+            const dist = point ? Math.hypot(pos[0]-point[0],pos[1]-point[1]) : null;
+            qaEls.distance.textContent = dist !== null ? `${dist.toFixed(1)} m (borde)` : '—';
+        }
+        qaRefreshLink();
+    }
+    function qaOpenCard(feature) {
+        qaCurrent = feature;
+        const group = String(feature.get('grupo') || '');
+        const key = qaGetDecisionKey(feature);
+        const previous = qaDecisions[key] || {};
+        qaSetOptions(group);
+        qaEls.name.textContent = `${feature.get('field_key')} · ${feature.get('tree_id')}`;
+        qaEls.sub.textContent = `${group === 'A' ? 'Grupo A · IA inicial' : 'Grupo B · censo independiente'} · ${feature.get('especie')} · ${feature.get('estado_arbol')}`;
+        qaEls.proposed.textContent = feature.get('operational_id_propuesto') || 'Sin propuesta previa';
+        qaEls.previous.textContent = previous.dictamen || 'Pendiente';
+        qaEls.dictamen.value = previous.dictamen || 'Pendiente';
+        qaEls.evidence.value = previous.evidence || '';
+        qaEls.notes.value = previous.notes || '';
+        qaEls.warning.textContent = group === 'B'
+            ? 'Muestreo independiente: las copas próximas son solo candidatas. Revisar toda el área antes de considerar un posible árbol omitido.'
+            : 'Propuesta preliminar: confirma identidad con ortomosaico, posición de fuste, solapamiento y evidencia de campo.';
+        if (feature.get('especie') !== 'Pinus lawsonii') {
+            qaEls.warning.textContent += ' Especie acompañante: no integrar automáticamente en métricas de Pinus lawsonii.';
+        }
+        qaEls.card.hidden = false;
+        document.body.classList.add('qa-field-card-open');
+        qaSetCandidate(previous.candidato_revisado || previous.operational_id_confirmado || feature.get('operational_id_propuesto') || '');
+        qaFieldLayer.changed();
+        if (window.innerWidth < 1280) closeDrawers();
+    }
+    function qaCloseCard() {
+        qaCurrent = null;
+        qaChosenId = '';
+        qaEls.card.hidden = true;
+        document.body.classList.remove('qa-field-card-open');
+        qaLinkSource.clear();
+        qaFieldLayer.changed();
+    }
+    qaEls.close.addEventListener('click',qaCloseCard);
+    qaEls.open.addEventListener('click',()=>qaEls.file.click());
+    qaEls.file.addEventListener('change',async()=>{
+        const file=qaEls.file.files?.[0];
+        if(!file)return;
+        try{
+            if(file.size>3_000_000) throw new Error('Archivo demasiado grande para esta herramienta de campo (máximo 3 MB).');
+            const doc=JSON.parse(await file.text());
+            if(doc.type!=='FeatureCollection'||!Array.isArray(doc.features)) throw new Error('Se requiere un GeoJSON FeatureCollection de fustes.');
+            if(doc.features.length>2000)throw new Error('Demasiados puntos para esta herramienta de revisión (máximo 2000).');
+            if(doc.properties?.analysis_uuid && doc.properties.analysis_uuid!==qaAnalysisUUID)
+                throw new Error('El GeoJSON pertenece a otro AnalysisJob. Abre el análisis correcto para evitar asociaciones erróneas.');
+            const features = new ol.format.GeoJSON().readFeatures(doc,{
+                dataProjection:'EPSG:4326',featureProjection:mapProjection,
+            });
+            const valid=features.filter(f=>f.getGeometry()?.getType()==='Point'&&f.get('field_key')&&f.get('grupo'));
+            if(valid.length!==doc.features.length||!valid.length)throw new Error('Algunos registros no contienen Point, grupo o field_key.');
+            qaCloseCard();
+            qaSource.clear();qaSource.addFeatures(valid);qaFieldFeatures=valid;
+            qaEls.status.textContent=`${valid.length} fustes cargados · Los círculos azules son Pinus, los naranjas Quercus.`;
+            qaEls.status.style.color='#0B7952';
+            const extent=qaSource.getExtent();
+            if(extent&&ol.extent.getWidth(extent)>0&&ol.extent.getHeight(extent)>0){
+                map.getView().fit(extent,{padding:window.innerWidth<=760?[150,50,150,50]:[90,80,90,80],maxZoom:22,duration:250});
+            }
+        }catch(err){
+            qaEls.status.textContent=`No se pudo cargar: ${err.message}`;
+            qaEls.status.style.color='#B33B31';
+        }
+        qaEls.file.value='';
+    });
+    map.on('singleclick',(evt)=>{
+        const hit=map.forEachFeatureAtPixel(evt.pixel,feature=>feature,{layerFilter:l=>l===qaFieldLayer,hitTolerance:11});
+        if(hit)qaOpenCard(hit);
+    });
+    qaEls.zoom.addEventListener('click',()=>{
+        if(!qaCurrent)return;
+        const candidate=qaFeatureById(qaCurrent.get('operational_id_propuesto'));
+        if(candidate)selectFeature(candidate,true);
+        else qaEls.warning.textContent='No hay un objeto propuesto en el análisis actual. Examina las copas del entorno.';
+    });
+    qaEls.useSelected.addEventListener('click',()=>{
+        if(!qaCurrent)return;
+        if(!selectedFeature){qaEls.warning.textContent='Selecciona primero una copa del mapa (contorno verde/morado) y vuelve a pulsar.';return;}
+        qaSetCandidate(getOperationalId(selectedFeature));
+        qaEls.warning.textContent='Copa seleccionada para revisión. Todavía debes registrar un dictamen sustentado; la selección no confirma la identidad.';
+    });
+    qaEls.reset.addEventListener('click',()=>{
+        if(qaCurrent)qaSetCandidate(qaCurrent.get('operational_id_propuesto')||'');
+    });
+    qaEls.save.addEventListener('click',()=>{
+        if(!qaCurrent)return;
+        const dictamen=qaEls.dictamen.value;
+        const group=qaCurrent.get('grupo');
+        const requiresId=(group==='A'&&['Confirmada','Corregida'].includes(dictamen))
+            ||(group==='B'&&dictamen==='Copa asociada');
+        const proposed=String(qaCurrent.get('operational_id_propuesto') || '');
+        if(dictamen==='Corregida' && qaGetChoice()===proposed){
+            qaEls.warning.textContent='Para registrar una corrección, elige una copa distinta de la propuesta original.';return;
+        }
+        if(requiresId&&!qaFeatureById(qaGetChoice())){
+            qaEls.warning.textContent='Para este dictamen, selecciona una geometría IA existente en el análisis antes de guardar.';return;
+        }
+        const key=qaGetDecisionKey(qaCurrent);
+        const conflict=requiresId && Object.entries(qaDecisions).find(([otherKey,v]) =>
+            otherKey!==key && v.operational_id_confirmado===qaGetChoice());
+        if(conflict){
+            qaEls.warning.textContent=`La copa ${qaGetChoice()} ya fue confirmada para ${conflict[0]}. Revisa si hay registros duplicados antes de aprobar otro vínculo.`;return;
+        }
+        qaDecisions[key]={
+            grupo:group,field_key:qaCurrent.get('field_key'),tree_id:qaCurrent.get('tree_id'),
+            especie:qaCurrent.get('especie'),propuesto:qaCurrent.get('operational_id_propuesto')||'',
+            candidato_revisado:qaGetChoice(),operational_id_confirmado:requiresId?qaGetChoice():'',dictamen,
+            evidence:qaEls.evidence.value.trim(),notes:qaEls.notes.value.trim(),
+            saved_at:new Date().toISOString(),analysis_uuid:qaAnalysisUUID
+        };
+        try{localStorage.setItem(qaStoreKey,JSON.stringify(qaDecisions));}catch(err){
+            qaEls.warning.textContent='No hay almacenamiento local disponible. Exporta los dictámenes en este momento.';
+        }
+        qaEls.previous.textContent=dictamen;
+        qaEls.warning.textContent='Dictamen registrado localmente. Exporta la revisión para conservarla y comprobar duplicidades antes de calcular métricas.';
+        qaEls.status.textContent=`${qaFieldFeatures.length} fustes · ${Object.keys(qaDecisions).length} dictámenes guardados localmente`;
+    });
+    qaEls.export.addEventListener('click',()=>{
+        const rows=Object.values(qaDecisions);
+        if(!rows.length){qaEls.status.textContent='Todavía no hay dictámenes guardados para exportar.';return;}
+        const headers=['grupo','field_key','tree_id','especie','propuesto','candidato_revisado','operational_id_confirmado','dictamen','evidence','notes','saved_at','analysis_uuid'];
+        const safe=v=>{
+            let text=String(v??'').replace(/[\t\r\n]+/g,' ').trim();
+            if(/^[=+@-]/.test(text))text="'"+text; // prevenir interpretación como fórmula en Excel
+            return text;
+        };
+        const content='\uFEFF'+[headers.join('\t'),...rows.map(r=>headers.map(h=>safe(r[h])).join('\t'))].join('\r\n');
+        const bytes=new Uint8Array(content.length*2);
+        for(let i=0;i<content.length;i++){const c=content.charCodeAt(i);bytes[2*i]=c&255;bytes[2*i+1]=c>>8;}
+        const object=URL.createObjectURL(new Blob([bytes],{type:'text/tab-separated-values;charset=utf-16le'}));
+        const a=document.createElement('a');a.href=object;
+        a.download=`SIGMAD_revision_campo_${qaAnalysisUUID.slice(0,8)}.tsv`;
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(object),2000);
+        qaEls.status.textContent=`Exportados ${rows.length} dictámenes en formato tabulado compatible con Excel.`;
+    });
+
 
     /* =========================================================
        INICIO
