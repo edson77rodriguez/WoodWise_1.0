@@ -4,14 +4,17 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\MobileSyncNotification;
+use App\Services\MobileSyncNotificationProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class MobileSyncController extends Controller
 {
-    public function store(Request $request)
-    {
+    public function store(
+        Request $request,
+        MobileSyncNotificationProcessor $processor
+    ) {
         // ============================================
         // 1. USUARIO AUTENTICADO
         // ============================================
@@ -23,27 +26,21 @@ class MobileSyncController extends Controller
 
         $persona = $user->persona;
 
-
         if (!$persona || !$persona->rol) {
-
             return response()->json([
                 'message' =>
                     'El usuario no tiene un perfil configurado correctamente.',
             ], 403);
         }
 
-
         if ($persona->rol->nom_rol !== 'Tecnico') {
-
             return response()->json([
                 'message' =>
                     'Solo los técnicos pueden registrar sincronizaciones.',
             ], 403);
         }
 
-
         if (!$persona->tecnico) {
-
             return response()->json([
                 'message' =>
                     'El usuario no tiene un perfil de técnico configurado.',
@@ -58,11 +55,9 @@ class MobileSyncController extends Controller
         $validated = $request->validate([
 
             /*
-             * Temporalmente es opcional porque la versión
-             * actual de React Native todavía no lo envía.
-             *
-             * En el siguiente paso la app generará
-             * y conservará este identificador.
+             * Se conserva como opcional temporalmente
+             * por compatibilidad con versiones anteriores
+             * de la aplicación móvil.
              */
             'sync_id' => [
                 'sometimes',
@@ -100,15 +95,13 @@ class MobileSyncController extends Controller
         // ============================================
 
         $idsSolicitados =
-            collect(
-                $validated['parcelas']
-            )
-            ->pluck('id_parcela')
-            ->map(
-                fn ($id) =>
-                    (int) $id
-            )
-            ->values();
+            collect($validated['parcelas'])
+                ->pluck('id_parcela')
+                ->map(
+                    fn ($id) =>
+                        (int) $id
+                )
+                ->values();
 
 
         // ============================================
@@ -125,7 +118,6 @@ class MobileSyncController extends Controller
                 )
                 ->get();
 
-
         $idsAutorizados =
             $parcelasAutorizadas
                 ->pluck('id_parcela')
@@ -141,13 +133,9 @@ class MobileSyncController extends Controller
 
         $idsNoAutorizados =
             $idsSolicitados
-                ->diff(
-                    $idsAutorizados
-                );
-
+                ->diff($idsAutorizados);
 
         if ($idsNoAutorizados->isNotEmpty()) {
-
             return response()->json([
                 'message' =>
                     'Una o más parcelas no existen o no están autorizadas para este técnico.',
@@ -160,22 +148,17 @@ class MobileSyncController extends Controller
         // ============================================
 
         $totalRegistros =
-            collect(
-                $validated['parcelas']
-            )
-            ->sum(
-                function ($item) {
-
-                    return
-                        (int) $item['arboles']
-                        +
-                        (int) $item['trozas'];
-                }
-            );
-
+            collect($validated['parcelas'])
+                ->sum(
+                    function ($item) {
+                        return
+                            (int) $item['arboles']
+                            +
+                            (int) $item['trozas'];
+                    }
+                );
 
         if ($totalRegistros <= 0) {
-
             return response()->json([
                 'message' =>
                     'La sincronización no contiene registros nuevos.',
@@ -191,45 +174,41 @@ class MobileSyncController extends Controller
         // ============================================
 
         $detalleParcelas =
-            collect(
-                $validated['parcelas']
-            )
-            ->map(
-                function ($item)
-                use ($parcelasAutorizadas) {
+            collect($validated['parcelas'])
+                ->map(
+                    function ($item)
+                    use ($parcelasAutorizadas) {
 
-                    $parcela =
-                        $parcelasAutorizadas
-                            ->firstWhere(
-                                'id_parcela',
-                                (int) $item['id_parcela']
-                            );
+                        $parcela =
+                            $parcelasAutorizadas
+                                ->firstWhere(
+                                    'id_parcela',
+                                    (int) $item['id_parcela']
+                                );
 
+                        return [
+                            'id_parcela' =>
+                                (int) $parcela->id_parcela,
 
-                    return [
+                            'nom_parcela' =>
+                                $parcela->nom_parcela,
 
-                        'id_parcela' =>
-                            (int) $parcela->id_parcela,
+                            'id_productor' =>
+                                (int) $parcela->id_productor,
 
-                        'nom_parcela' =>
-                            $parcela->nom_parcela,
+                            'arboles' =>
+                                (int) $item['arboles'],
 
-                        'id_productor' =>
-                            (int) $parcela->id_productor,
+                            'trozas' =>
+                                (int) $item['trozas'],
 
-                        'arboles' =>
-                            (int) $item['arboles'],
-
-                        'trozas' =>
-                            (int) $item['trozas'],
-
-                        'total_registros' =>
-                            (int) $item['arboles']
-                            +
-                            (int) $item['trozas'],
-                    ];
-                }
-            );
+                            'total_registros' =>
+                                (int) $item['arboles']
+                                +
+                                (int) $item['trozas'],
+                        ];
+                    }
+                );
 
 
         // ============================================
@@ -240,17 +219,13 @@ class MobileSyncController extends Controller
 
         $productores =
             $detalleParcelas
-                ->groupBy(
-                    'id_productor'
-                )
+                ->groupBy('id_productor')
                 ->map(
                     function (
                         $parcelas,
                         $idProductor
                     ) {
-
                         return [
-
                             'id_productor' =>
                                 (int) $idProductor,
 
@@ -258,14 +233,10 @@ class MobileSyncController extends Controller
                                 $parcelas->count(),
 
                             'total_arboles' =>
-                                $parcelas->sum(
-                                    'arboles'
-                                ),
+                                $parcelas->sum('arboles'),
 
                             'total_trozas' =>
-                                $parcelas->sum(
-                                    'trozas'
-                                ),
+                                $parcelas->sum('trozas'),
 
                             'total_registros' =>
                                 $parcelas->sum(
@@ -284,14 +255,13 @@ class MobileSyncController extends Controller
         // 9. IDENTIFICADOR DE SINCRONIZACIÓN
         //
         // Si React Native lo manda, se conserva.
-        // Si todavía no lo manda, Laravel genera uno.
+        // Para compatibilidad, Laravel puede generar uno.
         // ============================================
 
         $syncId =
             $validated['sync_id']
             ??
             (string) Str::uuid();
-
 
         $idTecnico =
             (int) $persona->tecnico->getKey();
@@ -309,7 +279,6 @@ class MobileSyncController extends Controller
                         $syncId,
                         $idTecnico
                     ) {
-
                         /*
                          * Orden estable para que el hash
                          * siempre produzca el mismo resultado
@@ -319,15 +288,11 @@ class MobileSyncController extends Controller
                             collect(
                                 $productor['parcelas']
                             )
-                            ->sortBy(
-                                'id_parcela'
-                            )
+                            ->sortBy('id_parcela')
                             ->values()
                             ->map(
                                 function ($parcela) {
-
                                     return [
-
                                         'id_parcela' =>
                                             (int) $parcela['id_parcela'],
 
@@ -350,9 +315,7 @@ class MobileSyncController extends Controller
                             )
                             ->all();
 
-
                         $payload = [
-
                             'sync_id' =>
                                 $syncId,
 
@@ -378,7 +341,6 @@ class MobileSyncController extends Controller
                                 $parcelas,
                         ];
 
-
                         $payloadJson =
                             json_encode(
                                 $payload,
@@ -389,9 +351,7 @@ class MobileSyncController extends Controller
                                 JSON_PRESERVE_ZERO_FRACTION
                             );
 
-
                         return [
-
                             'id_productor' =>
                                 (int) $productor['id_productor'],
 
@@ -420,7 +380,6 @@ class MobileSyncController extends Controller
                     $idTecnico,
                     $notificaciones
                 ) {
-
                     /*
                      * Bloqueamos cualquier evento existente
                      * con este sync_id mientras lo validamos.
@@ -450,7 +409,6 @@ class MobileSyncController extends Controller
                                 ->contains(
                                     function ($evento)
                                     use ($idTecnico) {
-
                                         return
                                             (int) $evento->id_tecnico
                                             !==
@@ -458,9 +416,7 @@ class MobileSyncController extends Controller
                                     }
                                 );
 
-
                         if ($tecnicoDiferente) {
-
                             return [
                                 'ok' => false,
 
@@ -476,19 +432,14 @@ class MobileSyncController extends Controller
                          */
                         $productoresEsperados =
                             $notificaciones
-                                ->pluck(
-                                    'id_productor'
-                                )
+                                ->pluck('id_productor')
                                 ->sort()
                                 ->values()
                                 ->all();
 
-
                         $productoresExistentes =
                             $eventosExistentes
-                                ->pluck(
-                                    'id_productor'
-                                )
+                                ->pluck('id_productor')
                                 ->map(
                                     fn ($id) =>
                                         (int) $id
@@ -497,13 +448,11 @@ class MobileSyncController extends Controller
                                 ->values()
                                 ->all();
 
-
                         if (
                             $productoresEsperados
                             !==
                             $productoresExistentes
                         ) {
-
                             return [
                                 'ok' => false,
 
@@ -521,14 +470,12 @@ class MobileSyncController extends Controller
                             $notificaciones
                             as $notificacion
                         ) {
-
                             $eventoExistente =
                                 $eventosExistentes
                                     ->firstWhere(
                                         'id_productor',
                                         $notificacion['id_productor']
                                     );
-
 
                             if (
                                 !$eventoExistente
@@ -538,7 +485,6 @@ class MobileSyncController extends Controller
                                     (string) $notificacion['payload_hash']
                                 )
                             ) {
-
                                 return [
                                     'ok' => false,
 
@@ -547,7 +493,6 @@ class MobileSyncController extends Controller
                                 ];
                             }
                         }
-
 
                         return [
                             'ok' => true,
@@ -564,9 +509,7 @@ class MobileSyncController extends Controller
                         $notificaciones
                         as $notificacion
                     ) {
-
                         MobileSyncNotification::create([
-
                             'sync_id' =>
                                 $syncId,
 
@@ -596,7 +539,6 @@ class MobileSyncController extends Controller
                         ]);
                     }
 
-
                     return [
                         'ok' => true,
                         'replay' => false,
@@ -610,33 +552,102 @@ class MobileSyncController extends Controller
         // ============================================
 
         if (!$resultadoIdempotencia['ok']) {
-
             return response()->json([
-
                 'message' =>
                     $resultadoIdempotencia['message'],
-
             ], 409);
         }
-
 
         $esReintento =
             (bool) $resultadoIdempotencia['replay'];
 
 
         // ============================================
-        // 13. RESPUESTA
+        // 13. PROCESAR NOTIFICACIONES EXTERNAS
+        //
+        // Se ejecuta DESPUÉS de confirmar la
+        // transacción MySQL.
+        //
+        // Nunca hacemos la llamada HTTP a n8n
+        // dentro de DB::transaction().
+        // ============================================
+
+        $eventos =
+            MobileSyncNotification::query()
+                ->where(
+                    'sync_id',
+                    $syncId
+                )
+                ->orderBy('id')
+                ->get();
+
+        $notificacionesProcesadas =
+            $eventos
+                ->map(
+                    function (
+                        MobileSyncNotification $evento
+                    ) use ($processor) {
+                        return [
+                            'id_productor' =>
+                                (int) $evento->id_productor,
+
+                            'ok' =>
+                                $processor->procesar(
+                                    $evento
+                                ),
+                        ];
+                    }
+                );
+
+        $notificacionCompleta =
+            $notificacionesProcesadas
+                ->every(
+                    fn ($resultado) =>
+                        $resultado['ok'] === true
+                );
+
+
+        // ============================================
+        // 14. ERROR DE NOTIFICACIÓN
+        //
+        // La sincronización ya quedó persistida.
+        // El 502 permite que la app conserve/reintente
+        // el mismo sync_id de manera idempotente.
+        // ============================================
+
+        if (!$notificacionCompleta) {
+            return response()->json([
+                'message' =>
+                    'La sincronización fue registrada, pero una o más notificaciones no pudieron enviarse.',
+
+                'data' => [
+                    'sync_id' =>
+                        $syncId,
+
+                    'id_tecnico' =>
+                        $idTecnico,
+
+                    'idempotent_replay' =>
+                        $esReintento,
+
+                    'notification_pending' =>
+                        true,
+                ],
+            ], 502);
+        }
+
+
+        // ============================================
+        // 15. RESPUESTA EXITOSA
         // ============================================
 
         return response()->json([
-
             'message' =>
                 $esReintento
                     ? 'Sincronización ya registrada previamente.'
                     : 'Sincronización validada y registrada correctamente.',
 
             'data' => [
-
                 'sync_id' =>
                     $syncId,
 
@@ -669,7 +680,6 @@ class MobileSyncController extends Controller
                 'productores' =>
                     $productores,
             ],
-
         ], 200);
     }
 }
