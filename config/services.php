@@ -45,5 +45,9 @@ return [
         'url' => env('AI_API_URL'),
     ],
 
+    'n8n_sync' => [
+    'url' => env('N8N_SYNC_WEBHOOK_URL'),
+    'secret' => env('N8N_SYNC_WEBHOOK_SECRET'),
+],
 
 ];
