@@ -13,8 +13,8 @@ class MobileSyncNotificationProcessor
         MobileSyncNotification $evento
     ): bool {
         /*
-         * Si ya fue notificado, no debe enviarse
-         * nuevamente.
+         * Si ya fue notificado correctamente,
+         * no debe enviarse nuevamente.
          */
         if ($evento->status === 'notified') {
             return true;
@@ -36,6 +36,10 @@ class MobileSyncNotificationProcessor
         }
 
         try {
+            // ============================================
+            // 1. OBTENER PRODUCTOR Y TELÉFONO
+            // ============================================
+
             $productor =
                 Productor::with('persona')
                     ->findOrFail(
@@ -50,6 +54,11 @@ class MobileSyncNotificationProcessor
                     'El Productor no tiene teléfono configurado.'
                 );
             }
+
+
+            // ============================================
+            // 2. RECUPERAR PAYLOAD PERSISTIDO
+            // ============================================
 
             $payloadGuardado =
                 $evento->payload;
@@ -68,7 +77,7 @@ class MobileSyncNotificationProcessor
 
 
             // ============================================
-            // MENSAJE CONSTRUIDO POR LARAVEL
+            // 3. CONSTRUIR MENSAJE EN LARAVEL
             // ============================================
 
             $mensaje =
@@ -93,7 +102,7 @@ class MobileSyncNotificationProcessor
 
 
             // ============================================
-            // PAYLOAD HACIA N8N
+            // 4. CONSTRUIR PAYLOAD HACIA N8N
             // ============================================
 
             $payload = [
@@ -118,8 +127,7 @@ class MobileSyncNotificationProcessor
                 ],
 
                 /*
-                 * Campos directos para simplificar
-                 * el workflow de n8n.
+                 * Campos directos para simplificar n8n.
                  */
                 'telefono' =>
                     $telefono,
@@ -140,8 +148,8 @@ class MobileSyncNotificationProcessor
                     $totalRegistros,
 
                 /*
-                 * Se conserva también el resumen
-                 * estructurado para trazabilidad.
+                 * También conservamos el resumen
+                 * estructurado.
                  */
                 'resumen' => [
                     'total_parcelas' =>
@@ -157,20 +165,28 @@ class MobileSyncNotificationProcessor
                         $totalRegistros,
                 ],
 
+                /*
+                 * Detalle de parcelas para trazabilidad.
+                 */
                 'parcelas' =>
                     $payloadGuardado['parcelas'],
             ];
 
 
-            /*
-             * Registrar el intento antes de enviar.
-             */
+            // ============================================
+            // 5. REGISTRAR INTENTO
+            // ============================================
+
             $evento->increment('attempts');
 
             $evento->update([
                 'last_error' => null,
             ]);
 
+
+            // ============================================
+            // 6. ENVIAR A N8N
+            // ============================================
 
             $response =
                 Http::withHeaders([
@@ -188,6 +204,10 @@ class MobileSyncNotificationProcessor
                 );
 
 
+            // ============================================
+            // 7. VALIDAR RESPUESTA HTTP
+            // ============================================
+
             if (!$response->successful()) {
                 throw new \RuntimeException(
                     'n8n respondió HTTP '
@@ -195,15 +215,15 @@ class MobileSyncNotificationProcessor
                 );
             }
 
-
             $respuesta =
                 $response->json();
 
 
             /*
-             * Un HTTP 200 no basta.
+             * HTTP 200 por sí solo no significa
+             * que WhatsApp haya sido aceptado.
              *
-             * n8n debe confirmar:
+             * n8n debe devolver:
              *
              * {
              *   "ok": true,
@@ -221,10 +241,10 @@ class MobileSyncNotificationProcessor
             }
 
 
-            /*
-             * Solo aquí consideramos terminada
-             * la notificación.
-             */
+            // ============================================
+            // 8. MARCAR COMO NOTIFICADO
+            // ============================================
+
             $evento->update([
                 'status' =>
                     'notified',
@@ -235,7 +255,6 @@ class MobileSyncNotificationProcessor
                 'last_error' =>
                     null,
             ]);
-
 
             return true;
 
