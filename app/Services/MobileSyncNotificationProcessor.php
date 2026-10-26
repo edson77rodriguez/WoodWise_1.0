@@ -20,13 +20,11 @@ class MobileSyncNotificationProcessor
             return true;
         }
 
-
         $url =
             config('services.n8n_sync.url');
 
         $secret =
             config('services.n8n_sync.secret');
-
 
         if (!$url || !$secret) {
             $this->marcarFallido(
@@ -37,7 +35,6 @@ class MobileSyncNotificationProcessor
             return false;
         }
 
-
         try {
             $productor =
                 Productor::with('persona')
@@ -45,10 +42,8 @@ class MobileSyncNotificationProcessor
                         $evento->id_productor
                     );
 
-
             $telefono =
                 $productor->persona?->telefono;
-
 
             if (!$telefono) {
                 throw new \RuntimeException(
@@ -56,10 +51,50 @@ class MobileSyncNotificationProcessor
                 );
             }
 
-
             $payloadGuardado =
                 $evento->payload;
 
+            $totalParcelas =
+                (int) $payloadGuardado['total_parcelas'];
+
+            $totalArboles =
+                (int) $payloadGuardado['total_arboles'];
+
+            $totalTrozas =
+                (int) $payloadGuardado['total_trozas'];
+
+            $totalRegistros =
+                (int) $payloadGuardado['total_registros'];
+
+
+            // ============================================
+            // MENSAJE CONSTRUIDO POR LARAVEL
+            // ============================================
+
+            $mensaje =
+                'Hola. SIGMAD informa que se ha completado '
+                . 'una nueva sincronización de información forestal.'
+                . "\n\n"
+                . 'Parcelas actualizadas: '
+                . $totalParcelas
+                . '.'
+                . "\n"
+                . 'Árboles registrados: '
+                . $totalArboles
+                . '.'
+                . "\n"
+                . 'Trozas registradas: '
+                . $totalTrozas
+                . '.'
+                . "\n"
+                . 'Total de nuevos registros: '
+                . $totalRegistros
+                . '.';
+
+
+            // ============================================
+            // PAYLOAD HACIA N8N
+            // ============================================
 
             $payload = [
                 'event' =>
@@ -82,18 +117,44 @@ class MobileSyncNotificationProcessor
                         $telefono,
                 ],
 
+                /*
+                 * Campos directos para simplificar
+                 * el workflow de n8n.
+                 */
+                'telefono' =>
+                    $telefono,
+
+                'mensaje' =>
+                    $mensaje,
+
+                'total_parcelas' =>
+                    $totalParcelas,
+
+                'total_arboles' =>
+                    $totalArboles,
+
+                'total_trozas' =>
+                    $totalTrozas,
+
+                'total_registros' =>
+                    $totalRegistros,
+
+                /*
+                 * Se conserva también el resumen
+                 * estructurado para trazabilidad.
+                 */
                 'resumen' => [
                     'total_parcelas' =>
-                        (int) $payloadGuardado['total_parcelas'],
+                        $totalParcelas,
 
                     'total_arboles' =>
-                        (int) $payloadGuardado['total_arboles'],
+                        $totalArboles,
 
                     'total_trozas' =>
-                        (int) $payloadGuardado['total_trozas'],
+                        $totalTrozas,
 
                     'total_registros' =>
-                        (int) $payloadGuardado['total_registros'],
+                        $totalRegistros,
                 ],
 
                 'parcelas' =>
@@ -140,12 +201,9 @@ class MobileSyncNotificationProcessor
 
 
             /*
-             * MUY IMPORTANTE:
+             * Un HTTP 200 no basta.
              *
-             * Un simple HTTP 200 no significa todavía
-             * que WhatsApp fue enviado.
-             *
-             * n8n deberá responder:
+             * n8n debe confirmar:
              *
              * {
              *   "ok": true,
@@ -209,4 +267,4 @@ class MobileSyncNotificationProcessor
                 ),
         ]);
     }
-}   
+}
