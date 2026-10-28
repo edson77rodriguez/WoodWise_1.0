@@ -15,7 +15,7 @@ use App\Http\Controllers\API\MobileEstimacionTrozaController;
 use App\Http\Controllers\API\MobileEstimacionArbolController;
 use App\Http\Controllers\API\MobileSyncController;
 use App\Http\Controllers\API\MobileParcelaReportController;
-
+use App\Http\Controllers\API\MobileProductorReportController;
 Route::prefix('v1/bot')
     ->middleware(['botkey', 'verify.hmac'])
     ->group(function () {
@@ -87,6 +87,17 @@ Route::middleware([
     MobileArbolController::class,
     'store'
 ]);
+
+Route::middleware([
+    'auth:sanctum',
+    'api.role:Productor',
+])->get(
+    '/reportes/general-pdf',
+    [
+        MobileProductorReportController::class,
+        'download',
+    ]
+);
 
 Route::middleware([
     'auth:sanctum',
