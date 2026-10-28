@@ -13,7 +13,18 @@ class MobileDashboardController extends Controller
     public function summary(Request $request)
     {
         // ============================================
-        // 1. USUARIO AUTENTICADO
+        // 1. CONFIGURACIÓN
+        // ============================================
+
+        $timezone =
+            'America/Mexico_City';
+
+        $ahoraLocal =
+            Carbon::now($timezone);
+
+
+        // ============================================
+        // 2. USUARIO AUTENTICADO
         // ============================================
 
         $user = $request->user()->load([
@@ -22,7 +33,8 @@ class MobileDashboardController extends Controller
             'persona.productor',
         ]);
 
-        $persona = $user->persona;
+        $persona =
+            $user->persona;
 
         if (!$persona || !$persona->rol) {
             return response()->json([
@@ -36,7 +48,7 @@ class MobileDashboardController extends Controller
 
 
         // ============================================
-        // 2. PARCELAS SEGÚN ROL
+        // 3. PARCELAS Y SINCRONIZACIONES SEGÚN ROL
         // ============================================
 
         if ($rol === 'Tecnico') {
@@ -51,12 +63,22 @@ class MobileDashboardController extends Controller
                 ], 403);
             }
 
+
             /*
              * Solo parcelas asignadas al Técnico.
+             *
+             * También cargamos las estimaciones que
+             * ya existen en MySQL.
+             *
+             * NO recalculamos fórmulas aquí.
              */
             $parcelas =
                 $tecnico
                     ->parcelas()
+                    ->with([
+                        'trozas.estimaciones.tipoEstimacion',
+                        'arboles.estimaciones.tipoEstimacion',
+                    ])
                     ->withCount([
                         'arboles',
                         'trozas',
@@ -75,6 +97,7 @@ class MobileDashboardController extends Controller
                         $tecnico->id_tecnico
                     );
 
+
         } elseif ($rol === 'Productor') {
 
             $productor =
@@ -87,9 +110,10 @@ class MobileDashboardController extends Controller
                 ], 403);
             }
 
+
             /*
              * Solo parcelas pertenecientes
-             * al Productor.
+             * al Productor autenticado.
              */
             $parcelas =
                 Parcela::query()
@@ -97,6 +121,10 @@ class MobileDashboardController extends Controller
                         'id_productor',
                         $productor->id_productor
                     )
+                    ->with([
+                        'trozas.estimaciones.tipoEstimacion',
+                        'arboles.estimaciones.tipoEstimacion',
+                    ])
                     ->withCount([
                         'arboles',
                         'trozas',
@@ -105,8 +133,8 @@ class MobileDashboardController extends Controller
 
 
             /*
-             * Solo sincronizaciones dirigidas
-             * a este Productor.
+             * Solo sincronizaciones asociadas
+             * al Productor autenticado.
              */
             $syncQuery =
                 MobileSyncNotification::query()
@@ -114,6 +142,7 @@ class MobileDashboardController extends Controller
                         'id_productor',
                         $productor->id_productor
                     );
+
 
         } else {
 
@@ -125,38 +154,400 @@ class MobileDashboardController extends Controller
 
 
         // ============================================
-        // 3. ESTADÍSTICAS FORESTALES
+        // 4. ESTADÍSTICAS POR PARCELA
+        // ============================================
+
+        $estadisticasParcelas =
+            $parcelas
+                ->map(
+                    function ($parcela) {
+
+                        $volumenParcela =
+                            0.0;
+
+                        $biomasaParcela =
+                            0.0;
+
+                        $carbonoParcela =
+                            0.0;
+
+
+                        // --------------------------------
+                        // TROZAS
+                        // --------------------------------
+
+                        foreach (
+                            $parcela->trozas
+                            as $troza
+                        ) {
+
+                            $volumen =
+                                $troza
+                                    ->estimaciones
+                                    ->where(
+                                        'tipoEstimacion.desc_estimacion',
+                                        'Volumen'
+                                    )
+                                    ->first();
+
+                            if ($volumen) {
+                                $volumenParcela +=
+                                    (float) $volumen->calculo;
+                            }
+                        }
+
+
+                        // --------------------------------
+                        // ÁRBOLES
+                        // --------------------------------
+
+                        foreach (
+                            $parcela->arboles
+                            as $arbol
+                        ) {
+
+                            $volumen =
+                                $arbol
+                                    ->estimaciones
+                                    ->where(
+                                        'tipoEstimacion.desc_estimacion',
+                                        'Volumen'
+                                    )
+                                    ->first();
+
+                            $biomasa =
+                                $arbol
+                                    ->estimaciones
+                                    ->where(
+                                        'tipoEstimacion.desc_estimacion',
+                                        'Biomasa'
+                                    )
+                                    ->first();
+
+                            $carbono =
+                                $arbol
+                                    ->estimaciones
+                                    ->where(
+                                        'tipoEstimacion.desc_estimacion',
+                                        'Carbono'
+                                    )
+                                    ->first();
+
+
+                            if ($volumen) {
+                                $volumenParcela +=
+                                    (float) $volumen->calculo;
+                            }
+
+                            if ($biomasa) {
+                                $biomasaParcela +=
+                                    (float) $biomasa->calculo;
+                            }
+
+                            if ($carbono) {
+                                $carbonoParcela +=
+                                    (float) $carbono->calculo;
+                            }
+                        }
+
+
+                        return [
+                            'id_parcela' =>
+                                (int) $parcela->id_parcela,
+
+                            'nom_parcela' =>
+                                $parcela->nom_parcela,
+
+                            'extension' =>
+                                (float) (
+                                    $parcela->extension
+                                    ?? 0
+                                ),
+
+                            'arboles' =>
+                                (int) $parcela->arboles_count,
+
+                            'trozas' =>
+                                (int) $parcela->trozas_count,
+
+                            'total_elementos' =>
+                                (int) $parcela->arboles_count
+                                +
+                                (int) $parcela->trozas_count,
+
+                            /*
+                             * Valores ya calculados y
+                             * persistidos en MySQL.
+                             */
+                            'volumen' =>
+                                $volumenParcela,
+
+                            'biomasa' =>
+                                $biomasaParcela,
+
+                            'carbono' =>
+                                $carbonoParcela,
+                        ];
+                    }
+                )
+                ->values();
+
+
+        // ============================================
+        // 5. TOTALES FORESTALES
         // ============================================
 
         $totalParcelas =
-            $parcelas->count();
+            $estadisticasParcelas->count();
 
         $totalArboles =
-            (int) $parcelas->sum(
-                'arboles_count'
-            );
+            (int) $estadisticasParcelas
+                ->sum('arboles');
 
         $totalTrozas =
-            (int) $parcelas->sum(
-                'trozas_count'
-            );
+            (int) $estadisticasParcelas
+                ->sum('trozas');
 
         $totalExtension =
-            (float) $parcelas->sum(
-                'extension'
-            );
+            (float) $estadisticasParcelas
+                ->sum('extension');
+
+        $totalVolumen =
+            (float) $estadisticasParcelas
+                ->sum('volumen');
+
+        $totalBiomasa =
+            (float) $estadisticasParcelas
+                ->sum('biomasa');
+
+        $totalCarbono =
+            (float) $estadisticasParcelas
+                ->sum('carbono');
 
 
         // ============================================
-        // 4. ESTADÍSTICAS DE SINCRONIZACIÓN
+        // 6. OBTENER EVENTOS DE SINCRONIZACIÓN
+        // ============================================
+
+        $eventosSync =
+            (clone $syncQuery)
+                ->orderByDesc('created_at')
+                ->get([
+                    'id',
+                    'sync_id',
+                    'status',
+                    'attempts',
+                    'payload',
+                    'notified_at',
+                    'last_error',
+                    'created_at',
+                ]);
+
+
+        // ============================================
+        // 7. AGRUPAR POR sync_id
+        //
+        // Un mismo sync_id puede generar una fila por
+        // Productor. Para el Dashboard debe contar como
+        // UNA sincronización.
+        // ============================================
+
+        $sincronizaciones =
+            $eventosSync
+                ->groupBy('sync_id')
+                ->map(
+                    function (
+                        $eventos,
+                        $syncId
+                    ) {
+
+                        $estados =
+                            $eventos
+                                ->pluck('status');
+
+
+                        /*
+                         * Estado consolidado:
+                         *
+                         * - si alguna notificación falló:
+                         *   failed
+                         *
+                         * - si todas están notified:
+                         *   notified
+                         *
+                         * - cualquier otro caso:
+                         *   pending
+                         */
+                        if (
+                            $estados->contains(
+                                'failed'
+                            )
+                        ) {
+
+                            $estado =
+                                'failed';
+
+                        } elseif (
+                            $estados->every(
+                                fn ($estadoEvento) =>
+                                    $estadoEvento
+                                    ===
+                                    'notified'
+                            )
+                        ) {
+
+                            $estado =
+                                'notified';
+
+                        } else {
+
+                            $estado =
+                                'pending';
+                        }
+
+
+                        $ultimoEvento =
+                            $eventos
+                                ->sortByDesc(
+                                    fn ($evento) =>
+                                        $evento
+                                            ->created_at
+                                            ?->timestamp
+                                        ?? 0
+                                )
+                                ->first();
+
+
+                        $ultimoNotificado =
+                            $eventos
+                                ->filter(
+                                    fn ($evento) =>
+                                        $evento->notified_at
+                                        !==
+                                        null
+                                )
+                                ->sortByDesc(
+                                    fn ($evento) =>
+                                        $evento->notified_at
+                                            ? Carbon::parse(
+                                                $evento->notified_at
+                                            )->timestamp
+                                            : 0
+                                )
+                                ->first();
+
+
+                        return [
+                            'sync_id' =>
+                                $syncId,
+
+                            'status' =>
+                                $estado,
+
+                            /*
+                             * Si el evento incluye varios
+                             * Productores tomamos el mayor
+                             * número de intentos.
+                             */
+                            'attempts' =>
+                                (int) $eventos
+                                    ->max('attempts'),
+
+                            /*
+                             * Los payloads son por Productor.
+                             * Se suman para obtener el total
+                             * real del sync completo.
+                             */
+                            'total_parcelas' =>
+                                (int) $eventos
+                                    ->sum(
+                                        fn ($evento) =>
+                                            (int) (
+                                                ($evento->payload ?? [])
+                                                ['total_parcelas']
+                                                ?? 0
+                                            )
+                                    ),
+
+                            'total_arboles' =>
+                                (int) $eventos
+                                    ->sum(
+                                        fn ($evento) =>
+                                            (int) (
+                                                ($evento->payload ?? [])
+                                                ['total_arboles']
+                                                ?? 0
+                                            )
+                                    ),
+
+                            'total_trozas' =>
+                                (int) $eventos
+                                    ->sum(
+                                        fn ($evento) =>
+                                            (int) (
+                                                ($evento->payload ?? [])
+                                                ['total_trozas']
+                                                ?? 0
+                                            )
+                                    ),
+
+                            'total_registros' =>
+                                (int) $eventos
+                                    ->sum(
+                                        fn ($evento) =>
+                                            (int) (
+                                                ($evento->payload ?? [])
+                                                ['total_registros']
+                                                ?? 0
+                                            )
+                                    ),
+
+                            /*
+                             * Número de Productores que
+                             * participaron en ese sync.
+                             */
+                            'notificaciones' =>
+                                $eventos->count(),
+
+                            'created_at' =>
+                                $ultimoEvento
+                                    ?->created_at,
+
+                            'notified_at' =>
+                                $ultimoNotificado
+                                    ?->notified_at,
+
+                            'has_error' =>
+                                $eventos
+                                    ->contains(
+                                        fn ($evento) =>
+                                            !empty(
+                                                $evento->last_error
+                                            )
+                                    ),
+                        ];
+                    }
+                )
+                ->sortByDesc(
+                    fn ($sync) =>
+                        $sync['created_at']
+                            ? Carbon::parse(
+                                $sync['created_at']
+                            )->timestamp
+                            : 0
+                )
+                ->values();
+
+
+        // ============================================
+        // 8. ESTADÍSTICAS DE SINCRONIZACIÓN
         // ============================================
 
         $totalSincronizaciones =
-            (clone $syncQuery)
-                ->count();
+            $sincronizaciones->count();
 
         $sincronizacionesNotificadas =
-            (clone $syncQuery)
+            $sincronizaciones
                 ->where(
                     'status',
                     'notified'
@@ -164,7 +555,7 @@ class MobileDashboardController extends Controller
                 ->count();
 
         $sincronizacionesFallidas =
-            (clone $syncQuery)
+            $sincronizaciones
                 ->where(
                     'status',
                     'failed'
@@ -172,7 +563,7 @@ class MobileDashboardController extends Controller
                 ->count();
 
         $sincronizacionesPendientes =
-            (clone $syncQuery)
+            $sincronizaciones
                 ->where(
                     'status',
                     'pending'
@@ -180,92 +571,50 @@ class MobileDashboardController extends Controller
                 ->count();
 
 
-        // ============================================
-        // 5. ÚLTIMA SINCRONIZACIÓN
-        // ============================================
+        $porcentajeExito =
+            $totalSincronizaciones > 0
+                ? round(
+                    (
+                        $sincronizacionesNotificadas
+                        /
+                        $totalSincronizaciones
+                    )
+                    * 100,
+                    1
+                )
+                : 0.0;
 
-        $ultima =
-            (clone $syncQuery)
-                ->latest('created_at')
-                ->first();
+
+        /*
+         * Total de registros pertenecientes a
+         * sincronizaciones completadas.
+         */
+        $totalRegistrosSincronizados =
+            (int) $sincronizaciones
+                ->where(
+                    'status',
+                    'notified'
+                )
+                ->sum(
+                    'total_registros'
+                );
+
+
+        // ============================================
+        // 9. ÚLTIMA SINCRONIZACIÓN
+        // ============================================
 
         $ultimaSincronizacion =
-            null;
-
-        if ($ultima) {
-
-            $payload =
-                $ultima->payload ?? [];
-
-            $ultimaSincronizacion = [
-                'sync_id' =>
-                    $ultima->sync_id,
-
-                'status' =>
-                    $ultima->status,
-
-                'attempts' =>
-                    (int) $ultima->attempts,
-
-                'total_parcelas' =>
-                    (int) (
-                        $payload['total_parcelas']
-                        ?? 0
-                    ),
-
-                'total_arboles' =>
-                    (int) (
-                        $payload['total_arboles']
-                        ?? 0
-                    ),
-
-                'total_trozas' =>
-                    (int) (
-                        $payload['total_trozas']
-                        ?? 0
-                    ),
-
-                'total_registros' =>
-                    (int) (
-                        $payload['total_registros']
-                        ?? 0
-                    ),
-
-                'created_at' =>
-                    $ultima->created_at,
-
-                'notified_at' =>
-                    $ultima->notified_at,
-
-                'has_error' =>
-                    !empty(
-                        $ultima->last_error
-                    ),
-            ];
-        }
+            $sincronizaciones
+                ->first();
 
 
         // ============================================
-        // 6. ACTIVIDAD DE LOS ÚLTIMOS 7 DÍAS
+        // 10. ACTIVIDAD DE LOS ÚLTIMOS 7 DÍAS
+        //
+        // Se convierte cada timestamp almacenado a
+        // America/Mexico_City antes de agruparlo.
         // ============================================
-
-        $inicio =
-            now()
-                ->subDays(6)
-                ->startOfDay();
-
-        $eventosRecientes =
-            (clone $syncQuery)
-                ->where(
-                    'created_at',
-                    '>=',
-                    $inicio
-                )
-                ->get([
-                    'created_at',
-                    'status',
-                ]);
-
 
         $actividad7Dias =
             collect(
@@ -273,35 +622,66 @@ class MobileDashboardController extends Controller
             )
             ->map(
                 function ($offset)
-                use ($eventosRecientes) {
+                use (
+                    $sincronizaciones,
+                    $ahoraLocal,
+                    $timezone
+                ) {
 
                     $fecha =
-                        Carbon::today()
+                        $ahoraLocal
+                            ->copy()
                             ->subDays(
                                 6 - $offset
+                            )
+                            ->startOfDay();
+
+
+                    $sincronizacionesDia =
+                        $sincronizaciones
+                            ->filter(
+                                function ($sync)
+                                use (
+                                    $fecha,
+                                    $timezone
+                                ) {
+
+                                    if (
+                                        empty(
+                                            $sync['created_at']
+                                        )
+                                    ) {
+                                        return false;
+                                    }
+
+                                    $fechaSync =
+                                        Carbon::parse(
+                                            $sync['created_at']
+                                        )
+                                        ->timezone(
+                                            $timezone
+                                        )
+                                        ->toDateString();
+
+                                    return
+                                        $fechaSync
+                                        ===
+                                        $fecha
+                                            ->toDateString();
+                                }
                             );
 
-                    $eventosDia =
-                        $eventosRecientes
-                            ->filter(
-                                fn ($evento) =>
-                                    $evento
-                                        ->created_at
-                                        ->toDateString()
-                                    ===
-                                    $fecha
-                                        ->toDateString()
-                            );
 
                     return [
                         'fecha' =>
                             $fecha->toDateString(),
 
                         'total' =>
-                            $eventosDia->count(),
+                            $sincronizacionesDia
+                                ->count(),
 
                         'notified' =>
-                            $eventosDia
+                            $sincronizacionesDia
                                 ->where(
                                     'status',
                                     'notified'
@@ -309,10 +689,18 @@ class MobileDashboardController extends Controller
                                 ->count(),
 
                         'failed' =>
-                            $eventosDia
+                            $sincronizacionesDia
                                 ->where(
                                     'status',
                                     'failed'
+                                )
+                                ->count(),
+
+                        'pending' =>
+                            $sincronizacionesDia
+                                ->where(
+                                    'status',
+                                    'pending'
                                 )
                                 ->count(),
                     ];
@@ -322,7 +710,31 @@ class MobileDashboardController extends Controller
 
 
         // ============================================
-        // 7. RESPUESTA PARA REACT NATIVE
+        // 11. DISTRIBUCIÓN DEL INVENTARIO
+        //
+        // Lista preparada para una gráfica.
+        // ============================================
+
+        $distribucionInventario = [
+            [
+                'tipo' =>
+                    'Árboles',
+
+                'total' =>
+                    $totalArboles,
+            ],
+            [
+                'tipo' =>
+                    'Trozas',
+
+                'total' =>
+                    $totalTrozas,
+            ],
+        ];
+
+
+        // ============================================
+        // 12. RESPUESTA PARA REACT NATIVE
         // ============================================
 
         return response()->json([
@@ -331,7 +743,13 @@ class MobileDashboardController extends Controller
                 'rol' =>
                     $rol,
 
+
+                // ====================================
+                // RESUMEN FORESTAL
+                // ====================================
+
                 'forestal' => [
+
                     'total_parcelas' =>
                         $totalParcelas,
 
@@ -348,9 +766,24 @@ class MobileDashboardController extends Controller
                         $totalArboles
                         +
                         $totalTrozas,
+
+                    'total_volumen' =>
+                        $totalVolumen,
+
+                    'total_biomasa' =>
+                        $totalBiomasa,
+
+                    'total_carbono' =>
+                        $totalCarbono,
                 ],
 
+
+                // ====================================
+                // SINCRONIZACIÓN
+                // ====================================
+
                 'sincronizacion' => [
+
                     'total' =>
                         $totalSincronizaciones,
 
@@ -363,36 +796,47 @@ class MobileDashboardController extends Controller
                     'pending' =>
                         $sincronizacionesPendientes,
 
+                    'porcentaje_exito' =>
+                        $porcentajeExito,
+
+                    'total_registros_sincronizados' =>
+                        $totalRegistrosSincronizados,
+
                     'ultima' =>
                         $ultimaSincronizacion,
                 ],
 
-                /*
-                 * Directamente utilizable para
-                 * una gráfica de actividad.
-                 */
+
+                // ====================================
+                // DATOS PARA GRÁFICAS
+                // ====================================
+
                 'actividad_7_dias' =>
                     $actividad7Dias,
 
+                'distribucion_inventario' =>
+                    $distribucionInventario,
+
                 /*
-                 * Directamente utilizable para
-                 * una gráfica Árboles vs Trozas.
+                 * Puede utilizarse para una gráfica
+                 * comparativa por parcela.
                  */
-                'distribucion_inventario' => [
-                    [
-                        'tipo' =>
-                            'Árboles',
+                'parcelas_estadisticas' =>
+                    $estadisticasParcelas,
 
-                        'total' =>
-                            $totalArboles,
-                    ],
-                    [
-                        'tipo' =>
-                            'Trozas',
 
-                        'total' =>
-                            $totalTrozas,
-                    ],
+                // ====================================
+                // METADATOS
+                // ====================================
+
+                'meta' => [
+
+                    'timezone' =>
+                        $timezone,
+
+                    'generado_at' =>
+                        $ahoraLocal
+                            ->toIso8601String(),
                 ],
             ],
         ], 200);
