@@ -14,6 +14,7 @@ use App\Http\Controllers\API\MobileFormulaController;
 use App\Http\Controllers\API\MobileEstimacionTrozaController;
 use App\Http\Controllers\API\MobileEstimacionArbolController;
 use App\Http\Controllers\API\MobileSyncController;
+use App\Http\Controllers\API\MobileParcelaReportController;
 
 Route::prefix('v1/bot')
     ->middleware(['botkey', 'verify.hmac'])
@@ -139,6 +140,17 @@ Route::middleware([
     ]
 );
 
+
+Route::middleware([
+    'auth:sanctum',
+    'api.role:Tecnico,Productor',
+])->get(
+    '/parcelas/{id}/reporte-pdf',
+    [
+        MobileParcelaReportController::class,
+        'download',
+    ]
+);
 
 Route::middleware([
     'auth:sanctum',
