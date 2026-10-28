@@ -17,7 +17,7 @@ use App\Http\Controllers\API\MobileSyncController;
 use App\Http\Controllers\API\MobileParcelaReportController;
 use App\Http\Controllers\API\MobileProductorReportController;
 use App\Http\Controllers\API\MobileSyncHistoryController;
-
+use App\Http\Controllers\API\MobileDashboardController;
 Route::prefix('v1/bot')
     ->middleware(['botkey', 'verify.hmac'])
     ->group(function () {
@@ -210,5 +210,16 @@ Route::middleware([
         ]
     );
 
+
+    Route::middleware([
+    'auth:sanctum',
+    'api.role:Tecnico,Productor',
+])->get(
+    '/dashboard/resumen',
+    [
+        MobileDashboardController::class,
+        'summary',
+    ]
+);
 
 });
