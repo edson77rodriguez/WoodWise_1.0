@@ -3,7 +3,7 @@
 @section('title', 'SIGMAD Campo · Captura forestal')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('campo/campo.css') }}">
+<link rel="stylesheet" href="{{ asset('sigmad-campo-assets/campo.css') }}">
 @endpush
 
 @section('content')
@@ -11,5 +11,5 @@
 <script>
 window.SIGMAD_FIELD_BOOT = @json($campoBootstrap);
 </script>
-<script src="{{ asset('campo/campo.js') }}" defer></script>
+<script src="{{ asset('sigmad-campo-assets/campo.js') }}" defer></script>
 @endsection

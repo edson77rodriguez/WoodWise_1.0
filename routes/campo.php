@@ -3,9 +3,9 @@
 use App\Http\Controllers\FieldObservationController;
 use Illuminate\Support\Facades\Route;
 
-// Incluir este archivo desde routes/web.php, que ya recibe middleware web.
+// Los recursos públicos están en /sigmad-campo-assets/ para no crear
+// un directorio físico /campo que bloquearía la ruta en Apache/Hostinger.
 Route::middleware(['auth', 'role:Administrador,Tecnico'])->group(function () {
-    Route::get('/campo', fn () => redirect()->route('campo.index'));
-    Route::get('/campo/', [FieldObservationController::class, 'index'])->name('campo.index');
+    Route::get('/campo', [FieldObservationController::class, 'index'])->name('campo.index');
     Route::post('/campo/sync', [FieldObservationController::class, 'sync'])->name('campo.sync');
 });
