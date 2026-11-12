@@ -40,14 +40,14 @@ return [
         'model' => env('OPENAI_MODEL', 'gpt-5.4-mini'),
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
     ],
-    
+
     'ai' => [
         'url' => env('AI_API_URL'),
     ],
 
     'n8n_sync' => [
-    'url' => env('N8N_SYNC_WEBHOOK_URL'),
-    'secret' => env('N8N_SYNC_WEBHOOK_SECRET'),
-],
+        'url' => env('N8N_SYNC_WEBHOOK_URL'),
+        'secret' => env('N8N_SYNC_WEBHOOK_SECRET'),
+    ],
 
 ];
