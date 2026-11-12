@@ -1,8 +1,9 @@
 @extends('layouts.uav')
 
-@section('title', 'SIGMAD Campo · Captura forestal')
+@section('title', 'SIGMAD Campo · Mapa e inventario forestal')
 
 @push('styles')
+<link rel="stylesheet" href="{{ asset('sigmad-campo-assets/vendor/ol.css') }}">
 <link rel="stylesheet" href="{{ asset('sigmad-campo-assets/campo.css') }}">
 @endpush
 
@@ -11,5 +12,8 @@
 <script>
 window.SIGMAD_FIELD_BOOT = @json($campoBootstrap);
 </script>
+<script src="{{ asset('sigmad-campo-assets/vendor/proj4.js') }}" defer></script>
+<script src="{{ asset('sigmad-campo-assets/vendor/ol.js') }}" defer></script>
+<script src="{{ asset('sigmad-campo-assets/campo-mapa.js') }}" defer></script>
 <script src="{{ asset('sigmad-campo-assets/campo.js') }}" defer></script>
 @endsection

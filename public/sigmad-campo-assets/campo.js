@@ -36,11 +36,19 @@
     root.innerHTML = `
       <div class="smallhead"><div><h1>SIGMAD Campo</h1><p class="intro">Inventario digital · Protocolo de validación UAV V0.8A · Piloto V0.1</p></div><span class="pill" id="connection">Comprobando conexión</span></div>
       <div id="campo-msg" class="message" hidden></div>
+      <section class="campo-map-section" aria-label="Mapa de levantamiento forestal">
+        <div class="campo-map-top"><div><h2>Mapa de campo</h2><p class="intro">El punto azul muestra el GPS estimado. La selección de copas NO confirma identidad por sí misma.</p></div>${context.is_admin&&context.mission_admin_url?`<a class="campo-map-link" href="${context.mission_admin_url}">Preparar misiones</a>`:''}</div>
+        <div class="campo-map-tools"><label>Parcela / misión <select id="campo-mission"><option value="">Elegir misión…</option></select></label><button type="button" class="secondary" id="map-download">Descargar misión</button><button type="button" class="secondary" id="map-follow">Centrar mi GPS</button></div>
+        <div class="campo-map-canvas" id="campo-map" aria-label="Ubicación y copas asignadas"></div>
+        <div class="campo-map-footer"><span id="map-gps">GPS: esperando permiso</span><span id="map-choice">Toca una copa para vincularla</span></div>
+        <div id="map-feedback" class="campo-map-feedback" role="status">Selecciona una misión descargable.</div>
+        <button type="button" id="map-manual" class="campo-manual-btn">+ Registrar árbol no detectado / registro independiente</button>
+      </section>
       <div class="cards"><div>
       <div class="card"><h2>Registrar árbol</h2><p class="intro">Captura directa sin Excel. Los valores quedan en este teléfono hasta confirmación del servidor.</p>
         <form id="tree-form">
           <div class="fieldgrid">
-            <div><label for="grupo">Grupo de muestreo</label><select id="grupo" name="grupo" required><option value="A">A · Candidato de IA</option><option value="B">B · Censo independiente</option><option value="C">C · Remedición de control</option></select></div>
+            <div><label for="grupo">Grupo de muestreo</label><select id="grupo" name="grupo" required><option value="A">A · Candidato de IA</option><option value="B">B · Censo independiente</option><option value="H">H · Hallazgo sin propuesta IA</option><option value="C">C · Remedición de control</option></select></div>
             <div><label for="parcela">Parcela</label><select id="parcela" name="parcela" required></select></div>
             <div><label for="candidate_id">ID del candidato IA</label><input id="candidate_id" name="candidate_id" maxlength="80" placeholder="Ej. A012"></div>
             <div><label for="tree_id">Tree ID de campo</label><input id="tree_id" name="tree_id" maxlength="80" placeholder="Ej. P01-023"></div>
@@ -81,6 +89,7 @@
     $('#sync-records').addEventListener('click', synchronize);
     $('#export-records').addEventListener('click', exportBackup);
     updateGroup(); updateConnection(); updateGPS(); refreshRecords();
+    window.SIGMAD_CAMPO_MAP?.initialize(context);
   }
 
   function updateGroup() {
@@ -90,6 +99,7 @@
     $('#localizado').required = group === 'A';
     $('#tree_id').required = group !== 'A';
     $('#candidate_id').required = group === 'A';
+    window.SIGMAD_CAMPO_MAP?.updateGroup(group);
   }
   function updateConnection() {
     const p = $('#connection'); if (!p) return;
@@ -140,6 +150,8 @@
       gps_metodo: currentGPS?.gps_metodo || 'sin_gps',
       motivo_sin_medicion: String(fd.get('motivo_sin_medicion') || '').trim() || null,
       observaciones: String(fd.get('observaciones') || '').trim() || null,
+      mission_uuid: window.SIGMAD_CAMPO_MAP?.association()?.mission_uuid || null,
+      detection_ref: fd.get('grupo') === 'A' ? (window.SIGMAD_CAMPO_MAP?.association()?.detection_ref || null) : null,
     };
     return p;
   }
@@ -149,6 +161,12 @@
     const group = $('#grupo').value, parcela = Number($('#parcela').value);
     if (!parcela) return message('Debes tener una parcela asignada para guardar.', true);
     const payload = readPayload();
+    if (group === 'A' && Array.isArray(context.missions) && context.missions.length) {
+      const link = window.SIGMAD_CAMPO_MAP?.association();
+      if (!link?.mission_uuid || !link?.detection_ref) {
+        return message('Grupo A: descarga una misión y selecciona una copa directamente en el mapa.', true);
+      }
+    }
     if (group === 'A' && !payload.candidate_id) return message('Grupo A requiere ID de candidato.', true);
     if (group !== 'A' && !payload.tree_id) return message('Grupo B/C requiere Tree ID.', true);
     if (group === 'A' && !payload.localizado) return message('Indica si localizaste al candidato.', true);
@@ -183,12 +201,16 @@
     resetForm(false); await refreshRecords();
   }
   function resetForm(clearMessage = true) {
-    $('#tree-form').reset(); editId = null; currentGPS = null;
-    updateGroup(); updateGPS(); $('#save-record').textContent = 'Guardar en este dispositivo';
+    const parcelaActual = $('#parcela').value;
+    $('#tree-form').reset();
+    $('#parcela').value = parcelaActual;
+    editId = null; currentGPS = null;
+    updateGroup(); updateGPS(); window.SIGMAD_CAMPO_MAP?.onReset(); $('#save-record').textContent = 'Guardar en este dispositivo';
     if (clearMessage) $('#campo-msg').hidden = true;
   }
   async function refreshRecords() {
     const records = await myRecords();
+    window.SIGMAD_CAMPO_MAP?.setRecords(records);
     $('#local-count').textContent = records.length;
     const pending = records.filter(r => r.status !== 'synced');
     $('#pending-count').textContent = `${pending.length} pendientes`;
@@ -217,6 +239,7 @@
     });
     const {latitud,longitud,gps_precision_m,gps_fecha,gps_metodo} = rec.payload;
     currentGPS = {latitud,longitud,gps_precision_m,gps_fecha,gps_metodo}; updateGPS();
+    window.SIGMAD_CAMPO_MAP?.onEdit(rec);
     $('#save-record').textContent = 'Actualizar registro pendiente';
     root.scrollIntoView({behavior:'smooth',block:'start'});
   }
@@ -261,7 +284,10 @@
       db = await dbOpen();
       if (window.SIGMAD_FIELD_BOOT) {
         context = window.SIGMAD_FIELD_BOOT;
-        await setSetting('last_context', {user_id:context.user_id,user_name:context.user_name,parcelas:context.parcelas,sync_url:context.sync_url});
+        await setSetting('last_context', {user_id:context.user_id,user_name:context.user_name,
+          parcelas:context.parcelas,sync_url:context.sync_url,missions:context.missions,
+          mission_url_template:context.mission_url_template,is_admin:context.is_admin,
+          mission_admin_url:context.mission_admin_url});
       } else {
         const cached = await setting('last_context'); context = cached?.value;
       }
