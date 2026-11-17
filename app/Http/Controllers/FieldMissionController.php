@@ -133,6 +133,7 @@ class FieldMissionController extends Controller
             'crs' => $mission->crs, 'bounds' => $mission->bounds,
             'geojson' => $mission->geojson,
             'preview_url' => route('campo.mission.preview', ['mission' => $mission->uuid]),
+            'tile_manifest_url' => route('campo.mission.tiles.manifest', ['mission' => $mission->uuid]),
             'selected_count' => $mission->selected_count,
         ])->header('Cache-Control', 'no-store, private');
     }
@@ -160,4 +161,71 @@ class FieldMissionController extends Controller
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
+    // Descarga JSON reproducible para generar teselas desde el GeoTIFF en la computadora.
+    public function exportDefinition(Request $request, FieldMission $mission)
+    {
+        return $this->data($request, $mission)->header(
+            'Content-Disposition', 'attachment; filename="SIGMAD_mision_' . $mission->uuid . '.json"'
+        );
+    }
+
+    // Teselas privadas de una misión, generadas localmente y subidas mediante SFTP.
+    // Ningún GeoTIFF ni paquete íntegro se expone bajo public_html.
+    private function tileFolder(FieldMission $mission): string
+    {
+        return storage_path('app/private/sigmad-campo-tiles/' . $mission->uuid);
+    }
+
+    private function loadTileManifest(FieldMission $mission): array
+    {
+        $file = $this->tileFolder($mission) . '/manifest.json';
+        abort_unless(is_file($file) && filesize($file) < 500_000, 404, 'Mapa HD no preparado para esta misión.');
+        $json = json_decode((string) file_get_contents($file), true);
+        abort_unless(is_array($json) &&
+            ($json['schema'] ?? '') === 'sigmad-campo-utm-tiles-v1' &&
+            ($json['mission_uuid'] ?? '') === $mission->uuid &&
+            ($json['analysis_uuid'] ?? '') === $mission->analysisJob->uuid &&
+            ($json['crs'] ?? '') === $mission->crs &&
+            ($json['format'] ?? '') === 'webp' &&
+            ($json['tile_size'] ?? 0) === 256 &&
+            is_array($json['tiles'] ?? null) &&
+            count($json['tiles']) === ($json['tile_count'] ?? -1) &&
+            count($json['tiles']) <= 2000 &&
+            count($json['resolutions'] ?? []) <= 13 &&
+            count($json['resolutions'] ?? []) >= 1, 422, 'Manifiesto de teselas inválido.');
+        $bounds = $json['bounds'] ?? [];
+        abort_unless(is_array($bounds) && count($bounds) === 4 &&
+            count($mission->bounds ?? []) === 4, 422);
+        foreach ($mission->bounds as $i => $v) {
+            abort_unless(abs((float) $v - (float) $bounds[$i]) < 0.5, 422,
+                'Los límites del mapa HD no coinciden con la misión.');
+        }
+        return $json;
+    }
+
+    public function tilesManifest(Request $request, FieldMission $mission)
+    {
+        $this->checkAccess($request, $mission);
+        $mission->loadMissing('analysisJob');
+        $manifest = $this->loadTileManifest($mission);
+        $manifest['tile_url_template'] = route('campo.mission.tiles.tile', [
+            'mission' => $mission->uuid, 'z' => '__Z__', 'x' => '__X__', 'y' => '__Y__',
+        ]);
+        return response()->json($manifest)->header('Cache-Control', 'private, no-store');
+    }
+
+    public function tile(Request $request, FieldMission $mission, int $z, int $x, int $y)
+    {
+        $this->checkAccess($request, $mission);
+        abort_unless($z >= 0 && $z <= 12 && $x >= 0 && $x <= 8192 &&
+            $y >= 0 && $y <= 8192, 404);
+        $file = $this->tileFolder($mission) . "/{$z}/{$x}/{$y}.webp";
+        abort_unless(is_file($file) && is_readable($file), 404);
+        return response()->file($file, [
+            'Content-Type' => 'image/webp',
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
 }

@@ -34,14 +34,14 @@
 
   function render() {
     root.innerHTML = `
-      <div class="smallhead"><div><h1>SIGMAD Campo</h1><p class="intro">Inventario digital · Protocolo de validación UAV V0.8A · Piloto V0.1</p></div><span class="pill" id="connection">Comprobando conexión</span></div>
+      <div class="smallhead"><div><h1>SIGMAD Campo</h1><p class="intro">Inventario digital · Protocolo de validación UAV V0.8A · Piloto V0.2.1</p></div><span class="pill" id="connection">Comprobando conexión</span></div>
       <div id="campo-msg" class="message" hidden></div>
       <section class="campo-map-section" aria-label="Mapa de levantamiento forestal">
         <div class="campo-map-top"><div><h2>Mapa de campo</h2><p class="intro">El punto azul muestra el GPS estimado. La selección de copas NO confirma identidad por sí misma.</p></div>${context.is_admin&&context.mission_admin_url?`<a class="campo-map-link" href="${context.mission_admin_url}">Preparar misiones</a>`:''}</div>
-        <div class="campo-map-tools"><label>Parcela / misión <select id="campo-mission"><option value="">Elegir misión…</option></select></label><button type="button" class="secondary" id="map-download">Descargar misión</button><button type="button" class="secondary" id="map-follow">Centrar mi GPS</button></div>
+        <div class="campo-map-tools"><label>Parcela / misión <select id="campo-mission"><option value="">Elegir misión…</option></select></label><button type="button" class="secondary" id="map-download">Descargar misión</button><button type="button" class="secondary" id="map-download-hd">Descargar mapa HD</button><button type="button" class="secondary" id="map-follow">Centrar mi GPS</button></div>
         <div class="campo-map-canvas" id="campo-map" aria-label="Ubicación y copas asignadas"></div>
         <div class="campo-map-footer"><span id="map-gps">GPS: esperando permiso</span><span id="map-choice">Toca una copa para vincularla</span></div>
-        <div id="map-feedback" class="campo-map-feedback" role="status">Selecciona una misión descargable.</div>
+        <div id="map-feedback" class="campo-map-feedback" role="status">Selecciona una misión descargable.</div><div id="map-hd-status" class="campo-map-feedback" role="status">Mapas HD: aún no preparados.</div>
         <button type="button" id="map-manual" class="campo-manual-btn">+ Registrar árbol no detectado / registro independiente</button>
       </section>
       <div class="cards"><div>

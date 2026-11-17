@@ -12,3 +12,6 @@
 .campo-map-feedback{font-size:13px;padding:10px 12px;border-radius:9px;background:#e7f4ee;color:#195d3f}.campo-map-feedback[data-warn="yes"]{background:#fff1dd;color:#85510b}
 .campo-manual-btn{margin-top:12px;width:100%;background:#1c5685!important}
 @media(max-width:480px){.campo-map-tools button{flex:1;width:auto}.campo-map-tools label{flex-basis:100%}.campo-map-canvas{height:53vh;min-height:320px}}
+
+/* V0.2.1: estado de descarga HD */
+#map-hd-status{margin-top:7px}#map-download-hd{background:#246f9e;color:white}

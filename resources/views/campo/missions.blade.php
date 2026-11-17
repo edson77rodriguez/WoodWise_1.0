@@ -37,7 +37,7 @@
     </form>
     <section class="cmissions-existing"><h2>Misiones recientes</h2>
         @forelse($missions as $m)
-            <p><strong>{{ $m->title }}</strong> · Parcela {{ $m->id_parcela }} · {{ $m->selected_count }} copas · {{ $m->status }} · {{ $m->created_at?->format('Y-m-d') }}</p>
+            <p><strong>{{ $m->title }}</strong> · Parcela {{ $m->id_parcela }} · {{ $m->selected_count }} copas · {{ $m->status }} · {{ $m->created_at?->format('Y-m-d') }} · <a href="{{ route('campo.mission.export', ['mission' => $m->uuid]) }}">Descargar JSON para mapa HD</a></p>
         @empty <p>Todavía no hay misiones.</p> @endforelse
     </section>
 </div>

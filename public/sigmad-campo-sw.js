@@ -1,6 +1,6 @@
-/* SIGMAD Campo V0.2.0 - Sólo recursos públicos estáticos y shell offline.
+/* SIGMAD Campo V0.2.1 - Sólo recursos públicos estáticos y shell offline.
    Las misiones y observaciones científicas NO se guardan en CacheStorage. */
-const CACHE = 'sigmad-campo-v0.2.0';
+const CACHE = 'sigmad-campo-v0.2.1';
 const ASSETS = [
   '/sigmad-campo-assets/offline.html',
   '/sigmad-campo-assets/campo.css',
