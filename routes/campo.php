@@ -20,3 +20,15 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('/campo/misiones', [FieldMissionController::class, 'create'])->name('campo.missions.create');
     Route::post('/campo/misiones', [FieldMissionController::class, 'store'])->name('campo.missions.store');
 });
+
+// SIGMAD Campo V0.3 — administración de observaciones (mantener las rutas V0.2.1).
+\Illuminate\Support\Facades\Route::middleware(['auth', 'role:Administrador'])->group(function () {
+    \Illuminate\Support\Facades\Route::get('/campo/registros', [\App\Http\Controllers\FieldRecordsController::class, 'index'])->name('campo.records.index');
+    \Illuminate\Support\Facades\Route::get('/campo/registros/exportar', [\App\Http\Controllers\FieldRecordsController::class, 'export'])->name('campo.records.export');
+    \Illuminate\Support\Facades\Route::get('/campo/registros/mapa', [\App\Http\Controllers\FieldRecordsController::class, 'map'])->name('campo.records.map');
+    \Illuminate\Support\Facades\Route::get('/campo/registros/{record}', [\App\Http\Controllers\FieldRecordsController::class, 'show'])->whereNumber('record')->name('campo.records.show');
+    \Illuminate\Support\Facades\Route::post('/campo/registros/{record}/revision', [\App\Http\Controllers\FieldRecordsController::class, 'review'])->whereNumber('record')->name('campo.records.review');
+});
+
+// SIGMAD Campo V0.3.2 — mapa administrativo (solo lectura).
+require __DIR__ . '/campo_registros_capas.php';
