@@ -95,7 +95,7 @@ class FieldRecordsController extends Controller
         $rows = (clone $base)->orderByDesc('field_observations.client_created_at')
             ->orderByDesc('field_observations.id')->paginate(25)->withQueryString();
 
-        $totals = (clone $base)->reorder()->selectRaw(
+        $totals = (clone $base)->reorder()->select([])->selectRaw(
             "COUNT(*) as total, " .
             "SUM(CASE WHEN field_observations.review_status = 'pendiente' THEN 1 ELSE 0 END) as pendientes, " .
             "SUM(CASE WHEN field_observations.review_status = 'validado' THEN 1 ELSE 0 END) as validados, " .

@@ -299,3 +299,5 @@ Route::prefix('P')->middleware(['auth', 'role:Productor'])->group(function () {
 ///////////////////////////////////////////UAV
 
 
+
+require __DIR__ . '/campo.php';

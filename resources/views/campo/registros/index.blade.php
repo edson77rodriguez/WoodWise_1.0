@@ -3,6 +3,7 @@
 @push('styles')
 <link rel="stylesheet" href="{{ asset('sigmad-campo-assets/vendor/ol.css') }}">
 <link rel="stylesheet" href="{{ asset('sigmad-campo-assets/registros.css') }}">
+<link rel="stylesheet" href="{{ asset('sigmad-campo-assets/registros-mapa-integrado.css') }}?v=0320">
 @endpush
 @section('content')
 <main class="cr-wrap">
@@ -102,15 +103,45 @@
         </div>
     </section>
     <section class="cr-panel">
-        <div class="cr-section-head"><div><h2>Mapa de observaciones GPS</h2><p>Hasta 500 registros recientes de la selección filtrada. No muestra automáticamente centros de copa IA.</p></div><span id="cr-map-count">Preparando…</span></div>
-        <div id="cr-record-map" role="img" aria-label="Mapa geográfico de posiciones registradas por los brigadistas"></div>
-        <p class="cr-map-note" id="cr-map-note">La posición GPS corresponde al dispositivo junto al fuste, con incertidumbre reportada. Base cartográfica online, no pertenece al mapa HD offline del brigadista.</p>
+        <div class="cr-section-head"><div>
+            <h2>Mapa integrado: campo + copas IA</h2>
+            <p>Administración y revisión posterior al levantamiento. Las copas son únicamente las asignadas a la misión elegida.</p>
+        </div><span id="cr-map-count">Preparando…</span></div>
+        <div class="cr-map-toolbar">
+            <label>Misión UAV para superponer
+                <select id="cr-mission-select"><option value="">Solo puntos GPS de campo</option></select>
+            </label>
+            <button type="button" id="cr-fit-mission">Enfocar misión</button>
+            <button type="button" id="cr-fit-gps">Enfocar GPS de campo</button>
+        </div>
+        <div class="cr-map-toggles" aria-label="Capas del mapa">
+            <label><input type="checkbox" id="cr-layer-image" checked> Ortomosaico (vista previa / HD)</label>
+            <label><input type="checkbox" id="cr-layer-ai" checked> Copas IA de la misión</label>
+            <label><input type="checkbox" id="cr-layer-gps" checked> Árboles registrados en campo</label>
+            <label><input type="checkbox" id="cr-layer-accuracy" checked> Precisión GNSS reportada</label>
+        </div>
+        <div class="cr-map-legend" aria-label="Simbología">
+            <span><b></b> GPS medido</span>
+            <span><b class="cr-ai-legend"></b> Contorno IA asignado</span>
+        </div>
+        <p class="cr-map-status" id="cr-map-status" role="status">Preparando visualización…</p>
+        <div id="cr-record-map" role="region" aria-label="Mapa comparativo de observaciones georreferenciadas y copas asignadas por IA"></div>
+        <p class="cr-map-note" id="cr-map-note">El punto GPS es la posición reportada del teléfono junto al fuste, no el centro de la copa IA. No se clasifica TP/FP/FN automáticamente.</p>
         <div id="cr-selected-record" class="cr-map-detail" hidden></div>
+        <p class="cr-map-info">Mapa administrativo online; no sustituye las misiones HD offline de SIGMAD Campo. Las capas y filtros no modifican mediciones.</p>
     </section>
 </main>
 <script>
-window.SIGMAD_FIELD_RECORD_MAP = @json(['url' => route('campo.records.map', request()->query())]);
+<?php
+    $sigmadCampoMapConfig = [
+        'url' => route('campo.records.map', request()->query()),
+        'missions_url' => route('campo.records.layers.missions', array_filter(['parcela' => request()->query('parcela')])),
+        'parcela_id' => request()->query('parcela'),
+    ];
+?>
+window.SIGMAD_FIELD_RECORD_MAP = @json($sigmadCampoMapConfig);
 </script>
+<script src="{{ asset('sigmad-campo-assets/vendor/proj4.js') }}" defer></script>
 <script src="{{ asset('sigmad-campo-assets/vendor/ol.js') }}" defer></script>
-<script src="{{ asset('sigmad-campo-assets/registros.js') }}" defer></script>
+<script src="{{ asset('sigmad-campo-assets/registros-mapa-integrado.js') }}?v=0320" defer></script>
 @endsection

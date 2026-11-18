@@ -1,0 +1,46 @@
+/* Estilos para la página de gestión de usuarios */
+.header-actions .search-bar {
+    max-width: 250px;
+    transition: max-width 0.3s ease-in-out;
+}
+.header-actions .search-bar:focus-within {
+    max-width: 350px;
+}
+.header-actions .form-control,
+.header-actions .input-group-text {
+    border-radius: 50rem !important;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--wood-primary-light, #588157);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.btn-icon {
+    width: 35px;
+    height: 35px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50% !important;
+    margin: 0 2px;
+}
+
+/* Colores para badges de roles */
+.badge.bg-role-admin { background-color: #6f42c1; color: white; }
+.badge.bg-role-tecnico { background-color: #0d6efd; color: white; }
+.badge.bg-role-productor { background-color: #198754; color: white; }
+.badge.bg-role-default { background-color: #6c757d; color: white; }

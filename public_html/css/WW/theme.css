@@ -1,0 +1,785 @@
+/* 
+ * VISTA SHOW DE PARCELA - CSS MEJORADO
+ * Diseño moderno con glassmorphism y efectos avanzados
+ */
+
+:root {
+    /* Paleta principal mejorada */
+    --emerald-50: #ECFDF5;
+    --emerald-100: #D1FAE5;
+    --emerald-200: #A7F3D0;
+    --emerald-300: #6EE7B7;
+    --emerald-400: #34D399;
+    --emerald-500: #10B981;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+    --emerald-800: #065F46;
+    --emerald-900: #064E3B;
+
+    /* Colores del bosque */
+    --forest-50: #F0FDF4;
+    --forest-100: #DCFCE7;
+    --forest-200: #BBF7D0;
+    --forest-300: #86EFAC;
+    --forest-400: #4ADE80;
+    --forest-500: #22C55E;
+    --forest-600: #16A34A;
+    --forest-700: #15803D;
+    --forest-800: #166534;
+    --forest-900: #14532D;
+
+    /* Colores acento */
+    --accent-amber: #F59E0B;
+    --accent-blue: #3B82F6;
+    --accent-purple: #8B5CF6;
+    --accent-rose: #F43F5E;
+
+    /* Efectos glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --glass-blur: blur(20px);
+
+    /* Gradientes */
+    --gradient-primary: linear-gradient(135deg, var(--emerald-600), var(--emerald-800));
+    --gradient-success: linear-gradient(135deg, var(--forest-500), var(--forest-700));
+    --gradient-warning: linear-gradient(135deg, var(--accent-amber), #D97706);
+    --gradient-info: linear-gradient(135deg, var(--accent-blue), #1D4ED8);
+    --gradient-danger: linear-gradient(135deg, var(--accent-rose), #BE123C);
+}
+
+/* === CONTENEDOR PRINCIPAL === */
+.parcela-show-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, 
+        rgba(240, 253, 244, 0.4) 0%,
+        rgba(220, 252, 231, 0.6) 50%,
+        rgba(187, 247, 208, 0.4) 100%);
+    backdrop-filter: var(--glass-blur);
+}
+
+/* === HEADER DE PARCELA === */
+.parcela-header-modern {
+    background: var(--gradient-primary);
+    border-radius: 24px;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--glass-shadow);
+    border: 1px solid var(--glass-border);
+}
+
+.parcela-header-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%2310b981' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+    opacity: 0.3;
+}
+
+.parcela-header-content {
+    position: relative;
+    z-index: 2;
+}
+
+.parcela-title-section {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.parcela-icon-hero {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    animation: iconFloat 6s infinite ease-in-out;
+}
+
+@keyframes iconFloat {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(5deg); }
+}
+
+.parcela-title-text h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.parcela-title-text p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.parcela-header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* === STATS CARDS MEJORADAS === */
+.parcela-stats-grid {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+/* Grid para las tarjetas de estadísticas */
+.parcela-stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+
+.parcela-stat-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.parcela-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.6s;
+}
+
+.parcela-stat-card:hover::before {
+    left: 100%;
+}
+
+.parcela-stat-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.parcela-stat-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.parcela-stat-card:hover .parcela-stat-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.parcela-stat-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0.5rem 0;
+    background: linear-gradient(135deg, var(--emerald-600), var(--emerald-800));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.parcela-stat-label {
+    color: var(--emerald-700);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.parcela-stat-unit {
+    color: var(--emerald-600);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+/* Colores específicos para cada stat card */
+.parcela-stat-card:nth-child(1) .parcela-stat-icon { 
+    background: var(--emerald-100); 
+    color: var(--emerald-600); 
+}
+.parcela-stat-card:nth-child(2) .parcela-stat-icon { 
+    background: var(--forest-100); 
+    color: var(--forest-600); 
+}
+.parcela-stat-card:nth-child(3) .parcela-stat-icon { 
+    background: var(--emerald-200); 
+    color: var(--emerald-700); 
+}
+.parcela-stat-card:nth-child(4) .parcela-stat-icon { 
+    background: var(--accent-amber); 
+    color: white; 
+}
+
+/* === TABS AVANZADAS === */
+.parcela-tabs-modern {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--glass-shadow);
+    margin-bottom: 2rem;
+}
+
+.parcela-tabs-header {
+    background: linear-gradient(135deg, var(--emerald-500), var(--emerald-700));
+    padding: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.parcela-tabs-nav {
+    display: flex;
+    gap: 0;
+    padding: 0 1.5rem;
+}
+
+.parcela-tab-btn {
+    position: relative;
+    padding: 1.25rem 2rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+    background: transparent;
+    border: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 3px solid transparent;
+}
+
+.parcela-tab-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.parcela-tab-btn.active {
+    color: white;
+    border-bottom-color: var(--accent-amber);
+}
+
+.parcela-tab-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-width: 24px;
+}
+
+.parcela-tab-content {
+    padding: 2rem;
+    background: white;
+}
+
+/* === ESTRUCTURA DE CONTENEDORES Y TABLAS === */
+
+/* Grid de Pestañas */
+.parcela-tabs-modern {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Contenedor del contenido de pestañas */
+.wood-tab-content {
+    width: 100%;
+    flex: 1;
+}
+
+/* Panel de pestaña */
+.tab-pane {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Contenedor de la tabla */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    background: var(--glass-bg);
+    border-radius: 1rem;
+    box-shadow: var(--glass-shadow);
+    margin: 0;
+    padding: 1rem;
+}
+
+/* Base de la tabla */
+.parcela-table-modern,
+.wood-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: transparent;
+}
+
+/* 3. Headers Pegajosos (Sticky) */
+.parcela-table-modern thead,
+.wood-table thead {
+    background: var(--gradient-primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.parcela-table-modern thead th,
+.wood-table thead th {
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 1.25rem;
+    border: none;
+    white-space: nowrap;
+    background: var(--gradient-primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 4. Estilos del Cuerpo de la Tabla */
+.parcela-table-modern tbody td,
+.wood-table tbody td {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--emerald-100);
+    vertical-align: middle;
+    background: var(--glass-bg);
+    color: #374151;
+    font-weight: 500;
+}
+
+/* Ajustes para las columnas */
+.parcela-table-modern th:first-child,
+.parcela-table-modern td:first-child,
+.wood-table th:first-child,
+.wood-table td:first-child {
+    padding-left: 1.5rem;
+}
+
+.parcela-table-modern th:last-child,
+.parcela-table-modern td:last-child,
+.wood-table th:last-child,
+.wood-table td:last-child {
+    padding-right: 1.5rem;
+}
+
+/* Última fila sin borde */
+.parcela-table-modern tbody tr:last-child td,
+.wood-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* 5. Hover y Efectos */
+.parcela-table-modern tbody tr:hover,
+.wood-table tbody tr:hover {
+    background: var(--emerald-50);
+}
+
+/* Columna de acciones */
+.parcela-table-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    min-width: max-content;
+}
+
+/* 6. Scrollbar Personalizado */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: var(--emerald-50);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--emerald-200);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: var(--emerald-300);
+}
+
+/* Celdas especiales */
+.parcela-table-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.parcela-table-badge.success {
+    background: var(--emerald-100);
+    color: var(--emerald-700);
+}
+
+.parcela-table-badge.warning {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.parcela-table-badge.info {
+    background: #DBEAFE;
+    color: #1E40AF;
+}
+
+.parcela-table-badge.secondary {
+    background: #F3F4F6;
+    color: #6B7280;
+}
+
+/* Acciones de tabla */
+.parcela-table-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.parcela-action-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.parcela-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.6s;
+}
+
+.parcela-action-btn:hover::before {
+    left: 100%;
+}
+
+.parcela-action-btn:hover {
+    transform: translateY(-2px) scale(1.1);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+}
+
+.parcela-action-btn.view { background: var(--emerald-100); color: var(--emerald-600); }
+.parcela-action-btn.edit { background: #DBEAFE; color: var(--accent-blue); }
+.parcela-action-btn.estimate { background: #FEF3C7; color: var(--accent-amber); }
+.parcela-action-btn.delete { background: #FEE2E2; color: var(--accent-rose); }
+
+/* === ESTADO VACÍO MEJORADO === */
+.parcela-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6B7280;
+}
+
+.parcela-empty-icon {
+    font-size: 4rem;
+    color: #D1D5DB;
+    margin-bottom: 1.5rem;
+    opacity: 0.7;
+}
+
+.parcela-empty-state h4 {
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.parcela-empty-state p {
+    margin-bottom: 2rem;
+    color: #6B7280;
+}
+
+/* === MODALES MEJORADOS === */
+.parcela-modal-modern .modal-content {
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+}
+
+.parcela-modal-header {
+    background: var(--gradient-primary);
+    padding: 2rem;
+    border-bottom: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.parcela-modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+    opacity: 0.3;
+}
+
+.parcela-modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.25rem;
+    position: relative;
+    z-index: 2;
+}
+
+.parcela-modal-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    margin: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.parcela-modal-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    margin-right: 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.parcela-modal-body {
+    padding: 2rem;
+    background: white;
+}
+
+.parcela-modal-footer {
+    padding: 1.5rem 2rem;
+    background: #f8fafc;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* Colores de modal específicos */
+.parcela-modal-success .parcela-modal-header {
+    background: var(--gradient-success);
+}
+
+.parcela-modal-warning .parcela-modal-header {
+    background: var(--gradient-warning);
+}
+
+.parcela-modal-info .parcela-modal-header {
+    background: var(--gradient-info);
+}
+
+.parcela-modal-danger .parcela-modal-header {
+    background: var(--gradient-danger);
+}
+
+/* === BOTONES MEJORADOS === */
+.parcela-btn-primary {
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: 12px;
+    padding: 0.875rem 1.75rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.parcela-btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s;
+}
+
+.parcela-btn-primary:hover::before {
+    left: 100%;
+}
+
+.parcela-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    color: white;
+}
+
+.parcela-btn-outline {
+    background: transparent;
+    border: 2px solid var(--emerald-500);
+    border-radius: 12px;
+    padding: 0.875rem 1.75rem;
+    font-weight: 600;
+    color: var(--emerald-600);
+    transition: all 0.3s ease;
+}
+
+.parcela-btn-outline:hover {
+    background: var(--emerald-500);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+}
+
+.parcela-btn-light {
+    background: var(--emerald-50);
+    border: 1px solid var(--emerald-100);
+    border-radius: 12px;
+    padding: 0.875rem 1.75rem;
+    font-weight: 600;
+    color: var(--emerald-700);
+    transition: all 0.3s ease;
+}
+
+.parcela-btn-light:hover {
+    background: var(--emerald-100);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* === ANIMACIONES === */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.parcela-header-modern,
+.parcela-stats-grid,
+.parcela-tabs-modern {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Delay escalonado */
+.parcela-stats-grid .parcela-stat-card:nth-child(1) { animation-delay: 0.1s; }
+.parcela-stats-grid .parcela-stat-card:nth-child(2) { animation-delay: 0.2s; }
+.parcela-stats-grid .parcela-stat-card:nth-child(3) { animation-delay: 0.3s; }
+.parcela-stats-grid .parcela-stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .parcela-show-container {
+        padding: 1rem;
+    }
+    
+    .parcela-header-modern {
+        padding: 2rem 1.5rem;
+        border-radius: 20px;
+    }
+    
+    .parcela-title-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .parcela-title-text h1 {
+        font-size: 2rem;
+    }
+    
+    .parcela-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .parcela-tabs-nav {
+        flex-direction: column;
+        padding: 0;
+    }
+    
+    .parcela-tab-btn {
+        padding: 1rem 1.5rem;
+        justify-content: center;
+    }
+    
+    .parcela-table-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .parcela-modal-body {
+        padding: 1.5rem;
+    }
+}
+
+/* Scrollbar personalizado */
+.parcela-tab-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.parcela-tab-content::-webkit-scrollbar-track {
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 10px;
+}
+
+.parcela-tab-content::-webkit-scrollbar-thumb {
+    background: var(--emerald-400);
+    border-radius: 10px;
+}
+
+.parcela-tab-content::-webkit-scrollbar-thumb:hover {
+    background: var(--emerald-500);
+}
