@@ -1,0 +1,21 @@
+/* SIGMAD Campo V0.3.2: complementa registros.css; no altera captura ni mapas móviles. */
+.cr-map-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+.cr-map-toolbar label{font-size:12px;font-weight:700;color:#52665b;display:flex;flex-direction:column;gap:5px;flex:1;min-width:240px;max-width:430px}
+.cr-map-toolbar select{min-height:42px;padding:9px 12px;border:1px solid #d5e0d8;border-radius:10px;background:white;color:#193d2d;max-width:100%;font:inherit;font-weight:500}
+.cr-map-toolbar button{min-height:42px;border:1px solid #d3dfd6;border-radius:10px;background:#f2f8f3;color:#1d674b;padding:9px 12px;cursor:pointer;font-weight:700}
+.cr-map-toolbar button:hover{background:#e8f4eb}.cr-map-toolbar button:disabled{opacity:.48;cursor:not-allowed}
+.cr-map-toggles{display:flex;flex-wrap:wrap;gap:9px 18px;margin:12px 0 14px;align-items:center}
+.cr-map-toggles label{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#335946;cursor:pointer}
+.cr-map-toggles input{accent-color:#167653;width:16px;height:16px}
+.cr-map-legend{display:flex;gap:12px;flex-wrap:wrap;margin:7px 0 2px;font-size:12px;color:#50695a}
+.cr-map-legend span{display:inline-flex;align-items:center;gap:6px}
+.cr-map-legend b{display:inline-block;width:11px;height:11px;border-radius:50%;background:#2464a1;border:2px solid white;box-shadow:0 0 0 1px #4b7086}
+.cr-map-legend .cr-ai-legend{border-radius:2px;background:rgba(0,166,140,.15);border:2px solid #00a68c;width:13px;height:12px;box-shadow:none}
+#cr-record-map{height:500px;background:#edf2ee}
+.cr-map-status{font-size:12px;color:#50655b;margin:8px 0;min-height:18px}
+.cr-map-status[data-error="1"]{color:#a43e2e}
+.cr-map-detail{line-height:1.6;overflow-wrap:anywhere}
+.cr-map-detail .cr-map-details-kind{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#567467;font-weight:750}
+.cr-map-detail a{display:inline-block;margin-top:5px}
+.cr-map-info{margin:5px 0 0;font-size:12px;color:#667c6d}
+@media(max-width:650px){#cr-record-map{height:370px}.cr-map-toolbar label{min-width:100%;max-width:100%}.cr-map-toolbar button{flex:1}}
