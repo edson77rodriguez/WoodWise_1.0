@@ -45,6 +45,9 @@ class FieldMissionController extends Controller
                     'geojson_url' => route('analysis.map.geojson', ['analysisUuid' => $j->uuid]),
                     'preview_url' => !empty($j->mosaic->preview_object_key)
                         ? route('analysis.map.preview', ['analysisUuid' => $j->uuid]) : null,
+                    // Reutiliza el endpoint COG ya protegido y validado del analizador.
+                    'cog_url' => filter_var(data_get($j->mosaic->metadata, 'web_cog.verified', false), FILTER_VALIDATE_BOOLEAN)
+                        ? route('analysis.map.cog-url', ['analysisUuid' => $j->uuid]) : null,
                 ];
             })->values();
         $parcelas = Parcela::orderBy('nom_parcela')->get(['id_parcela', 'nom_parcela']);

@@ -43,6 +43,7 @@
 </div>
 <script>window.SIGMAD_MISSIONS_BOOT = @json($jobs);</script>
 <script src="{{ asset('sigmad-campo-assets/vendor/proj4.js') }}" defer></script>
-<script src="{{ asset('sigmad-campo-assets/vendor/ol.js') }}" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/geotiff@3.1.0-beta.0/dist-browser/geotiff.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/ol@10.10.0/dist/ol.js" defer></script>
 <script src="{{ asset('sigmad-campo-assets/misiones.js') }}" defer></script>
 @endsection
