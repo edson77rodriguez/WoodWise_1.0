@@ -19,6 +19,7 @@ Route::middleware(['auth', 'role:Administrador,Tecnico'])->group(function () {
 Route::middleware(['auth', 'role:Administrador'])->group(function () {
     Route::get('/campo/misiones', [FieldMissionController::class, 'create'])->name('campo.missions.create');
     Route::post('/campo/misiones', [FieldMissionController::class, 'store'])->name('campo.missions.store');
+    Route::put('/campo/misiones/{mission:uuid}', [FieldMissionController::class, 'update'])->name('campo.missions.update');
 });
 
 // SIGMAD Campo V0.3 — administración de observaciones (mantener las rutas V0.2.1).

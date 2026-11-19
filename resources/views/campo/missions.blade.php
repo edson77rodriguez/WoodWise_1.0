@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.10.0/ol.css">
 @verbatim
 <style>
-/* SIGMAD Mission Planner V0.4.2 — estilos autocontenidos: sin dependencia de public_html */
+/* SIGMAD Mission Planner V0.4.3 — edición auditada y filtros de copas */
 main.page {max-width:none !important;width:100%;padding:0 !important;margin:0 !important;}
 .cmh {--pine:#0b6045;--deep:#102d24;--ink:#18352a;--muted:#718579;--line:#dfeae2;--mint:#eaf6ed;--gold:#efb247;--card:#fff;min-height:calc(100vh - 66px);padding:24px clamp(15px,2.7vw,44px) 40px;background:radial-gradient(circle at 93% 1%,#d7efe2 0,transparent 37%),linear-gradient(145deg,#f7faf7,#eff6f1 67%,#eef4ef);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;}
 .cmh *{box-sizing:border-box;}.cmh button,.cmh input,.cmh select{font:inherit;}.cmh button{cursor:pointer;}.cmh button:disabled{opacity:.45;cursor:not-allowed}.cmh a{color:inherit}.cmh [hidden]{display:none !important;}
@@ -20,6 +20,12 @@ main.page {max-width:none !important;width:100%;padding:0 !important;margin:0 !i
 .cmh-overlay{position:absolute;inset:0 0 36px;z-index:14;display:flex;justify-content:center;align-items:center;pointer-events:none;background:radial-gradient(circle,#173e2c77,#0b251e88);}.cmh-overlay-card{max-width:360px;text-align:center;background:#0c2b20ed;color:#effaf2;border:1px solid #ffffff2a;box-shadow:0 18px 50px #0005;border-radius:19px;padding:26px 27px;}.cmh-overlay-icon{width:54px;height:54px;background:#17563e;border:1px solid #ffffff2b;display:grid;place-items:center;font-size:26px;border-radius:17px;margin:0 auto 13px}.cmh-overlay-title{font-size:17px;font-weight:850;margin:0 0 8px}.cmh-overlay-desc{font-size:11px;color:#b1d0bd;line-height:1.6;margin:0}.cmh-overlay.error .cmh-overlay-card{border-color:#d98d87}
 .cmh-tooltip{position:absolute;z-index:23;pointer-events:none;max-width:240px;min-width:155px;background:#0c3024ed;color:#fff;border:1px solid #ffffff36;border-radius:9px;padding:8px 10px;font-size:10px;box-shadow:0 7px 19px #0004}.cmh-tooltip b{display:block;font-size:12px;margin-bottom:3px}.cmh-tooltip span{color:#bce2ce;line-height:1.5}.cmh-info-tag{display:inline-flex;align-items:center;gap:7px;background:#e1f4e8;color:#117e51;border-radius:8px;padding:6px 8px;font-size:10px;font-weight:800;}
 .cmh-bottom{margin-top:18px;background:white;border:1px solid var(--line);border-radius:17px;padding:18px 20px;box-shadow:0 10px 25px #143b2310}.cmh-bottom-header{display:flex;align-items:center;justify-content:space-between;gap:10px}.cmh-bottom h2{font-size:17px;margin:0;letter-spacing:-.02em}.cmh-bottom-sub{font-size:11px;color:#7b8f80;margin-top:5px}.cmh-recent-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}.cmh-mission-card{border:1px solid #e0ebe3;border-radius:12px;background:#fafdfa;padding:12px}.cmh-mission-card strong{font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cmh-mission-card small{display:block;color:#718677;line-height:1.6;font-size:10px;margin:6px 0}.cmh-mission-card a{font-size:11px;color:#087a52;font-weight:800;text-decoration:none}.cmh-mission-card a:hover{text-decoration:underline}
+/* Edición segura: conserva composición con revisión auditada y controles visibles */
+.cmh-edit-notice{margin:0 0 15px;padding:13px 17px;border:1px solid #b4d9c3;background:#e6f5eb;border-radius:13px;color:#285a40;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:12px;line-height:1.5}
+.cmh-edit-notice strong{font-weight:850;color:#0b6645}.cmh-edit-notice a{padding:8px 12px;background:#fff;color:#076b4c;border:1px solid #b8d7c3;border-radius:9px;text-decoration:none;font-weight:800}
+.cmh-filterbar{display:flex;gap:6px;margin:8px 0 7px}.cmh-filterbar button{flex:1 1 0;border:1px solid #d7e5db;border-radius:9px;background:#fbfdfa;color:#476c58;font-size:10px;font-weight:800;min-height:34px;padding:6px 8px}.cmh-filterbar button[aria-pressed="true"]{background:#0a7553;border-color:#0a7553;color:#fff}
+.cmh-reason{border-top:1px solid var(--line);padding:12px 19px 13px;background:#f8fcf9}.cmh-reason label{display:block;font-size:11px;font-weight:800;color:#365d47}.cmh-reason textarea{margin-top:7px;width:100%;min-height:67px;resize:vertical;border:1px solid #d1e3d6;border-radius:10px;padding:9px 10px;background:#fff;color:#284b36;font:inherit;font-size:11px}.cmh-reason small{display:block;margin-top:6px;color:#718a7a;font-size:10px;line-height:1.45}.cmh-edit-diff{font-size:11px;font-weight:800;color:#0b7952;padding:5px 0 0}
+.cmh-mission-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}.cmh-mission-actions a{font-size:11px;color:#087a52;font-weight:800;text-decoration:none}.cmh-mission-actions a:hover{text-decoration:underline}.cmh-mission-actions a.cmh-edit-link{background:#e1f3e8;color:#076345;padding:7px 11px;border-radius:8px;border:1px solid #badaca}.cmh-mission-card.editing{border-color:#46a77e;background:#f0faf3}
 .cmh-mapbox:fullscreen{border-radius:0;min-height:100vh}.cmh-mapbox:fullscreen .cmh-map{height:100vh;min-height:100vh}
 @media(max-width:1250px){.cmh-form{grid-template-columns:minmax(280px,330px) minmax(0,1fr)}.cmh-mapbox,.cmh-map{min-height:690px}.cmh-map-titles{max-width:50%}}
 @media(max-width:960px){.cmh{padding:18px 14px 30px}.cmh-form{grid-template-columns:1fr}.cmh-sidebar{display:grid;grid-template-columns:1fr 1fr;}.cmh-sidebar>.cmh-panel-head{grid-column:1/-1}.cmh-sidebar>.cmh-fields{border-right:1px solid var(--line)}.cmh-sidebar>.cmh-selection{padding-top:17px}.cmh-sidebar>.cmh-actions{grid-column:1/-1}.cmh-mapbox,.cmh-map{min-height:610px}.cmh-recent-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -33,34 +39,41 @@ main.page {max-width:none !important;width:100%;padding:0 !important;margin:0 !i
     <header class="cmh-head">
         <div>
             <div class="cmh-eyebrow">SIGMAD Campo / Planificación espacial</div>
-            <h1 class="cmh-title">Preparar misión de campo</h1>
-            <p class="cmh-subtitle">Selecciona copas sobre el ortomosaico en alta resolución, revisa su ubicación y construye una misión trazable. Las predicciones de IA no se modifican.</p>
+            <h1 class="cmh-title">{{ $editMission ? 'Editar misión de campo' : 'Preparar misión de campo' }}</h1>
+            <p class="cmh-subtitle">{{ $editMission ? 'Corrige la lista de copas, agrega nuevas o retira las no utilizadas. Cada cambio queda registrado.' : 'Selecciona copas sobre el ortomosaico en alta resolución, revisa su ubicación y construye una misión trazable. Las predicciones de IA no se modifican.' }}</p>
         </div>
         <a class="cmh-back" href="{{ route('campo.index') }}">← Volver a SIGMAD Campo</a>
     </header>
 
     @if(session('status')) <div class="cmh-alert" role="status">{{ session('status') }}</div> @endif
     @if($errors->any()) <div class="cmh-alert error" role="alert">{{ implode(' · ', $errors->all()) }}</div> @endif
+    @if($editMission)
+        <div class="cmh-edit-notice"><span><strong>Modo edición:</strong> {{ $editMission->title }} · {{ $editMission->selected_count }} copas guardadas. Solo se permite cambiar el nombre y los árboles, no la parcela ni el análisis. Las copas ya utilizadas como evidencia de campo están protegidas.</span><a href="{{ route('campo.missions.create') }}">+ Crear misión nueva</a></div>
+    @endif
 
-    <form id="mission-form" method="POST" action="{{ route('campo.missions.store') }}" class="cmh-form">
+    <form id="mission-form" method="POST" action="{{ $editMission ? route('campo.missions.update', ['mission' => $editMission->uuid]) : route('campo.missions.store') }}" class="cmh-form">
         @csrf
+        @if($editMission)
+            @method('PUT')
+            <input type="hidden" name="revision_token" value="{{ $editToken }}">
+        @endif
         <aside class="cmh-panel cmh-sidebar" aria-label="Configuración de misión">
             <div class="cmh-panel-head"><span class="cmh-step">Paso 01 · Configuración</span><h2 class="cmh-panel-title">Datos de la misión</h2><p class="cmh-panel-sub">Selecciona la parcela y el análisis de referencia.</p></div>
             <div class="cmh-fields">
                 <label class="cmh-field">Nombre de la misión
-                    <input name="title" id="mission-title" required minlength="3" maxlength="120" value="{{ old('title', 'Levantamiento piloto') }}" placeholder="Ej. Brigada 01 · Parcela norte">
+                    <input name="title" id="mission-title" required minlength="3" maxlength="120" value="{{ old('title', $editMission?->title ?? 'Levantamiento piloto') }}" placeholder="Ej. Brigada 01 · Parcela norte">
                 </label>
                 <label class="cmh-field">Parcela asignada
-                    <select name="id_parcela" id="mission-parcel" required><option value="">Selecciona una parcela…</option>
+                    <select name="id_parcela" id="mission-parcel" required @disabled((bool) $editMission)><option value="">Selecciona una parcela…</option>
                         @foreach($parcelas as $p)
-                            <option value="{{ $p->id_parcela }}" @selected(old('id_parcela') == $p->id_parcela)>{{ $p->nom_parcela }}</option>
+                            <option value="{{ $p->id_parcela }}" @selected((string)old('id_parcela', $editMission?->id_parcela) === (string)$p->id_parcela)>{{ $p->nom_parcela }}</option>
                         @endforeach
                     </select>
                 </label>
                 <label class="cmh-field">Análisis UAV completado
-                    <select name="analysis_uuid" id="mission-analysis" required><option value="">Selecciona un análisis…</option>
+                    <select name="analysis_uuid" id="mission-analysis" required @disabled((bool) $editMission)><option value="">Selecciona un análisis…</option>
                         @foreach($jobs as $j)
-                            <option value="{{ $j['uuid'] }}" @selected(old('analysis_uuid') === $j['uuid'])>{{ $j['label'] }}</option>
+                            <option value="{{ $j['uuid'] }}" @selected(old('analysis_uuid', $editMission?->analysisJob?->uuid) === $j['uuid'])>{{ $j['label'] }}</option>
                         @endforeach
                     </select>
                 </label>
@@ -75,16 +88,30 @@ main.page {max-width:none !important;width:100%;padding:0 !important;margin:0 !i
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="7.3"/><path d="m16 16 5 5"/></svg>
                     <input type="search" id="candidate-search" placeholder="Buscar copa, ej. OBJ_084" autocomplete="off" aria-label="Buscar por ID operativo">
                 </div>
+                <div class="cmh-filterbar" role="group" aria-label="Filtrar copas de la misión">
+                    <button type="button" id="filter-selected" aria-pressed="{{ $editMission ? 'true' : 'false' }}">● Solo seleccionadas</button>
+                    <button type="button" id="filter-all" aria-pressed="{{ $editMission ? 'false' : 'true' }}">◯ Mostrar todas</button>
+                </div>
+                <p class="cmh-hint">Este filtro solo oculta o muestra copas. Quita o agrega árboles con los botones y guarda para confirmar.</p>
                 <div class="cmh-section-caption">Catálogo de copas <span id="candidate-count">0 disponibles</span></div>
                 <div id="candidate-list" class="cmh-candidate-list"><div class="cmh-empty-list">Selecciona un análisis para cargar las copas.</div></div>
                 <div class="cmh-section-caption">Selección de la misión <span id="selected-caption">0 elegidas</span></div>
                 <div id="selected-list" class="cmh-selected"><div class="cmh-empty-list" style="width:100%">Sin copas seleccionadas.</div></div>
                 <div id="selected-inputs" hidden></div>
             </div>
+            @if($editMission)
+            <div class="cmh-reason">
+                <label for="change-reason">Motivo de la corrección (obligatorio)
+                    <textarea id="change-reason" name="change_reason" minlength="8" maxlength="500" required placeholder="Ej.: corregí 2 copas superpuestas y agregué 3 copas accesibles para la brigada">{{ old('change_reason') }}</textarea>
+                </label>
+                <small>No se pierden las predicciones originales. Si modificas las copas, vuelve a generar el paquete HD y solicita a los equipos descargar la misión actualizada.</small>
+                <div class="cmh-edit-diff" id="edit-diff" aria-live="polite">Sin cambios pendientes</div>
+            </div>
+            @endif
             <div class="cmh-actions">
                 <div class="cmh-actions-row">
-                    <button type="button" id="clear-mission" class="cmh-btn">Limpiar</button>
-                    <button type="submit" id="save-mission" class="cmh-btn primary" disabled>Guardar misión · 0 copas</button>
+                    <button type="button" id="clear-mission" class="cmh-btn">Quitar todas</button>
+                    <button type="submit" id="save-mission" class="cmh-btn primary" disabled>{{ $editMission ? 'Guardar cambios' : 'Guardar misión' }}</button>
                 </div>
                 <p class="cmh-save-caption">Los técnicos asociados a esta parcela podrán descargar la misión. La asignación individual por brigada aún no está implementada.</p>
             </div>
@@ -123,7 +150,16 @@ main.page {max-width:none !important;width:100%;padding:0 !important;margin:0 !i
         <div class="cmh-bottom-header"><div><h2>Misiones recientes</h2><div class="cmh-bottom-sub">Historial de misiones guardadas y exportaciones reproducibles.</div></div><span class="cmh-info-tag">Datos originales intactos</span></div>
         <div class="cmh-recent-grid">
             @forelse($missions as $m)
-                <div class="cmh-mission-card"><strong>{{ $m->title }}</strong><small>Parcela {{ $m->id_parcela }} · {{ $m->selected_count }} copas · {{ $m->status }} · {{ $m->created_at?->format('Y-m-d') }}</small><a href="{{ route('campo.mission.export', ['mission' => $m->uuid]) }}">Descargar JSON para mapa HD →</a></div>
+                <div class="cmh-mission-card {{ $editMission && $editMission->uuid === $m->uuid ? 'editing' : '' }}">
+                    <strong>{{ $m->title }}</strong>
+                    <small>Parcela {{ $m->id_parcela }} · {{ $m->selected_count }} copas · {{ $m->status }} · {{ $m->created_at?->format('Y-m-d') }}</small>
+                    <div class="cmh-mission-actions">
+                        @if($m->status === 'active')
+                            <a class="cmh-edit-link" href="{{ route('campo.missions.create', ['edit' => $m->uuid]) }}">✎ Editar misión</a>
+                        @endif
+                        <a href="{{ route('campo.mission.export', ['mission' => $m->uuid]) }}">Descargar JSON HD</a>
+                    </div>
+                </div>
             @empty
                 <p class="cmh-empty-list">Todavía no hay misiones creadas.</p>
             @endforelse
@@ -137,7 +173,9 @@ main.page {max-width:none !important;width:100%;padding:0 !important;margin:0 !i
 <script src="https://cdn.jsdelivr.net/npm/ol@10.10.0/dist/ol.js"></script>
 <script>
 window.SIGMAD_MISSIONS_BOOT = @json($jobs);
-window.SIGMAD_MISSIONS_OLD_IDS = @json(old('selected_ids', []));
+window.SIGMAD_MISSIONS_OLD_IDS = @json(old('selected_ids', $editIds));
+window.SIGMAD_MISSIONS_EDIT_UUID = @json($editMission?->uuid);
+window.SIGMAD_MISSIONS_EDIT_IDS = @json($editIds);
 </script>
 @verbatim
 <script>
@@ -146,6 +184,9 @@ window.SIGMAD_MISSIONS_OLD_IDS = @json(old('selected_ids', []));
     const $ = id => document.getElementById(id);
     const jobs = Array.isArray(window.SIGMAD_MISSIONS_BOOT) ? window.SIGMAD_MISSIONS_BOOT : [];
     const select = $('mission-analysis');
+    const isEditing=Boolean(window.SIGMAD_MISSIONS_EDIT_UUID);
+    const originalIds=new Set((window.SIGMAD_MISSIONS_EDIT_IDS||[]).map(String));
+    let selectedOnly=isEditing;
     const selected = new Set();
     const registry = new Map();
     let map=null, vectorSource=null, vectorLayer=null, previewLayer=null, cogLayer=null;
@@ -183,13 +224,18 @@ window.SIGMAD_MISSIONS_OLD_IDS = @json(old('selected_ids', []));
         stylePicked=new ol.style.Style({stroke:new ol.style.Stroke({color:'#ffc35c',width:3.25}),fill:new ol.style.Fill({color:'rgba(255,181,58,.34)'})});
         styleHover=new ol.style.Style({stroke:new ol.style.Stroke({color:'#f8fff3',width:2.6}),fill:new ol.style.Fill({color:'rgba(48,217,158,.22)'})});
     }
-    function styleFeature(f){const id=String(f.get('operational_id')??'');return selected.has(id)?stylePicked:id===hoveredId?styleHover:styleNormal;}
+    function styleFeature(f){const id=String(f.get('operational_id')??'');if(selectedOnly&&!selected.has(id))return null;return selected.has(id)?stylePicked:id===hoveredId?styleHover:styleNormal;}
     function renderSelected(){
         $('selected-count').textContent=String(selected.size);
         $('selected-caption').textContent=`${selected.size} elegidas`;
         $('selected-progress').style.width=`${Math.min(selected.size/200*100,100)}%`;
         $('save-mission').disabled=selected.size===0 || !currentJob;
-        $('save-mission').textContent=`Guardar misión · ${selected.size} copas`;
+        $('save-mission').textContent=isEditing?`Guardar cambios · ${selected.size} copas`:`Guardar misión · ${selected.size} copas`;
+        if(isEditing){
+            const add=[...selected].filter(id=>!originalIds.has(id)).length;
+            const remove=[...originalIds].filter(id=>!selected.has(id)).length;
+            $('edit-diff').textContent=`Cambios pendientes: +${add} copa${add===1?'':'s'} · −${remove} copa${remove===1?'':'s'}`;
+        }
         const out=$('selected-list'), inputs=$('selected-inputs');out.replaceChildren();inputs.replaceChildren();
         if(!selected.size){const n=document.createElement('div');n.className='cmh-empty-list';n.style.width='100%';n.textContent='Sin copas seleccionadas.';out.append(n);}
         for(const id of selected){
@@ -209,10 +255,12 @@ window.SIGMAD_MISSIONS_OLD_IDS = @json(old('selected_ids', []));
     }
     function renderCatalog(){
         const list=$('candidate-list');list.replaceChildren();const query=$('candidate-search').value.trim().toLowerCase();
-        const ids=(query?allIds.filter(id=>id.toLowerCase().includes(query)):allIds).slice(0,60);
-        const total=query?allIds.filter(id=>id.toLowerCase().includes(query)).length:allIds.length;
-        $('candidate-count').textContent=`${total} disponible${total===1?'':'s'}`;
-        if(!ids.length){const n=document.createElement('div');n.className='cmh-empty-list';n.textContent=query?'No se encontraron copas.':'Selecciona un análisis para cargar las copas.';list.append(n);return;}
+        const visibleIds=selectedOnly?allIds.filter(id=>selected.has(id)):allIds;
+        const matches=query?visibleIds.filter(id=>id.toLowerCase().includes(query)):visibleIds;
+        const ids=matches.slice(0,60);
+        const total=matches.length;
+        $('candidate-count').textContent=`${total} ${selectedOnly?'elegida':'disponible'}${total===1?'':'s'}`;
+        if(!ids.length){const n=document.createElement('div');n.className='cmh-empty-list';n.textContent=selectedOnly?'No hay copas visibles. Pulsa «Mostrar todas» para volver a agregar.':query?'No se encontraron copas.':'Selecciona un análisis para cargar las copas.';list.append(n);return;}
         const frag=document.createDocumentFragment();
         for(const id of ids){
             const f=registry.get(id);const picked=selected.has(id);
@@ -344,10 +392,24 @@ window.SIGMAD_MISSIONS_OLD_IDS = @json(old('selected_ids', []));
         if(seq!==loadSeq)return;
         await initCog(job,seq);
     }
+    function applySelectionFilter(only){
+        selectedOnly=only;
+        $('filter-selected').setAttribute('aria-pressed',String(only));
+        $('filter-all').setAttribute('aria-pressed',String(!only));
+        hoveredId=null;
+        $('map-tooltip').hidden=true;
+        updateMapStyle();renderCatalog();
+        status(only?'Mostrando únicamente las copas elegidas. Pulsa «Mostrar todas» para agregar otras.':'Mostrando todas las copas disponibles para esta misión.');
+    }
+    $('filter-selected').addEventListener('click',()=>applySelectionFilter(true));
+    $('filter-all').addEventListener('click',()=>applySelectionFilter(false));
     $('candidate-search').addEventListener('input',renderCatalog);
     $('candidate-search').addEventListener('keydown',e=>{if(e.key==='Enter')e.preventDefault();});
     select.addEventListener('change',loadAnalysis);
-    $('clear-mission').addEventListener('click',()=>{selected.clear();renderSelected();renderCatalog();status('Selección vaciada.');});
+    $('clear-mission').addEventListener('click',()=>{
+        if(selected.size && !window.confirm('¿Quitar todas las copas de la selección actual? No se guardará nada hasta pulsar Guardar cambios.'))return;
+        selected.clear();renderSelected();renderCatalog();status('Selección vaciada. El cambio todavía no está guardado.');
+    });
     $('map-fit').addEventListener('click',()=>{if(currentJob)fitExtent(currentJob.bounds.map(Number),19);});
     $('map-fit-selected').addEventListener('click',()=>{if(selected.size)fitExtent(selectedExtents(),21);else status('Selecciona una o más copas para enfocarlas.','warning');});
     $('map-toggle-crowns').addEventListener('click',()=>{polygonsVisible=!polygonsVisible;if(vectorLayer)vectorLayer.setVisible(polygonsVisible);$('map-toggle-crowns').setAttribute('aria-pressed',String(polygonsVisible));$('map-toggle-crowns').title=polygonsVisible?'Ocultar contornos':'Mostrar contornos';});

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\AnalysisJob;
+use App\Models\FieldObservation;
 use App\Models\FieldMission;
 use App\Models\Parcela;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -26,9 +28,26 @@ class FieldMissionController extends Controller
             ->where('parcelas.id_parcela', $mission->id_parcela)->exists(), 403);
     }
 
+    // Token optimista: detecta cambios de otro administrador antes de sobrescribir.
+    private function revisionToken(FieldMission $mission): string
+    {
+        return hash('sha256', json_encode([
+            'title' => $mission->title,
+            'selected_count' => (int) $mission->selected_count,
+            'geojson' => $mission->geojson,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+    }
+
     public function create(Request $request)
     {
         abort_unless($this->isAdmin($request), 403);
+        $editMission = null;
+        if ($request->filled('edit')) {
+            $request->validate(['edit' => ['required', 'uuid']]);
+            $editMission = FieldMission::with('analysisJob.mosaic')
+                ->where('uuid', $request->query('edit'))
+                ->where('status', 'active')->firstOrFail();
+        }
         $jobs = AnalysisJob::query()
             ->with(['mosaic', 'artifacts'])
             ->where('analysis_type', 'wall_to_wall_tree_crown')
@@ -50,9 +69,29 @@ class FieldMissionController extends Controller
                         ? route('analysis.map.cog-url', ['analysisUuid' => $j->uuid]) : null,
                 ];
             })->values();
+        // Una misión anterior a las 35 recientes debe seguir siendo editable.
+        if ($editMission && !$jobs->contains('uuid', $editMission->analysisJob->uuid)) {
+            $ej = AnalysisJob::with(['mosaic', 'artifacts'])->findOrFail($editMission->analysis_job_id);
+            $b = $ej->mosaic?->bounds;
+            abort_unless($ej->status === 'completed' && $ej->mosaic && $ej->artifacts->contains('type', 'geojson'), 422);
+            $jobs->push([
+                'uuid' => $ej->uuid, 'crs' => $ej->mosaic->crs,
+                'label' => $ej->mosaic->original_name . ' · ' . substr($ej->uuid, 0, 8),
+                'bounds' => $b ? [(float)($b['left'] ?? 0), (float)($b['bottom'] ?? 0),
+                    (float)($b['right'] ?? 0), (float)($b['top'] ?? 0)] : null,
+                'geojson_url' => route('analysis.map.geojson', ['analysisUuid' => $ej->uuid]),
+                'preview_url' => !empty($ej->mosaic->preview_object_key)
+                    ? route('analysis.map.preview', ['analysisUuid' => $ej->uuid]) : null,
+                'cog_url' => filter_var(data_get($ej->mosaic->metadata, 'web_cog.verified', false), FILTER_VALIDATE_BOOLEAN)
+                    ? route('analysis.map.cog-url', ['analysisUuid' => $ej->uuid]) : null,
+            ]);
+        }
+        $editIds = $editMission ? collect(data_get($editMission->geojson, 'features', []))
+            ->pluck('properties.operational_id')->filter()->map(fn ($id) => (string)$id)->values()->all() : [];
+        $editToken = $editMission ? $this->revisionToken($editMission) : null;
         $parcelas = Parcela::orderBy('nom_parcela')->get(['id_parcela', 'nom_parcela']);
         $missions = FieldMission::latest()->limit(30)->get();
-        return view('campo.missions', compact('jobs', 'parcelas', 'missions'));
+        return view('campo.missions', compact('jobs', 'parcelas', 'missions', 'editMission', 'editIds', 'editToken'));
     }
 
     public function store(Request $request)
@@ -124,6 +163,131 @@ class FieldMissionController extends Controller
             'selected_count' => count($found),
         ]);
         return redirect()->route('campo.missions.create')->with('status', 'Misión creada: ' . count($found) . ' copas asignadas.');
+    }
+
+    /**
+     * Editar composición de copas SIN modificar el análisis ni la parcela.
+     * Las copas con medición A o dictamen científico quedan protegidas.
+     */
+    public function update(Request $request, FieldMission $mission)
+    {
+        abort_unless($this->isAdmin($request), 403);
+        $v = $request->validate([
+            'title' => ['required', 'string', 'min:3', 'max:120'],
+            'selected_ids' => ['required', 'array', 'min:1', 'max:200'],
+            'selected_ids.*' => ['required', 'string', 'max:100', 'distinct'],
+            'revision_token' => ['required', 'string', 'size:64'],
+            'change_reason' => ['required', 'string', 'min:8', 'max:500'],
+        ]);
+
+        $result = DB::transaction(function () use ($request, $mission, $v) {
+            $current = FieldMission::query()->whereKey($mission->getKey())->lockForUpdate()->firstOrFail();
+            if ($current->status !== 'active') {
+                throw ValidationException::withMessages(['selected_ids' => 'Solo pueden editarse misiones activas.']);
+            }
+            if (!hash_equals($this->revisionToken($current), $v['revision_token'])) {
+                throw ValidationException::withMessages(['selected_ids' => 'Esta misión cambió desde que la abriste. Recarga la edición antes de guardar.']);
+            }
+
+            $job = AnalysisJob::with(['mosaic.project', 'artifacts'])->findOrFail($current->analysis_job_id);
+            abort_unless($job->status === 'completed' && $job->analysis_type === 'wall_to_wall_tree_crown', 422);
+            $artifact = $job->artifacts->firstWhere('type', 'geojson');
+            abort_unless($artifact && $job->result_prefix &&
+                str_starts_with($artifact->object_key, $job->result_prefix), 422);
+            $disk = Storage::disk('r2');
+            abort_unless($disk->exists($artifact->object_key), 404);
+            if ($disk->size($artifact->object_key) > 40 * 1024 * 1024) {
+                throw ValidationException::withMessages(['selected_ids' => 'GeoJSON supera 40 MB. No se alteró la misión.']);
+            }
+            $source = json_decode($disk->get($artifact->object_key), true);
+            if (!is_array($source) || ($source['type'] ?? '') !== 'FeatureCollection' ||
+                !is_array($source['features'] ?? null)) {
+                throw ValidationException::withMessages(['selected_ids' => 'GeoJSON original inválido. No se alteró la misión.']);
+            }
+            $wanted = array_fill_keys(array_map('strval', $v['selected_ids']), true);
+            $found = [];
+            foreach ($source['features'] as $feature) {
+                if (!is_array($feature)) continue;
+                $id = $feature['properties']['operational_id'] ?? null;
+                if (!is_scalar($id) || !isset($wanted[(string)$id])) continue;
+                $id = (string)$id;
+                if (isset($found[$id])) {
+                    throw ValidationException::withMessages(['selected_ids' => "ID duplicado en GeoJSON original: {$id}."]);
+                }
+                if (!in_array($feature['geometry']['type'] ?? '', ['Polygon', 'MultiPolygon'], true)) {
+                    throw ValidationException::withMessages(['selected_ids' => "Geometría inválida para {$id}."]);
+                }
+                $found[$id] = [
+                    'type' => 'Feature', 'id' => $id,
+                    'geometry' => $feature['geometry'],
+                    'properties' => [
+                        'operational_id' => $id,
+                        'primary_model' => (string)($feature['properties']['primary_model'] ?? ''),
+                        'requires_review' => (bool)($feature['properties']['requires_review'] ?? false),
+                    ],
+                ];
+            }
+            if (count($found) !== count($wanted)) {
+                throw ValidationException::withMessages(['selected_ids' => 'Algunas copas ya no existen en el GeoJSON original. Recarga el mapa.']);
+            }
+
+            $before = $current->geojson;
+            $oldIds = collect(data_get($before, 'features', []))
+                ->pluck('properties.operational_id')->filter()->map(fn ($id) => (string)$id)->values()->all();
+            $newIds = array_keys($found);
+            $added = array_values(array_diff($newIds, $oldIds));
+            $removed = array_values(array_diff($oldIds, $newIds));
+
+            if ($removed) {
+                $linked = DB::table('field_crown_links')->where('field_mission_id', $current->id)
+                    ->whereIn('operational_id', $removed)->pluck('operational_id')->all();
+                $measured = FieldObservation::query()->where('grupo', 'A')
+                    ->where('payload->mission_uuid', $current->uuid)
+                    ->whereIn('candidate_id', $removed)->pluck('candidate_id')->all();
+                $protected = array_values(array_unique(array_merge($linked, $measured)));
+                if ($protected) {
+                    throw ValidationException::withMessages(['selected_ids' =>
+                        'No se pueden quitar copas con mediciones de campo o dictámenes: '
+                        . implode(', ', array_slice($protected, 0, 12))
+                        . '. Conserva esas copas y realiza una revisión científica.']);
+                }
+            }
+
+            $after = ['type' => 'FeatureCollection', 'features' => array_values($found)];
+            $beforeHash = hash('sha256', json_encode($before, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+            $afterHash = hash('sha256', json_encode($after, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+            $titleChanged = $current->title !== $v['title'];
+            if (!$added && !$removed && !$titleChanged && hash_equals($beforeHash, $afterHash)) {
+                return ['added' => 0, 'removed' => 0, 'unchanged' => true];
+            }
+
+            $oldCount = (int)$current->selected_count;
+            $oldTitle = $current->title;
+            $current->title = $v['title'];
+            $current->geojson = $after;
+            $current->selected_count = count($found);
+            $current->save();
+            DB::table('field_mission_revision_events')->insert([
+                'field_mission_id' => $current->id,
+                'edited_by' => $request->user()->id,
+                'previous_count' => $oldCount,
+                'new_count' => count($found),
+                'previous_title' => $oldTitle,
+                'new_title' => $v['title'],
+                'added_ids' => json_encode($added, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                'removed_ids' => json_encode($removed, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                'before_sha256' => $beforeHash,
+                'after_sha256' => $afterHash,
+                'reason' => $v['change_reason'],
+                'created_at' => now(),
+            ]);
+            return ['added' => count($added), 'removed' => count($removed), 'unchanged' => false];
+        });
+
+        return redirect()->route('campo.missions.create', ['edit' => $mission->uuid])
+            ->with('status', $result['unchanged']
+                ? 'La misión ya estaba actualizada. No se generó una revisión adicional.'
+                : "Misión actualizada: {$result['added']} copas agregadas y {$result['removed']} retiradas. Regenera el mapa HD y sincroniza a los brigadistas antes de trabajar.");
     }
 
     public function data(Request $request, FieldMission $mission)
