@@ -32,3 +32,5 @@ Route::middleware(['auth', 'role:Administrador'])->group(function () {
 
 // SIGMAD Campo V0.3.2 — mapa administrativo (solo lectura).
 require __DIR__ . '/campo_registros_capas.php';
+// SIGMAD Campo V0.4.0 — Vinculación científica.
+require __DIR__ . '/campo_vinculaciones.php';

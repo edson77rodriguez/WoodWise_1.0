@@ -16,6 +16,9 @@
         <div class="cr-head-actions">
             <a class="cr-btn cr-light" href="{{ route('campo.index') }}">Volver a captura</a>
             <a class="cr-btn cr-light" href="{{ route('campo.missions.create') }}">Misiones</a>
+            <a class="cr-btn cr-light" href="{{ route('campo.links.index') }}">
+    Vincular copas IA
+</a>
         </div>
     </header>
     @if($errors->any())<div class="cr-notice cr-error">{{ implode(' · ', $errors->all()) }}</div>@endif
