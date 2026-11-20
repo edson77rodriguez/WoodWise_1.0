@@ -222,6 +222,9 @@ Route::get(
 );
 
 
+    // SIGMAD SAM2-R1 — rutas dentro de auth + role:Administrador
+    require __DIR__ . '/sam2.php';
+
 });
 
 // =====================================================================
