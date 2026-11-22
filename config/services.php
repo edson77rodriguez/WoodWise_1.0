@@ -50,4 +50,10 @@ return [
         'secret' => env('N8N_SYNC_WEBHOOK_SECRET'),
     ],
 
+    'ai_v08s' => [
+        'url' => env('AI_V08S_URL'),
+        'token' => env('AI_V08S_SHARED_TOKEN'),
+    ],
+
+
 ];
