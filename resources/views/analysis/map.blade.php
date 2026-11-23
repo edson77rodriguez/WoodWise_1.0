@@ -2259,6 +2259,29 @@
 }
 
 
+
+        /* SIGMAD V0.8B.5 — Exportación cartográfica PNG (solo presentación). */
+        .png-export-control { position: relative; }
+        #png-export-panel {
+            position: absolute; top: calc(100% + 8px); right: 0; z-index: 190;
+            width: min(310px, calc(100vw - 24px)); padding: 14px;
+            display: grid; gap: 10px; border: 1px solid #a9cdb8;
+            border-radius: 12px; background: #ffffff; color: #183b2a;
+            box-shadow: 0 16px 38px rgba(0, 30, 17, .24);
+        }
+        #png-export-panel[hidden] { display: none !important; }
+        #png-export-panel label { display: grid; gap: 5px; font-size: 11px; font-weight: 800; }
+        #png-export-panel select { width: 100%; padding: 9px; border: 1px solid #bdd5c8;
+            border-radius: 8px; background: #f9fcfa; color: #193b2a; font-size: 12px; }
+        #png-export-go { width: 100%; min-height: 39px; border: 0; border-radius: 9px;
+            background: #0b7854; color: white; cursor: pointer; font-weight: 800; }
+        #png-export-go:disabled { opacity: .55; cursor: wait; }
+        #png-export-status { color: #416654; font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+        .png-export-note { margin: 0; color: #697e72; font-size: 10px; line-height: 1.45; }
+        @media (max-width: 760px) {
+            #png-export-panel { position: fixed; top: 167px; right: 9px; max-height: 66dvh;
+                overflow-y: auto; width: min(310px, calc(100vw - 18px)); }
+        }
     </style>
 </head>
 
@@ -2536,6 +2559,38 @@
             </div>
 
             <div class="toolbar-right">
+                <div class="tool-group png-export-control">
+                    <button id="png-export-open" class="map-tool" type="button" title="Descargar mapa PNG" aria-expanded="false" aria-controls="png-export-panel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span class="tool-label">Exportar PNG</span><span class="tool-label-short">PNG</span>
+                    </button>
+                    <section id="png-export-panel" hidden aria-label="Opciones de exportación PNG">
+                        <strong style="font-size:13px;">Descargar mapa como PNG</strong>
+                        <label>Contenido
+                            <select id="png-export-mode">
+                                <option value="seg">Mosaico + segmentaciones configuradas</option>
+                                <option value="mosaic">Solo ortomosaico</option>
+                            </select>
+                        </label>
+                        <label>Área a exportar
+                            <select id="png-export-area">
+                                <option value="actual">Vista actual</option>
+                                <option value="focused">Área enfocada</option>
+                                <option value="full">Ortomosaico completo</option>
+                            </select>
+                        </label>
+                        <label>Resolución de salida
+                            <select id="png-export-width">
+                                <option value="1600">Estándar — 1600 px de ancho</option>
+                                <option value="2560" selected>Alta — 2560 px de ancho</option>
+                                <option value="3200">Muy alta — 3200 px de ancho</option>
+                            </select>
+                        </label>
+                        <button type="button" id="png-export-go">Generar y descargar PNG</button>
+                        <div id="png-export-status" role="status" aria-live="polite">Se respetan filtros, modelos visibles y opacidad. No cambia el análisis.</div>
+                        <p class="png-export-note">Imagen para presentación, no reemplaza al GeoTIFF georreferenciado. No incluye GPS ni puntos de campo.</p>
+                    </section>
+                </div>
                 <div class="tool-group desktop-panel-tools">
                     <button id="collapse-explorer" class="map-tool" type="button" aria-label="Contraer explorador" title="Mostrar u ocultar explorador" aria-pressed="false">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
@@ -4792,6 +4847,181 @@
         qaEls.status.textContent=`Exportados ${rows.length} dictámenes en formato tabulado compatible con Excel.`;
     });
 
+
+
+    /* ===================================================================
+       SIGMAD V0.8B.5 — Exportación PNG sin modificar la fuente GIS.
+       Nueva instancia de OpenLayers: conserva intacto el visor principal.
+       Exporta el área visible/enfocada/completa, sin GPS personal.
+       El COG se utiliza si está listo. Si solo hay preview, se advierte.
+    =================================================================== */
+    const pngEls = {
+        open: document.getElementById('png-export-open'),
+        panel: document.getElementById('png-export-panel'),
+        mode: document.getElementById('png-export-mode'),
+        area: document.getElementById('png-export-area'),
+        width: document.getElementById('png-export-width'),
+        go: document.getElementById('png-export-go'),
+        status: document.getElementById('png-export-status'),
+    };
+    let pngExportBusy = false;
+    pngEls.open.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const isOpen = pngEls.panel.hidden;
+        pngEls.panel.hidden = !isOpen;
+        pngEls.open.setAttribute('aria-expanded', String(isOpen));
+    });
+    pngEls.panel.addEventListener('click', (event) => event.stopPropagation());
+    document.addEventListener('click', () => {
+        pngEls.panel.hidden = true;
+        pngEls.open.setAttribute('aria-expanded', 'false');
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            pngEls.panel.hidden = true;
+            pngEls.open.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+    function pngDownloadBlob(blob, name) {
+        const href = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = href;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(href), 120000);
+    }
+
+    async function pngCreateExport() {
+        if (pngExportBusy) return;
+        pngExportBusy = true;
+        pngEls.go.disabled = true;
+        let exportMap = null;
+        let timeoutId = null;
+        try {
+            const mode = pngEls.mode.value;
+            const area = pngEls.area.value;
+            const width = Number(pngEls.width.value);
+            const originalSize = map.getSize();
+            if (!originalSize || originalSize[0] < 100 || originalSize[1] < 100) {
+                throw new Error('El mapa aún no tiene tamaño válido. Abre el visor y vuelve a intentar.');
+            }
+            const height = Math.round(width * originalSize[1] / originalSize[0]);
+            if (!Number.isFinite(height) || height < 100 || width * height > 14_000_000) {
+                throw new Error('El tamaño de imagen excede el límite seguro del navegador. Prueba una resolución menor.');
+            }
+            if (!cogReady && !previewAvailable) {
+                throw new Error('Todavía no está disponible el ortomosaico COG ni una vista previa exportable.');
+            }
+            const extent = area === 'full' ? mapBounds
+                : area === 'focused' ? focusedTargetExtent()
+                : map.getView().calculateExtent(originalSize);
+            if (!validExtent(extent)) {
+                throw new Error('No es válida el área elegida para exportar.');
+            }
+            const useCog = cogReady && !cogFailed && !!cogSource;
+            pngEls.status.textContent = useCog
+                ? 'Preparando imagen de alta calidad desde el COG…'
+                : 'Preparando PNG desde la vista previa; su detalle será limitado…';
+
+            const layers = [];
+            // El modo solo mosaico ignora las capas de IA, pero conserva la
+            // opacidad elegida para el raster. El modo segmentado respeta
+            // la visibilidad del mosaico que haya definido el usuario.
+            const includeRaster = mode === 'mosaic' || orthomosaicVisible;
+            if (includeRaster) {
+                if (useCog) {
+                    layers.push(new ol.layer.WebGLTile({
+                        source: cogSource, opacity: currentRasterOpacity,
+                        visible: true, zIndex: 1, preload: 0,
+                    }));
+                } else {
+                    layers.push(new ol.layer.Image({
+                        source: new ol.source.ImageStatic({
+                            url: previewUrl, imageExtent: mapBounds,
+                            projection: mapProjection, crossOrigin: 'anonymous',
+                            interpolate: true,
+                        }),
+                        opacity: currentRasterOpacity, visible: true, zIndex: 0,
+                    }));
+                }
+            }
+            if (mode === 'seg') {
+                // getFeatureStyle usa los estados actuales (filtros, búsqueda,
+                // modelo visible, opacidad y resalte de revisión).
+                layers.push(new ol.layer.Vector({
+                    source: vectorSource, style: getFeatureStyle,
+                    zIndex: 10, declutter: true,
+                }));
+            }
+
+            // Blanco debajo de cualquier área sin datos del ortomosaico.
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const exportView = new ol.View({
+                projection: mapProjection,
+                rotation: map.getView().getRotation() || 0,
+                center: ol.extent.getCenter(extent),
+                constrainResolution: false,
+            });
+            exportView.fit(extent, {
+                size: [width, height],
+                padding: [0, 0, 0, 0], duration: 0,
+            });
+            exportMap = new ol.Map({
+                target: canvas, layers, view: exportView,
+                controls: [], interactions: [], pixelRatio: 1,
+            });
+            const mapToRender = exportMap;
+            const result = await new Promise((resolve, reject) => {
+                let completed = false;
+                const finish = (err, blob) => {
+                    if (completed) return;
+                    completed = true;
+                    clearTimeout(timeoutId);
+                    if (err) reject(err); else resolve(blob);
+                };
+                timeoutId = setTimeout(() => finish(new Error(
+                    'La exportación tardó demasiado. El COG/WebGL podría impedirla; prueba una resolución menor o revisa el servidor.'
+                )), 35000);
+                mapToRender.once('rendercomplete', () => {
+                    try {
+                        canvas.toBlob((blob) => {
+                            if (!blob || blob.size < 2000) {
+                                finish(new Error('No se pudo leer la imagen. Comprueba CORS del COG y que el mapa esté cargado.'));
+                            } else {
+                                finish(null, blob);
+                            }
+                        }, 'image/png');
+                    } catch (error) {
+                        finish(new Error('El navegador bloqueó la lectura del COG/canvas: ' + error.message));
+                    }
+                });
+                mapToRender.renderSync();
+            });
+            const date = new Date().toISOString().slice(0, 10);
+            const type = mode === 'mosaic' ? 'solo_mosaico' : 'segmentacion_configurada';
+            const name = `SIGMAD_${qaAnalysisUUID.slice(0,8)}_${type}_${area}_${width}px_${date}.png`;
+            pngDownloadBlob(result, name);
+            pngEls.status.textContent = `PNG generado: ${width} × ${height} px (${(result.size/1048576).toFixed(1)} MB)`
+                + (useCog ? ' · fuente COG.' : ' · fuente preview (detalle limitado).');
+        } catch (error) {
+            console.error('Exportación SIGMAD PNG:', error);
+            pngEls.status.textContent = 'No se pudo exportar: ' + error.message;
+        } finally {
+            clearTimeout(timeoutId);
+            if (exportMap) {
+                exportMap.setTarget(null);
+                exportMap.dispose();
+            }
+            pngExportBusy = false;
+            pngEls.go.disabled = false;
+        }
+    }
+    pngEls.go.addEventListener('click', pngCreateExport);
 
     /* =========================================================
        INICIO
