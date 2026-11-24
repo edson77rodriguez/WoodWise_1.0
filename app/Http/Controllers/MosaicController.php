@@ -589,20 +589,63 @@ class MosaicController extends Controller
 
     }
 
-public function inspect(
-    Mosaic $mosaic,
-    AiService $ai
-)
+public function inspect(Mosaic $mosaic)
 {
-    $mosaic->update([
-        'status' => 'inspecting',
-    ]);
+    // La petición HTTP sólo registra trabajo. No descarga ni analiza el GeoTIFF.
+    $originalStatus = $mosaic->status;
+    if (!in_array($originalStatus, ['uploaded', 'failed'], true)) {
+        return redirect()->route('mosaics.index')
+            ->with('error', 'Este mosaico ya está en proceso o no está listo para inspección.');
+    }
+
+    $claimed = Mosaic::whereKey($mosaic->getKey())
+        ->where('status', $originalStatus)
+        ->update(['status' => 'inspecting']);
+    if (!$claimed) {
+        return redirect()->route('mosaics.index')
+            ->with('error', 'El estado del mosaico cambió. Recarga y revisa su estado.');
+    }
 
     try {
-        $result = $ai->inspectMosaic(
-            $mosaic->uuid,
-            $mosaic->object_key
-        );
+        \App\Jobs\InspectMosaicJob::dispatch($mosaic->getKey())
+            ->onConnection('database_mosaic')
+            ->onQueue('mosaic-long');
+    } catch (\Throwable $e) {
+        Mosaic::whereKey($mosaic->getKey())->where('status', 'inspecting')
+            ->update(['status' => $originalStatus]);
+        Log::error('No se pudo encolar inspección de mosaico', [
+            'mosaic_uuid' => $mosaic->uuid, 'error' => $e->getMessage(),
+        ]);
+        return redirect()->route('mosaics.index')
+            ->with('error', 'No fue posible registrar la inspección en la cola. Revisa el registro del servidor.');
+    }
+
+    return redirect()->route('mosaics.index')
+        ->with('success', 'Inspección registrada en la cola. Actualiza la página para consultar el estado.');
+}
+
+/**
+ * Ejecutado ÚNICAMENTE por el job en CLI. Inspecciona el GeoTIFF y conserva
+ * los metadatos/insumos existentes; nunca marca fallida la fuente si falla el COG.
+ */
+public function processInspectionJob(Mosaic $mosaic, AiService $ai): void
+{
+    $mosaic->refresh();
+    if ($mosaic->status !== 'inspecting') {
+        Log::warning('Inspección de mosaico omitida por estado no elegible', [
+            'mosaic_uuid' => $mosaic->uuid, 'status' => $mosaic->status,
+        ]);
+        return;
+    }
+
+    try {
+        $result = $ai->inspectMosaic($mosaic->uuid, $mosaic->object_key);
+        if (($result['mosaic_uuid'] ?? null) !== $mosaic->uuid
+            || ($result['object_key'] ?? null) !== $mosaic->object_key
+            || (isset($result['size_bytes'])
+                && (int) $result['size_bytes'] !== (int) $mosaic->size_bytes)) {
+            throw new \RuntimeException('La inspección no corresponde al objeto R2 registrado.');
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -686,199 +729,115 @@ public function inspect(
                 now(),
         ]);
 
+        // La fuente científica ya quedó inspeccionada. El COG es un derivado
+        // independiente y se genera en OTRA tarea, con su propio tiempo límite.
         $mosaic->refresh();
-        $mosaic->loadMissing('project');
-
-        /*
-        |--------------------------------------------------------------------------
-        | V0.8A.WEB.4 - COG web automático
-        |--------------------------------------------------------------------------
-        |
-        | El COG es un derivado de visualización del MOSAICO, no del AnalysisJob.
-        | Se genera una sola vez por fuente verificada y se reutiliza en todos
-        | los análisis posteriores del mismo mosaico.
-        |
-        | Si falla, NO invalida la inspección científica del GeoTIFF original.
-        |
-        */
-        $cogGenerated = false;
-        $cogAlreadyValid = false;
-
         try {
-            if ($this->hasCurrentVerifiedWebCog($mosaic)) {
-                $cogAlreadyValid = true;
-            } else {
-                $cogResult = $ai->generateMosaicWebCog(
-                    $mosaic->uuid,
-                    $mosaic->object_key
-                );
-
-                $this->persistWebCogResult(
-                    $mosaic,
-                    $cogResult
-                );
-
-                $cogGenerated = true;
-            }
-        } catch (\Throwable $cogError) {
-            Log::warning(
-                'La inspección terminó, pero no fue posible generar el COG web.',
-                [
-                    'mosaic_uuid' =>
-                        $mosaic->uuid,
-
-                    'object_key' =>
-                        $mosaic->object_key,
-
-                    'error' =>
-                        $cogError->getMessage(),
-                ]
-            );
-
-            $this->recordWebCogGenerationFailure(
-                $mosaic,
-                $cogError
-            );
+            \App\Jobs\GenerateMosaicCogJob::dispatch($mosaic->getKey(), false)
+                ->onConnection('database_mosaic')
+                ->onQueue('mosaic-long');
+            $metadata = $this->normalizeMosaicMetadata($mosaic->metadata);
+            $metadata['web_cog_generation'] = [
+                'status' => 'queued', 'queued_at' => now()->toIso8601String(),
+            ];
+            $mosaic->update(['metadata' => $metadata]);
+        } catch (\Throwable $cogQueueError) {
+            Log::warning('Inspección correcta, pero no se pudo encolar el COG.', [
+                'mosaic_uuid' => $mosaic->uuid, 'error' => $cogQueueError->getMessage(),
+            ]);
+            $this->recordWebCogGenerationFailure($mosaic, $cogQueueError);
         }
-
-        $message = 'Ortomosaico inspeccionado correctamente.';
-
-        if ($cogGenerated) {
-            $message .= ' COG web de alta resolución generado y verificado.';
-        } elseif ($cogAlreadyValid) {
-            $message .= ' El COG web existente continúa válido.';
-        } else {
-            $message .= ' El COG web quedó pendiente; el GeoTIFF original permanece válido.';
-        }
-
-        return redirect()
-            ->route('mosaics.index')
-            ->with(
-                'success',
-                $message
-            );
-
     } catch (\Throwable $e) {
-        Log::error(
-            'Error inspeccionando ortomosaico',
-            [
-                'mosaic_uuid' =>
-                    $mosaic->uuid,
-
-                'error' =>
-                    $e->getMessage(),
-            ]
-        );
-
-        $mosaic->update([
-            'status' =>
-                'failed',
+        Log::error('Error inspeccionando ortomosaico (cola)', [
+            'mosaic_uuid' => $mosaic->uuid, 'error' => $e->getMessage(),
         ]);
-
-        return redirect()
-            ->route('mosaics.index')
-            ->with(
-                'error',
-                'No se pudo inspeccionar: '
-                . $e->getMessage()
-            );
+        $mosaic->refresh();
+        $metadata = $this->normalizeMosaicMetadata($mosaic->metadata);
+        $metadata['inspection_failure'] = [
+            'at' => now()->toIso8601String(), 'error' => $e->getMessage(),
+        ];
+        $mosaic->update(['status' => 'failed', 'metadata' => $metadata]);
     }
 }
-
 
 /**
- * Generar o recuperar el COG web de un mosaico READY.
- *
- * Sirve para:
- * - backfill de mosaicos antiguos;
- * - reintentos después de una falla;
- * - regeneración explícita con force=1.
+ * Solicitud manual de COG: encolar, nunca generar dentro de la petición web.
  */
-public function generateCog(
-    Request $request,
-    Mosaic $mosaic,
-    AiService $ai
-)
+public function generateCog(Request $request, Mosaic $mosaic)
 {
     if ($mosaic->status !== 'ready') {
-        return redirect()
-            ->route('mosaics.index')
-            ->with(
-                'error',
-                'El ortomosaico debe estar inspeccionado antes de generar el COG web.'
-            );
+        return redirect()->route('mosaics.index')
+            ->with('error', 'Primero debe terminar la inspección del ortomosaico.');
     }
-
-    $force = $request->boolean(
-        'force',
-        false
-    );
-
+    $force = $request->boolean('force', false);
+    $metadata = $this->normalizeMosaicMetadata($mosaic->metadata);
+    if (!$force && ($metadata['web_cog_generation']['status'] ?? null) === 'queued') {
+        return redirect()->route('mosaics.index')
+            ->with('error', 'El COG ya se encuentra en la cola.');
+    }
     try {
-        $mosaic->loadMissing('project');
-
-        if (
-            !$force
-            &&
-            $this->hasCurrentVerifiedWebCog(
-                $mosaic
-            )
-        ) {
-            return redirect()
-                ->route('mosaics.index')
-                ->with(
-                    'success',
-                    'El COG web ya existe, pertenece al mosaico y continúa verificado.'
-                );
-        }
-
-        $result = $ai->generateMosaicWebCog(
-            $mosaic->uuid,
-            $mosaic->object_key
-        );
-
-        $this->persistWebCogResult(
-            $mosaic,
-            $result
-        );
-
-        return redirect()
-            ->route('mosaics.index')
-            ->with(
-                'success',
-                'COG web generado y verificado correctamente.'
-            );
-
+        \App\Jobs\GenerateMosaicCogJob::dispatch($mosaic->getKey(), $force)
+            ->onConnection('database_mosaic')
+            ->onQueue('mosaic-long');
     } catch (\Throwable $e) {
-        Log::error(
-            'Error generando COG web del ortomosaico',
-            [
-                'mosaic_uuid' =>
-                    $mosaic->uuid,
-
-                'object_key' =>
-                    $mosaic->object_key,
-
-                'error' =>
-                    $e->getMessage(),
-            ]
-        );
-
-        $this->recordWebCogGenerationFailure(
-            $mosaic,
-            $e
-        );
-
-        return redirect()
-            ->route('mosaics.index')
-            ->with(
-                'error',
-                'No se pudo generar el COG web: '
-                . $e->getMessage()
-            );
+        Log::error('No se pudo encolar COG', [
+            'mosaic_uuid' => $mosaic->uuid, 'error' => $e->getMessage(),
+        ]);
+        return redirect()->route('mosaics.index')
+            ->with('error', 'No se pudo registrar la generación del COG.');
     }
+    $metadata['web_cog_generation'] = [
+        'status' => 'queued', 'queued_at' => now()->toIso8601String(),
+    ];
+    $mosaic->update(['metadata' => $metadata]);
+    return redirect()->route('mosaics.index')
+        ->with('success', 'COG registrado en la cola. Recarga la página para comprobar el estado.');
 }
 
+/**
+ * Segundo trabajo: genera/reutiliza el COG preservando los datos de inspección.
+ */
+public function processCogJob(Mosaic $mosaic, AiService $ai, bool $force = false): void
+{
+    $claimed = Mosaic::whereKey($mosaic->getKey())
+        ->where('status', 'ready')
+        ->update(['status' => 'processing']);
+    if (!$claimed) {
+        Log::warning('COG omitido: mosaico no disponible para procesar', [
+            'mosaic_uuid' => $mosaic->uuid,
+        ]);
+        return;
+    }
+
+    $mosaic->refresh();
+    try {
+        $metadata = $this->normalizeMosaicMetadata($mosaic->metadata);
+        $metadata['web_cog_generation'] = [
+            'status' => 'generating', 'started_at' => now()->toIso8601String(),
+        ];
+        $mosaic->update(['metadata' => $metadata]);
+
+        if (!$force && $this->hasCurrentVerifiedWebCog($mosaic)) {
+            $metadata = $this->normalizeMosaicMetadata($mosaic->fresh()->metadata);
+            $metadata['web_cog_generation'] = [
+                'status' => 'ok', 'generated_at' => now()->toIso8601String(),
+                'error' => null,
+            ];
+            $mosaic->update(['metadata' => $metadata]);
+        } else {
+            $result = $ai->generateMosaicWebCog($mosaic->uuid, $mosaic->object_key);
+            $this->persistWebCogResult($mosaic, $result);
+        }
+    } catch (\Throwable $e) {
+        Log::warning('Inspección válida; falló generación de COG en cola', [
+            'mosaic_uuid' => $mosaic->uuid, 'error' => $e->getMessage(),
+        ]);
+        $this->recordWebCogGenerationFailure($mosaic, $e);
+    } finally {
+        Mosaic::whereKey($mosaic->getKey())->where('status', 'processing')
+            ->update(['status' => 'ready']);
+    }
+}
 
 /**
  * Normalizar metadata del modelo Mosaic.

@@ -1,3 +1,4 @@
+
 <?php
 
 return [
@@ -7,9 +8,8 @@ return [
     | Default Queue Connection Name
     |--------------------------------------------------------------------------
     |
-    | Laravel's queue supports a variety of backends via a single, unified
-    | API, giving you convenient access to each backend using identical
-    | syntax for each. The default queue connection is defined below.
+    | SIGMAD mantiene la conexión database como predeterminada.
+    | Los procesos geoespaciales pesados utilizan database_mosaic.
     |
     */
 
@@ -19,20 +19,28 @@ return [
     |--------------------------------------------------------------------------
     | Queue Connections
     |--------------------------------------------------------------------------
-    |
-    | Here you may configure the connection options for every queue backend
-    | used by your application. An example configuration is provided for
-    | each backend supported by Laravel. You're also free to add more.
-    |
-    | Drivers: "sync", "database", "beanstalkd", "sqs", "redis", "null"
-    |
     */
 
     'connections' => [
 
+        /*
+        |--------------------------------------------------------------------------
+        | Synchronous Queue
+        |--------------------------------------------------------------------------
+        */
+
         'sync' => [
             'driver' => 'sync',
         ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Default Database Queue
+        |--------------------------------------------------------------------------
+        |
+        | Mantiene la configuración original para tareas normales.
+        |
+        */
 
         'database' => [
             'driver' => 'database',
@@ -43,6 +51,42 @@ return [
             'after_commit' => false,
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | SIGMAD - Heavy Mosaic Processing Queue
+        |--------------------------------------------------------------------------
+        |
+        | Conexión dedicada para:
+        |
+        | - Inspección de ortomosaicos GeoTIFF.
+        | - Verificación de metadatos geoespaciales.
+        | - Validación de integridad del archivo.
+        | - Generación y verificación de COG.
+        |
+        | La conexión utiliza la misma tabla jobs, pero una cola
+        | independiente denominada mosaic.
+        |
+        | IMPORTANTE:
+        | El timeout efectivo del trabajador y de cada Job debe ser
+        | menor que retry_after, para evitar ejecuciones duplicadas.
+        |
+        */
+
+        'database_mosaic' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => env('DB_MOSAIC_QUEUE', 'mosaic'),
+            'retry_after' => (int) env('DB_MOSAIC_RETRY_AFTER', 2400),
+            'after_commit' => true,
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Beanstalkd Queue
+        |--------------------------------------------------------------------------
+        */
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),
@@ -52,16 +96,31 @@ return [
             'after_commit' => false,
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Amazon SQS Queue
+        |--------------------------------------------------------------------------
+        */
+
         'sqs' => [
             'driver' => 'sqs',
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'prefix' => env('SQS_PREFIX', 'https://sqs.us-east-1.amazonaws.com/your-account-id'),
+            'prefix' => env(
+                'SQS_PREFIX',
+                'https://sqs.us-east-1.amazonaws.com/your-account-id'
+            ),
             'queue' => env('SQS_QUEUE', 'default'),
             'suffix' => env('SQS_SUFFIX'),
             'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
             'after_commit' => false,
         ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Redis Queue
+        |--------------------------------------------------------------------------
+        */
 
         'redis' => [
             'driver' => 'redis',
@@ -78,11 +137,6 @@ return [
     |--------------------------------------------------------------------------
     | Job Batching
     |--------------------------------------------------------------------------
-    |
-    | The following options configure the database and table that store job
-    | batching information. These options can be updated to any database
-    | connection and table which has been defined by your application.
-    |
     */
 
     'batching' => [
@@ -94,13 +148,6 @@ return [
     |--------------------------------------------------------------------------
     | Failed Queue Jobs
     |--------------------------------------------------------------------------
-    |
-    | These options configure the behavior of failed queue job logging so you
-    | can control how and where failed jobs are stored. Laravel ships with
-    | support for storing failed jobs in a simple file or in a database.
-    |
-    | Supported drivers: "database-uuids", "dynamodb", "file", "null"
-    |
     */
 
     'failed' => [

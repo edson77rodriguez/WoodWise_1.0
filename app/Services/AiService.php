@@ -175,7 +175,7 @@ class AiService
         string $mosaicUuid,
         string $objectKey
     ): array {
-        $response = Http::timeout(300)
+        $response = Http::timeout(1150)
             ->connectTimeout(20)
             ->acceptJson()
             ->post(
@@ -267,7 +267,7 @@ class AiService
         string $mosaicUuid,
         string $objectKey
     ): array {
-        $response = Http::timeout(1800)
+        $response = Http::timeout(3400)
             ->connectTimeout(30)
             ->acceptJson()
             ->post(
