@@ -24,6 +24,7 @@ use App\Http\Controllers\ProductorDashboardController;
 use App\Http\Controllers\ArbolController;
 use App\Http\Controllers\Estimacion1Controller;
 
+use App\Http\Controllers\V09uAnalysisController;
 
 
 
@@ -221,6 +222,13 @@ Route::get(
     'analysis.artifacts.download'
 );
 
+
+Route::get('/analisis-uav/v09u', [V09uAnalysisController::class, 'index'])
+    ->name('analysis.v09u.index');
+Route::post('/analisis-uav/mosaicos/{mosaic:uuid}/v09u',
+    [V09uAnalysisController::class, 'start'])->name('analysis.v09u.start');
+Route::get('/analisis-uav/jobs/{analysisUuid}/v09u/estado',
+    [V09uAnalysisController::class, 'status'])->name('analysis.v09u.status');
 
     // SIGMAD SAM2-R1 — rutas dentro de auth + role:Administrador
     require __DIR__ . '/sam2.php';
