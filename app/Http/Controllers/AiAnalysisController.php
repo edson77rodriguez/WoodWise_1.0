@@ -2393,7 +2393,7 @@ public function mapGeoJson(Request $request, string $analysisUuid)
     // verificados obtenidos de R2, sin X-Sendfile ni fichero temporal.
     $expectedBytes = (int) ($artifact->size_bytes ?? 0);
 
-    if ($expectedBytes > 0 && $expectedBytes <= 12 * 1024 * 1024) {
+    if ($expectedBytes > 0 && $expectedBytes <= 32 * 1024 * 1024) {
         try {
             $contents = $disk->get($artifact->object_key);
 
