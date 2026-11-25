@@ -2386,6 +2386,47 @@ public function mapGeoJson(Request $request, string $analysisUuid)
         abort(404, 'El GeoJSON del analisis no existe en R2.');
     }
 
+    // V0.9U FIX02: evitar BinaryFileResponse para GeoJSON moderados.
+    // En algunos hostings, el archivo temporal se elimina antes de que
+    // el servidor termine de enviar la respuesta, provocando AbortError.
+    // Para archivos hasta 12 MiB, responder directamente con bytes
+    // verificados obtenidos de R2, sin X-Sendfile ni fichero temporal.
+    $expectedBytes = (int) ($artifact->size_bytes ?? 0);
+
+    if ($expectedBytes > 0 && $expectedBytes <= 12 * 1024 * 1024) {
+        try {
+            $contents = $disk->get($artifact->object_key);
+
+            if (!is_string($contents) || strlen($contents) !== $expectedBytes) {
+                throw new \RuntimeException('El tamanio recuperado de R2 no coincide con la BD.');
+            }
+
+            $expectedHash = strtolower(trim((string) ($artifact->checksum_sha256 ?? '')));
+            $actualHash = hash('sha256', $contents);
+
+            if ($expectedHash !== '' && !hash_equals($expectedHash, $actualHash)) {
+                throw new \RuntimeException('El SHA256 de R2 no coincide con el artefacto.');
+            }
+
+            return response($contents, 200, [
+                'Content-Type' => 'application/geo+json; charset=utf-8',
+                'Content-Disposition' => 'inline; filename="objetos_' . $job->uuid . '.geojson"',
+                'Cache-Control' => 'private, no-store, no-transform',
+                'X-Content-Type-Options' => 'nosniff',
+                'X-SIGMAD-GeoJSON-Delivery' => 'verified-buffered-v2',
+                'X-SIGMAD-GeoJSON-Bytes' => (string) $expectedBytes,
+            ]);
+
+        } catch (Throwable $e) {
+            Log::error('GeoJSON: entrega en memoria fallida.', [
+                'analysis_uuid' => $job->uuid,
+                'message' => $e->getMessage(),
+            ]);
+
+            abort(502, 'No fue posible verificar el GeoJSON antes de enviarlo.');
+        }
+    }
+
     // Almacenar temporalmente en disco local para verificar integridad
     // ANTES de enviar cualquier byte al navegador. Esto evita responder
     // HTTP 200 con un JSON parcialmente transmitido desde R2.
