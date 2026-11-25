@@ -287,6 +287,10 @@
             background: var(--border);
         }
 
+        .menu-item-cleanup { color: var(--amber); }
+        .menu-item-cleanup:hover { background: var(--amber-soft); }
+        .mosaic-row.menu-expanded { position: relative; z-index: 80; overflow: visible; }
+
         .menu-item-danger {
             color: var(--red);
         }
@@ -952,27 +956,32 @@
 
                                         @if(\Illuminate\Support\Facades\Route::has('mosaics.destroy'))
                                             <div class="menu-separator"></div>
-
-                                            @if(in_array($mosaic->status, ['uploading', 'inspecting', 'processing']))
-                                                <button
-                                                    type="button"
-                                                    class="menu-item menu-item-danger"
-                                                    disabled
-                                                    title="No se puede eliminar mientras el ortomosaico está siendo procesado."
-                                                >
-                                                    Eliminar ortomosaico
-                                                </button>
+                                            @php
+                                                $cleanupFailed = data_get($mosaic->metadata, 'cleanup.status') === 'failed';
+                                                $cleanupScope = data_get($mosaic->metadata, 'cleanup.scope');
+                                                $deletionLocked = in_array($mosaic->status, ['uploading', 'inspecting', 'processing']) && !$cleanupFailed;
+                                            @endphp
+                                            @if($deletionLocked)
+                                                <button type="button" class="menu-item menu-item-danger" disabled title="Existe una tarea activa.">Limpieza bloqueada (en proceso)</button>
                                             @else
-                                                <button
-                                                    type="button"
-                                                    class="menu-item menu-item-danger"
-                                                    data-delete-mosaic
-                                                    data-delete-name="{{ $mosaic->original_name }}"
-                                                    data-delete-uuid="{{ $mosaic->uuid }}"
-                                                    data-delete-action="{{ route('mosaics.destroy', ['mosaic' => $mosaic->uuid]) }}"
-                                                >
-                                                    Eliminar ortomosaico
-                                                </button>
+                                                @if(!$cleanupFailed || $cleanupScope === 'results')
+                                                    <button type="button" class="menu-item menu-item-cleanup" data-delete-mosaic
+                                                        data-delete-scope="results"
+                                                        data-delete-name="{{ $mosaic->original_name }}"
+                                                        data-delete-uuid="{{ $mosaic->uuid }}"
+                                                        data-delete-action="{{ route('mosaics.destroy', ['mosaic' => $mosaic->uuid]) }}">
+                                                        {{ $cleanupFailed ? 'Reintentar limpieza de IA' : 'Eliminar resultados de IA' }}
+                                                    </button>
+                                                @endif
+                                                @if(!$cleanupFailed || $cleanupScope === 'full')
+                                                    <button type="button" class="menu-item menu-item-danger" data-delete-mosaic
+                                                        data-delete-scope="full"
+                                                        data-delete-name="{{ $mosaic->original_name }}"
+                                                        data-delete-uuid="{{ $mosaic->uuid }}"
+                                                        data-delete-action="{{ route('mosaics.destroy', ['mosaic' => $mosaic->uuid]) }}">
+                                                        {{ $cleanupFailed ? 'Reintentar eliminación completa' : 'Eliminar ortomosaico completo' }}
+                                                    </button>
+                                                @endif
                                             @endif
                                         @endif
                                     </div>
@@ -1107,10 +1116,10 @@
 
                 <div>
                     <h3 id="deleteMosaicTitle" class="delete-modal-title">
-                        Eliminar ortomosaico
+                        Confirmar limpieza de almacenamiento
                     </h3>
                     <div id="deleteMosaicDescription" class="delete-modal-subtitle">
-                        Esta operación elimina el insumo y sus productos derivados asociados.
+                        Selecciona una opción desde el menú del ortomosaico.
                     </div>
                 </div>
             </div>
@@ -1122,14 +1131,16 @@
                     <div id="deleteMosaicUuid" class="delete-target-name mono" style="color:var(--muted); font-weight:600;">—</div>
                 </div>
 
-                <ul class="delete-warning-list">
-                    <li>Se eliminará el GeoTIFF original almacenado en R2.</li>
-                    <li>También se eliminarán preview, COG, QA/QC y demás derivados del mosaico.</li>
-                    <li>Los AnalysisJobs y artifacts asociados al mosaico también serán eliminados.</li>
-                </ul>
-
-                <div class="delete-warning-final">
-                    Esta acción es irreversible. No elimina otros ortomosaicos ni otros proyectos.
+                <div id="deleteScopeExplanation" class="delete-warning-final" aria-live="polite"></div>
+                <ul class="delete-warning-list" id="deleteWarningList"></ul>
+                <div style="margin-top:14px;">
+                    <label for="deleteUuidConfirm" style="display:block;font-size:11px;font-weight:750;margin-bottom:6px;">
+                        Confirma escribiendo el UUID completo del ortomosaico
+                    </label>
+                    <input id="deleteUuidConfirm" name="confirmation_uuid" form="deleteMosaicForm" type="text"
+                        required autocomplete="off" spellcheck="false" maxlength="36"
+                        class="search-input" style="padding-left:12px;" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                    <div style="margin-top:7px;color:var(--muted);font-size:10px;">Se comprobará también en el servidor. No se eliminará nada si no coincide.</div>
                 </div>
             </div>
 
@@ -1149,6 +1160,7 @@
                 >
                     @csrf
                     @method('DELETE')
+                    <input type="hidden" id="deleteScopeInput" name="deletion_scope" value="">
 
                     <button
                         id="confirmDeleteMosaic"
@@ -1415,13 +1427,20 @@
             event.stopPropagation();
             const menu = toggle.closest('.action-menu');
             document.querySelectorAll('.action-menu.open').forEach(openMenu => {
-                if (openMenu !== menu) openMenu.classList.remove('open');
+                if (openMenu !== menu) {
+                    openMenu.classList.remove('open');
+                    openMenu.closest('.mosaic-row')?.classList.remove('menu-expanded');
+                }
             });
             menu?.classList.toggle('open');
+            menu?.closest('.mosaic-row')?.classList.toggle('menu-expanded', menu?.classList.contains('open'));
         });
     });
     document.addEventListener('click', () => {
-        document.querySelectorAll('.action-menu.open').forEach(menu => menu.classList.remove('open'));
+        document.querySelectorAll('.action-menu.open').forEach(menu => {
+            menu.classList.remove('open');
+            menu.closest('.mosaic-row')?.classList.remove('menu-expanded');
+        });
     });
     document.querySelectorAll('.menu-panel').forEach(panel => panel.addEventListener('click', event => event.stopPropagation()));
 
@@ -1431,6 +1450,12 @@
     const deleteName = document.getElementById('deleteMosaicName');
     const deleteUuid = document.getElementById('deleteMosaicUuid');
     const confirmDeleteButton = document.getElementById('confirmDeleteMosaic');
+    const deleteScopeInput = document.getElementById('deleteScopeInput');
+    const deleteScopeExplanation = document.getElementById('deleteScopeExplanation');
+    const deleteWarningList = document.getElementById('deleteWarningList');
+    const deleteUuidConfirm = document.getElementById('deleteUuidConfirm');
+    const deleteTitle = document.getElementById('deleteMosaicTitle');
+    const deleteDescription = document.getElementById('deleteMosaicDescription');
 
     function closeDeleteModal() {
         if (!deleteModal) return;
@@ -1440,6 +1465,8 @@
         document.body.classList.remove('modal-open');
 
         if (deleteForm) deleteForm.action = '';
+        if (deleteScopeInput) deleteScopeInput.value = '';
+        if (deleteUuidConfirm) deleteUuidConfirm.value = '';
         if (deleteName) deleteName.textContent = '—';
         if (deleteUuid) deleteUuid.textContent = '—';
         if (confirmDeleteButton) {
@@ -1452,6 +1479,8 @@
         deleteButton.addEventListener('click', () => {
             if (!deleteModal || !deleteForm) return;
 
+            const scope = deleteButton.dataset.deleteScope || '';
+            if (!['results', 'full'].includes(scope)) return;
             const action = deleteButton.dataset.deleteAction || '';
             const name = deleteButton.dataset.deleteName || 'Ortomosaico';
             const uuid = deleteButton.dataset.deleteUuid || '—';
@@ -1459,10 +1488,31 @@
             if (!action) return;
 
             deleteForm.action = action;
+            if (deleteScopeInput) deleteScopeInput.value = scope;
+            if (deleteUuidConfirm) { deleteUuidConfirm.value = ''; deleteUuidConfirm.setCustomValidity(''); }
+            if (deleteTitle) deleteTitle.textContent = scope === 'results'
+                ? 'Eliminar resultados de IA' : 'Eliminar ortomosaico completo';
+            if (deleteDescription) deleteDescription.textContent = scope === 'results'
+                ? 'Conserva el GeoTIFF, el COG y las evidencias QA/QC.'
+                : 'Se eliminará también el GeoTIFF original. Esta acción es irreversible.';
+            if (deleteScopeExplanation) deleteScopeExplanation.textContent = scope === 'results'
+                ? 'Se borrarán todos los análisis de IA y sus productos R2 exclusivos de este mosaico, incluidos resultados V0.7E, V0.8S y V0.9U.'
+                : 'Se borrarán todos los objetos R2 bajo el prefijo exclusivo del mosaico, incluidos el original y todos los análisis.';
+            if (deleteWarningList) {
+                const warnings = scope === 'results'
+                    ? ['El GeoTIFF original permanecerá en R2.', 'Los registros de análisis y sus artifacts serán eliminados.', 'No afecta a otros mosaicos ni proyectos.']
+                    : ['Se eliminarán el GeoTIFF original, preview, COG y QA/QC.', 'Se eliminarán todos los AnalysisJobs y artifacts asociados.', 'No podrás abrir el mosaico ni sus mapas después.'];
+                deleteWarningList.replaceChildren(...warnings.map(message => {
+                    const li = document.createElement('li'); li.textContent = message; return li;
+                }));
+            }
+            if (confirmDeleteButton) confirmDeleteButton.textContent = scope === 'results'
+                ? 'Eliminar resultados de IA' : 'Eliminar mosaico y resultados';
             if (deleteName) deleteName.textContent = name;
             if (deleteUuid) deleteUuid.textContent = uuid;
 
             deleteButton.closest('.action-menu')?.classList.remove('open');
+            deleteButton.closest('.mosaic-row')?.classList.remove('menu-expanded');
 
             deleteModal.hidden = false;
             deleteModal.classList.add('open');
@@ -1474,12 +1524,24 @@
         closeDeleteButton.addEventListener('click', closeDeleteModal);
     });
 
-    deleteForm?.addEventListener('submit', () => {
+    deleteForm?.addEventListener('submit', (event) => {
+        const esperado = (deleteUuid?.textContent || '').trim();
+        if (!deleteUuidConfirm || deleteUuidConfirm.value.trim() !== esperado || !deleteScopeInput?.value) {
+            event.preventDefault();
+            if (deleteUuidConfirm) {
+                deleteUuidConfirm.setCustomValidity('El UUID debe coincidir exactamente.');
+                deleteUuidConfirm.reportValidity();
+            }
+            return;
+        }
+        deleteUuidConfirm.setCustomValidity('');
         if (confirmDeleteButton) {
             confirmDeleteButton.disabled = true;
             confirmDeleteButton.textContent = 'Eliminando...';
         }
     });
+
+    deleteUuidConfirm?.addEventListener('input', () => deleteUuidConfirm.setCustomValidity(''));
 
     document.addEventListener('keydown', event => {
         if (

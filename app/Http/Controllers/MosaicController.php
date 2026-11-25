@@ -1889,207 +1889,255 @@ public function tilingPreview(
 
 
     /**
-     * V0.8A.WEB.5
-     * Eliminar de forma controlada un ortomosaico de prueba.
-     *
-     * Alcance:
-     * - bloquea eliminación si existe un AnalysisJob en cola/proceso;
-     * - elimina TODOS los objetos R2 bajo el prefijo exclusivo del mosaico;
-     * - elimina artifacts y AnalysisJobs asociados;
-     * - elimina finalmente el registro Mosaic.
-     *
-     * IMPORTANTE:
-     * esta acción es irreversible.
+     * SIGMAD CLEANUP V1
+     * DELETE /ortomosaicos/{mosaic}
+     * Alcances explícitos: results (sólo IA), full (mosaico y derivados).
+     * Usa la ruta y middleware existentes. NO acepta eliminación implícita.
      */
-    public function destroy(
-        Mosaic $mosaic
-    )
+    public function destroy(Request $request, Mosaic $mosaic)
     {
-        $mosaic->loadMissing([
-            'project',
-            'analysisJobs.artifacts',
+        $validated = $request->validate([
+            'deletion_scope' => ['required', 'in:results,full'],
+            'confirmation_uuid' => ['required', 'string', 'max:36'],
         ]);
 
-        $hasActiveJobs = (
-            $mosaic->analysisJobs()
-                ->whereIn(
-                    'status',
-                    [
-                        'queued',
-                        'processing',
-                    ]
-                )
-                ->exists()
-        );
-
-        if ($hasActiveJobs) {
-            return redirect()
-                ->route('mosaics.index')
-                ->with(
-                    'error',
-                    'No se puede eliminar el ortomosaico porque existe un análisis UAV en cola o procesamiento.'
-                );
+        $scope = $validated['deletion_scope'];
+        if (!hash_equals((string) $mosaic->uuid, $validated['confirmation_uuid'])) {
+            return redirect()->route('mosaics.index')->with(
+                'error', 'Confirmación rechazada. Debes escribir el UUID exacto del ortomosaico.'
+            );
         }
 
-        $projectUuid = (
-            $mosaic->project->uuid
-            ?? null
-        );
-
-        if (!$projectUuid) {
-            return redirect()
-                ->route('mosaics.index')
-                ->with(
-                    'error',
-                    'No se puede eliminar el ortomosaico porque no tiene un proyecto válido asociado.'
-                );
-        }
-
-        $prefix = (
-            "projects/{$projectUuid}/"
-            . "mosaics/{$mosaic->uuid}/"
-        );
-
-        $disk = Storage::disk('r2');
+        $actor = auth()->id();
+        $originalStatus = null;
+        $claimed = false;
+        $prefix = null;
 
         try {
-            $remoteFiles = $disk->allFiles(
-                $prefix
-            );
+            // Reserva atómica: impide que una segunda petición inicie otra limpieza.
+            DB::transaction(function () use ($mosaic, $scope, &$originalStatus, &$claimed, &$prefix) {
+                $current = Mosaic::query()->whereKey($mosaic->getKey())
+                    ->lockForUpdate()->firstOrFail();
+                $current->loadMissing('project');
+                $projectUuid = $current->project?->uuid;
 
-            $deletedRemoteCount = count(
-                $remoteFiles
-            );
+                if (!$projectUuid || !preg_match('/^[a-f0-9-]{36}$/i', (string) $projectUuid)) {
+                    throw new \RuntimeException('Proyecto inválido; no es seguro seleccionar el prefijo R2.');
+                }
+                if (!preg_match('/^[a-f0-9-]{36}$/i', (string) $current->uuid)) {
+                    throw new \RuntimeException('UUID de mosaico inválido.');
+                }
 
-            foreach (
-                array_chunk(
-                    $remoteFiles,
-                    500
-                )
-                as
-                $chunk
-            ) {
-                if (!empty($chunk)) {
-                    $disk->delete(
-                        $chunk
+                $prefix = "projects/{$projectUuid}/mosaics/{$current->uuid}/";
+                if (!str_starts_with((string) $current->object_key, $prefix)) {
+                    throw new \RuntimeException('La clave del GeoTIFF original está fuera del prefijo permitido.');
+                }
+
+                $metadata = $this->normalizeMosaicMetadata($current->metadata);
+                $previous = $metadata['cleanup'] ?? [];
+                $retry = $current->status === 'processing'
+                    && ($previous['status'] ?? null) === 'failed'
+                    && ($previous['scope'] ?? null) === $scope;
+
+                if (!$retry && in_array($current->status, ['uploading', 'inspecting', 'processing'], true)) {
+                    throw new \RuntimeException('El mosaico se está subiendo o procesando. No es seguro eliminarlo.');
+                }
+                if ($current->analysisJobs()->whereIn('status', [
+                    'queued', 'processing', 'pending', 'running', 'starting', 'in_progress'
+                ])->exists()) {
+                    throw new \RuntimeException('Existen análisis en cola o ejecución. Debes terminarlos antes.');
+                }
+
+                // Los jobs de COG usan mosaic-long y pueden seguir activos aunque el mosaico esté ready.
+                $cogStatus = data_get($metadata, 'web_cog_generation.status');
+                if (in_array($cogStatus, ['queued', 'generating'], true)) {
+                    throw new \RuntimeException(
+                        'El COG figura en cola/generación. Comprueba y cancela primero ese trabajo de mosaic-long.'
+                    );
+                }
+
+                $jobs = $current->analysisJobs()->with('artifacts')->get();
+                $resultsPrefix = $prefix . 'analyses/';
+
+                foreach ($jobs as $job) {
+                    if ($job->result_prefix && !str_starts_with((string) $job->result_prefix, $resultsPrefix)) {
+                        throw new \RuntimeException('Hay un AnalysisJob con result_prefix fuera de analyses/.');
+                    }
+                    foreach ($job->artifacts as $artifact) {
+                        if (!str_starts_with((string) $artifact->object_key, $resultsPrefix)) {
+                            throw new \RuntimeException('Hay un artifact fuera del prefijo analyses/; requiere revisión.');
+                        }
+                    }
+                }
+
+                if ($scope === 'full') {
+                    foreach ([
+                        $current->preview_object_key,
+                        data_get($metadata, 'web_cog.object_key'),
+                        data_get($metadata, 'tiling_preview.footprints_object_key'),
+                        data_get($metadata, 'tiling_preview.coverage_object_key'),
+                    ] as $knownKey) {
+                        if ($knownKey && !str_starts_with((string) $knownKey, $prefix)) {
+                            throw new \RuntimeException('Hay un derivado fuera del prefijo de mosaico; revisar antes de borrar.');
+                        }
+                    }
+                }
+
+                // Detener si existen referencias reales en otras tablas: protege la verdad de campo.
+                $jobIds = $jobs->pluck('id')->all();
+                $artifactIds = $jobs->flatMap(fn ($job) => $job->artifacts->pluck('id'))->all();
+                $this->ensureNoOtherDatabaseReferences('analysis_artifacts', $artifactIds, []);
+                $this->ensureNoOtherDatabaseReferences('analysis_jobs', $jobIds, ['analysis_artifacts']);
+                if ($scope === 'full') {
+                    $this->ensureNoOtherDatabaseReferences('mosaics', [$current->id], ['analysis_jobs']);
+                }
+
+                $originalStatus = $retry
+                    ? ($previous['original_status'] ?? 'ready')
+                    : $current->status;
+                $metadata['cleanup'] = [
+                    'scope' => $scope,
+                    'status' => 'running',
+                    'original_status' => $originalStatus,
+                    'started_at' => now()->toIso8601String(),
+                    'actor_id' => auth()->id(),
+                ];
+                $current->update(['status' => 'processing', 'metadata' => $metadata]);
+                $claimed = true;
+            });
+
+            $disk = Storage::disk('r2');
+            $targetPrefix = $scope === 'results' ? $prefix . 'analyses/' : $prefix;
+            $files = $disk->allFiles($targetPrefix);
+            if (!is_array($files)) {
+                throw new \RuntimeException('No se pudo obtener el inventario R2.');
+            }
+            foreach ($files as $key) {
+                if (!str_starts_with($key, $targetPrefix)) {
+                    throw new \RuntimeException('R2 devolvió una clave fuera del prefijo autorizado.');
+                }
+                // No confundir archivos de verdad de campo con derivados de IA.
+                // Bloquea rutas sospechosas en lugar de borrarlas automáticamente.
+                $relative = substr($key, strlen($targetPrefix));
+                if (preg_match('~(^|/)(campo|field_truth|ground_truth|fustes|parcelas|mediciones)(/|_|\.)~i', $relative)) {
+                    throw new \RuntimeException(
+                        'La carpeta contiene posibles datos de campo. Se bloqueó la eliminación para revisión manual.'
                     );
                 }
             }
 
-            $remainingFiles = $disk->allFiles(
-                $prefix
-            );
-
-            if (!empty($remainingFiles)) {
-                throw new \RuntimeException(
-                    'R2 todavía contiene '
-                    . count($remainingFiles)
-                    . ' objeto(s) bajo el prefijo del mosaico.'
-                );
+            $total = count($files);
+            // No se transfieren los bytes del TIFF: R2 elimina por clave de objeto.
+            foreach (array_chunk($files, 200) as $chunk) {
+                $disk->delete($chunk);
+            }
+            $remaining = $disk->allFiles($targetPrefix);
+            if (!is_array($remaining) || count($remaining) !== 0) {
+                throw new \RuntimeException('R2 aún contiene objetos dentro del prefijo de eliminación.');
             }
 
             $deletedJobs = 0;
             $deletedArtifacts = 0;
-
-            DB::transaction(
-                function () use (
-                    $mosaic,
-                    &$deletedJobs,
-                    &$deletedArtifacts
-                ) {
-                    foreach (
-                        $mosaic->analysisJobs
-                        as
-                        $job
-                    ) {
-                        $artifactCount = (
-                            $job->artifacts
-                                ->count()
-                        );
-
-                        if ($artifactCount > 0) {
-                            $job->artifacts()
-                                ->delete();
-
-                            $deletedArtifacts += (
-                                $artifactCount
-                            );
-                        }
-
-                        $job->delete();
-
-                        $deletedJobs += 1;
-                    }
-
-                    $mosaic->delete();
+            DB::transaction(function () use ($mosaic, $scope, $originalStatus, &$deletedJobs, &$deletedArtifacts) {
+                $current = Mosaic::query()->whereKey($mosaic->getKey())
+                    ->lockForUpdate()->firstOrFail();
+                if ($current->status !== 'processing'
+                    || data_get($current->metadata, 'cleanup.status') !== 'running') {
+                    throw new \RuntimeException('El estado del mosaico cambió durante la limpieza.');
                 }
+                $jobs = $current->analysisJobs()->with('artifacts')->get();
+                foreach ($jobs as $job) {
+                    $deletedArtifacts += $job->artifacts->count();
+                    $job->artifacts()->delete();
+                    $job->delete();
+                    $deletedJobs++;
+                }
+                if ($scope === 'full') {
+                    $current->delete();
+                } else {
+                    $metadata = $this->normalizeMosaicMetadata($current->metadata);
+                    $metadata['cleanup']['status'] = 'completed';
+                    $metadata['cleanup']['completed_at'] = now()->toIso8601String();
+                    $current->update(['status' => $originalStatus, 'metadata' => $metadata]);
+                }
+            });
+
+            Log::notice('SIGMAD limpieza confirmada', [
+                'mosaic_uuid' => $mosaic->uuid,
+                'scope' => $scope,
+                'r2_prefix' => $targetPrefix,
+                'removed_objects' => $total,
+                'removed_analysis_jobs' => $deletedJobs,
+                'removed_artifacts' => $deletedArtifacts,
+                'actor_id' => $actor,
+            ]);
+
+            return redirect()->route('mosaics.index')->with('success',
+                ($scope === 'full' ? 'Ortomosaico completo eliminado. ' : 'Resultados de IA eliminados; GeoTIFF conservado. ')
+                . "R2: {$total} objetos; análisis: {$deletedJobs}; artifacts: {$deletedArtifacts}."
             );
-
-            Log::notice(
-                'Ortomosaico eliminado manualmente.',
-                [
-                    'mosaic_uuid' =>
-                        $mosaic->uuid,
-
-                    'project_uuid' =>
-                        $projectUuid,
-
-                    'r2_prefix' =>
-                        $prefix,
-
-                    'deleted_r2_objects' =>
-                        $deletedRemoteCount,
-
-                    'deleted_analysis_jobs' =>
-                        $deletedJobs,
-
-                    'deleted_analysis_artifacts' =>
-                        $deletedArtifacts,
-
-                    'user_id' =>
-                        auth()->id(),
-                ]
-            );
-
-            return redirect()
-                ->route('mosaics.index')
-                ->with(
-                    'success',
-                    'Ortomosaico eliminado correctamente. '
-                    . "R2: {$deletedRemoteCount} archivo(s); "
-                    . "análisis: {$deletedJobs}; "
-                    . "artifacts: {$deletedArtifacts}."
-                );
 
         } catch (\Throwable $e) {
-            Log::error(
-                'Error eliminando ortomosaico.',
-                [
-                    'mosaic_uuid' =>
-                        $mosaic->uuid,
-
-                    'project_uuid' =>
-                        $projectUuid,
-
-                    'r2_prefix' =>
-                        $prefix,
-
-                    'user_id' =>
-                        auth()->id(),
-
-                    'error' =>
-                        $e->getMessage(),
-                ]
+            if ($claimed) {
+                try {
+                    $fresh = Mosaic::find($mosaic->getKey());
+                    if ($fresh && data_get($fresh->metadata, 'cleanup.status') === 'running') {
+                        $metadata = $this->normalizeMosaicMetadata($fresh->metadata);
+                        $metadata['cleanup']['status'] = 'failed';
+                        $metadata['cleanup']['error'] = $e->getMessage();
+                        $metadata['cleanup']['failed_at'] = now()->toIso8601String();
+                        // Se mantiene processing hasta reintento: evita usar resultados parcialmente borrados.
+                        $fresh->update(['status' => 'processing', 'metadata' => $metadata]);
+                    }
+                } catch (\Throwable $markError) {
+                    Log::critical('No se pudo registrar fallo de limpieza SIGMAD', [
+                        'mosaic_uuid' => $mosaic->uuid, 'error' => $markError->getMessage()
+                    ]);
+                }
+            }
+            Log::error('SIGMAD limpieza bloqueada o incompleta', [
+                'mosaic_uuid' => $mosaic->uuid,
+                'scope' => $scope,
+                'claimed' => $claimed,
+                'actor_id' => $actor,
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->route('mosaics.index')->with('error',
+                'Limpieza no completada: ' . $e->getMessage()
+                . ($claimed ? ' El mosaico quedó bloqueado para evitar inconsistencias; puedes reintentar la misma opción.' : '')
             );
-
-            return redirect()
-                ->route('mosaics.index')
-                ->with(
-                    'error',
-                    'No se pudo eliminar el ortomosaico: '
-                    . $e->getMessage()
-                );
         }
     }
 
+    /**
+     * Guard contra borrado indirecto de tablas científicas relacionadas.
+     * Si la comprobación de claves foráneas falla, abortamos ANTES de tocar R2.
+     */
+    private function ensureNoOtherDatabaseReferences(string $table, array $ids, array $allowed): void
+    {
+        if (!$ids) return;
+        $refs = DB::select(
+            'SELECT TABLE_NAME AS table_name, COLUMN_NAME AS column_name '
+            . 'FROM information_schema.KEY_COLUMN_USAGE '
+            . 'WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_SCHEMA = DATABASE() '
+            . 'AND REFERENCED_TABLE_NAME = ?',
+            [$table]
+        );
+        foreach ($refs as $ref) {
+            $child = (string) $ref->table_name;
+            $column = (string) $ref->column_name;
+            if (in_array($child, $allowed, true)) continue;
+            if (!preg_match('/^[A-Za-z0-9_]+$/', $child)
+                || !preg_match('/^[A-Za-z0-9_]+$/', $column)) {
+                throw new \RuntimeException('Referencia inesperada en el esquema de datos.');
+            }
+            foreach (array_chunk($ids, 500) as $chunk) {
+                if (DB::table($child)->whereIn($column, $chunk)->exists()) {
+                    throw new \RuntimeException(
+                        "Existen registros científicos relacionados en {$child}; se bloqueó la eliminación."
+                    );
+                }
+            }
+        }
+    }
 }
