@@ -2359,261 +2359,147 @@ public function mapJob(
 
  */
 
-public function mapGeoJson(
+public function mapGeoJson(Request $request, string $analysisUuid)
+{
+    // Unicamente se modifica la entrega del GeoJSON de visualizacion.
+    // Los productos cientificos de R2 y los demas endpoints se conservan.
+    $job = AnalysisJob::query()
+        ->where('uuid', $analysisUuid)
+        ->firstOrFail();
 
-    Request $request,
+    $artifact = AnalysisArtifact::query()
+        ->where('analysis_job_id', $job->id)
+        ->where('type', 'geojson')
+        ->firstOrFail();
 
-    string $analysisUuid
-
-) {
-
-
-
-    $job = (
-
-        AnalysisJob::query()
-
-
-
-            ->where(
-
-                'uuid',
-
-                $analysisUuid
-
-            )
-
-
-
-            ->firstOrFail()
-
-    );
-
-
-
-
-
-    $artifact = (
-
-        AnalysisArtifact::query()
-
-
-
-            ->where(
-
-                'analysis_job_id',
-
-                $job->id
-
-            )
-
-
-
-            ->where(
-
-                'type',
-
-                'geojson'
-
-            )
-
-
-
-            ->firstOrFail()
-
-    );
-
-
-
-
-
+    // Mantener la validacion del prefijo privado del analisis.
     if (
-
         empty($job->result_prefix)
-
-        ||
-
-        !str_starts_with(
-
-            $artifact->object_key,
-
-            $job->result_prefix
-
-        )
-
+        || !str_starts_with($artifact->object_key, $job->result_prefix)
     ) {
-
-
-
-        abort(
-
-            403,
-
-            'El GeoJSON no pertenece al análisis solicitado.'
-
-        );
-
+        abort(403, 'El GeoJSON no pertenece al analisis solicitado.');
     }
-
-
-
-
 
     $disk = Storage::disk('r2');
 
-
-
-
-
-    if (
-
-        !$disk->exists(
-
-            $artifact->object_key
-
-        )
-
-    ) {
-
-
-
-        abort(
-
-            404,
-
-            'El GeoJSON del análisis no existe en R2.'
-
-        );
-
+    if (!$disk->exists($artifact->object_key)) {
+        abort(404, 'El GeoJSON del analisis no existe en R2.');
     }
 
+    // Almacenar temporalmente en disco local para verificar integridad
+    // ANTES de enviar cualquier byte al navegador. Esto evita responder
+    // HTTP 200 con un JSON parcialmente transmitido desde R2.
+    $tempPath = tempnam(sys_get_temp_dir(), 'sigmad_geojson_');
 
+    if ($tempPath === false) {
+        Log::error('GeoJSON: no se pudo crear archivo temporal.', [
+            'analysis_uuid' => $job->uuid,
+        ]);
 
-
-
-    $stream = $disk->readStream(
-
-        $artifact->object_key
-
-    );
-
-
-
-
-
-    if ($stream === false) {
-
-
-
-        abort(
-
-            500,
-
-            'No fue posible abrir el GeoJSON desde R2.'
-
-        );
-
+        abort(503, 'No hay espacio temporal disponible para servir el GeoJSON.');
     }
 
+    $source = null;
+    $target = null;
 
+    try {
+        $source = $disk->readStream($artifact->object_key);
 
+        if (!is_resource($source)) {
+            throw new \RuntimeException('No fue posible abrir el archivo R2.');
+        }
 
+        $target = fopen($tempPath, 'wb');
 
-    $headers = [
+        if (!is_resource($target)) {
+            throw new \RuntimeException('No fue posible escribir el archivo temporal.');
+        }
 
-        'Content-Type' =>
+        $copiedBytes = stream_copy_to_stream($source, $target);
 
-            'application/geo+json; charset=utf-8',
+        if ($copiedBytes === false || !fflush($target)) {
+            throw new \RuntimeException('Fallo la copia local del GeoJSON.');
+        }
 
+        // Finalizar lectura y escritura antes de comprobar tamaño y hash.
+        fclose($target);
+        $target = null;
+        fclose($source);
+        $source = null;
 
+        clearstatcache(true, $tempPath);
+        $actualBytes = filesize($tempPath);
+        $expectedBytes = (int) ($artifact->size_bytes ?? 0);
 
-        'Content-Disposition' =>
-
-            'inline; filename="primary_objects_V07E.geojson"',
-
-
-
-        'Cache-Control' =>
-
-            'private, max-age=300',
-
-
-
-        'X-Content-Type-Options' =>
-
-            'nosniff',
-
-    ];
-
-
-
-
-
-    if (
-
-        !empty(
-
-            $artifact->size_bytes
-
-        )
-
-    ) {
-
-
-
-        $headers['Content-Length'] =
-
-            (string) $artifact->size_bytes;
-
-    }
-
-
-
-
-
-    return response()->stream(
-
-        function () use ($stream) {
-
-
-
-            fpassthru(
-
-                $stream
-
+        if (
+            $actualBytes === false
+            || $actualBytes <= 0
+            || ($expectedBytes > 0 && $actualBytes !== $expectedBytes)
+        ) {
+            throw new \RuntimeException(
+                'El tamano descargado no coincide con el registrado en Laravel.'
             );
+        }
 
+        // Se compara contra la huella cientifica si existe. Los trabajos
+        // historicos sin SHA256 continuan disponibles con control de tamano.
+        $expectedHash = strtolower(trim((string) ($artifact->checksum_sha256 ?? '')));
+        $actualHash = hash_file('sha256', $tempPath);
 
+        if ($actualHash === false) {
+            throw new \RuntimeException('No fue posible calcular SHA256 del GeoJSON.');
+        }
 
+        if ($expectedHash !== '' && !hash_equals($expectedHash, $actualHash)) {
+            throw new \RuntimeException('El SHA256 descargado no coincide con el artefacto.');
+        }
 
+        $headers = [
+            'Content-Type' => 'application/geo+json; charset=utf-8',
+            'Content-Disposition' => 'inline; filename="objetos_' . $job->uuid . '.geojson"',
+            'Cache-Control' => 'private, no-store, no-transform',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-SIGMAD-GeoJSON-Delivery' => 'verified-local-file',
+            'X-SIGMAD-GeoJSON-SHA256' => $actualHash,
+        ];
 
-            if (
+        // BinaryFileResponse calcula el Content-Length a partir del archivo
+        // verificado. No se impone manualmente el tamano de la BD.
+        // De esta forma Laravel no hace fpassthru() del stream remoto.
+        $response = response()->file($tempPath, $headers);
+        $response->deleteFileAfterSend(true);
 
-                is_resource($stream)
-
-            ) {
-
-
-
-                fclose(
-
-                    $stream
-
-                );
-
+        // Salvaguarda ante interrupciones que impidan el borrado normal.
+        register_shutdown_function(static function () use ($tempPath): void {
+            if (is_file($tempPath)) {
+                @unlink($tempPath);
             }
+        });
 
-        },
+        return $response;
 
-        200,
+    } catch (Throwable $e) {
+        Log::error('GeoJSON: error de entrega verificada desde R2.', [
+            'analysis_uuid' => $job->uuid,
+            'message' => $e->getMessage(),
+        ]);
 
-        $headers
+        if (is_file($tempPath)) {
+            @unlink($tempPath);
+        }
 
-    );
+        abort(502, 'No fue posible verificar y entregar completo el GeoJSON.');
 
+    } finally {
+        if (is_resource($source)) {
+            fclose($source);
+        }
+
+        if (is_resource($target)) {
+            fclose($target);
+        }
+    }
 }
-
-
 
 
 
