@@ -77,7 +77,7 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_MOSAIC_QUEUE', 'mosaic'),
-            'retry_after' => (int) env('DB_MOSAIC_RETRY_AFTER', 2400),
+            'retry_after' => (int) env('DB_MOSAIC_RETRY_AFTER', 4200),
             'after_commit' => true,
         ],
 
