@@ -2550,324 +2550,111 @@ public function mapGeoJson(Request $request, string $analysisUuid)
 
  */
 
+
 public function mapPreview(
-
     Request $request,
-
     string $analysisUuid
-
 ) {
+    $job = AnalysisJob::query()
+        ->with('mosaic.project')
+        ->where('uuid', $analysisUuid)
+        ->firstOrFail();
 
-
-
-    $job = (
-
-        AnalysisJob::query()
-
-
-
-            ->where(
-
-                'uuid',
-
-                $analysisUuid
-
-            )
-
-
-
-            ->with(
-
-                'mosaic.project'
-
-            )
-
-
-
-            ->firstOrFail()
-
+    abort_unless(
+        $job->analysis_type === 'wall_to_wall_tree_crown'
+        && $job->status === 'completed',
+        404
     );
-
-
-
-
 
     $mosaic = $job->mosaic;
 
-
-
-
-
-    if (
-
-        !$mosaic
-
-        ||
-
-        empty(
-
-            $mosaic->preview_object_key
-
-        )
-
-    ) {
-
-
-
-        abort(
-
-            404,
-
-            'El mosaico no dispone de preview web.'
-
-        );
-
-    }
-
-
-
-
-
-    $projectUuid = (
-
-        $mosaic->project->uuid
-
-        ?? null
-
+    abort_unless(
+        $mosaic
+        && $mosaic->project
+        && filled($mosaic->preview_object_key),
+        404,
+        'El ortomosaico no tiene vista previa.'
     );
 
+    $key = (string) $mosaic->preview_object_key;
 
+    $prefix = "projects/{$mosaic->project->uuid}/"
+            . "mosaics/{$mosaic->uuid}/";
 
-
-
-    if (!$projectUuid) {
-
-
-
-        abort(
-
-            404,
-
-            'El mosaico no tiene proyecto asociado.'
-
-        );
-
-    }
-
-
-
-
-
-    $expectedPrefix = (
-
-        "projects/{$projectUuid}/"
-
-        . "mosaics/{$mosaic->uuid}/"
-
+    abort_unless(
+        str_starts_with($key, $prefix),
+        403,
+        'La vista previa no pertenece al mosaico.'
     );
-
-
-
-
-
-    if (
-
-        !str_starts_with(
-
-            $mosaic->preview_object_key,
-
-            $expectedPrefix
-
-        )
-
-    ) {
-
-
-
-        abort(
-
-            403,
-
-            'El preview no pertenece al mosaico solicitado.'
-
-        );
-
-    }
-
-
-
-
 
     $disk = Storage::disk('r2');
 
-
-
-
-
-    if (
-
-        !$disk->exists(
-
-            $mosaic->preview_object_key
-
-        )
-
-    ) {
-
-
-
-        abort(
-
-            404,
-
-            'El preview del mosaico no existe en R2.'
-
-        );
-
-    }
-
-
-
-
-
-    $stream = $disk->readStream(
-
-        $mosaic->preview_object_key
-
+    abort_unless(
+        $disk->exists($key),
+        404,
+        'La vista previa no existe en R2.'
     );
 
+    try {
+        $expectedBytes = (int) $disk->size($key);
 
-
-
-
-    if ($stream === false) {
-
-
-
-        abort(
-
-            500,
-
-            'No fue posible abrir el preview desde R2.'
-
-        );
-
-    }
-
-
-
-
-
-    $extension = strtolower(
-
-        pathinfo(
-
-            $mosaic->preview_object_key,
-
-            PATHINFO_EXTENSION
-
-        )
-
-    );
-
-
-
-
-
-    $contentType = match ($extension) {
-
-        'png' =>
-
-            'image/png',
-
-
-
-        'jpg', 'jpeg' =>
-
-            'image/jpeg',
-
-
-
-        'webp' =>
-
-            'image/webp',
-
-
-
-        default =>
-
-            'application/octet-stream',
-
-    };
-
-
-
-
-
-    return response()->stream(
-
-        function () use ($stream) {
-
-
-
-            fpassthru(
-
-                $stream
-
+        // Límite de protección: 20 MiB.
+        if (
+            $expectedBytes <= 0
+            || $expectedBytes > 20 * 1024 * 1024
+        ) {
+            throw new \RuntimeException(
+                'Tamaño de preview fuera del límite permitido.'
             );
+        }
 
+        $contents = $disk->get($key);
 
+        if (
+            !is_string($contents)
+            || strlen($contents) !== $expectedBytes
+        ) {
+            throw new \RuntimeException(
+                'El preview se recibió incompleto desde R2.'
+            );
+        }
 
+        $imageInfo = @getimagesizefromstring($contents);
+        $mime = $imageInfo['mime'] ?? '';
 
+        if (!in_array($mime, [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+        ], true)) {
+            throw new \RuntimeException(
+                'El archivo no contiene una imagen reconocida.'
+            );
+        }
 
-            if (
+        return response($contents, 200, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline',
+            'Cache-Control' => 'private, no-store, no-transform',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-SIGMAD-Preview-Delivery' => 'verified-buffered',
+        ]);
 
-                is_resource($stream)
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error(
+            'SIGMAD: error al entregar preview.',
+            [
+                'analysis_uuid' => $job->uuid,
+                'mosaic_uuid' => $mosaic->uuid,
+                'error' => $e->getMessage(),
+            ]
+        );
 
-            ) {
-
-
-
-                fclose(
-
-                    $stream
-
-                );
-
-            }
-
-        },
-
-        200,
-
-        [
-
-            'Content-Type' =>
-
-                $contentType,
-
-
-
-            'Content-Disposition' =>
-
-                'inline',
-
-
-
-            'Cache-Control' =>
-
-                'private, max-age=300',
-
-
-
-            'X-Content-Type-Options' =>
-
-                'nosniff',
-
-        ]
-
-    );
-
+        abort(
+            502,
+            'No fue posible verificar y entregar la vista previa.'
+        );
+    }
 }
 
 
