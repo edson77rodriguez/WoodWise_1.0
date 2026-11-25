@@ -54,6 +54,10 @@ return [
         'url' => env('AI_V08S_URL'),
         'token' => env('AI_V08S_SHARED_TOKEN'),
     ],
+    'ai_v09u' => [
+        'url' => env('AI_V09U_URL'),
+        'token' => env('AI_V09U_SHARED_TOKEN'),
+    ],
 
 
 ];
