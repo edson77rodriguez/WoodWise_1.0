@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * SIGMAD Revisión IA · V0.8.0.
+ * SIGMAD Revisión IA · V0.8.1 con fondo maestro HD independiente.
  * Se guardan revisiones aditivas, sin modificar predicciones ni mediciones de campo.
  */
 class SigmadReviewController extends Controller
@@ -72,10 +72,12 @@ class SigmadReviewController extends Controller
             ->orderBy('id')->limit(501)->get();
         abort_if($manual->count() > 500, 422, 'Demasiadas marcas manuales para esta revisión.');
 
+        $analysisUuid = $mission->analysis_uuid ?: $mission->analysisJob?->uuid;
         return response()->json([
             'uuid' => $mission->uuid,
             'title' => $mission->title,
-            'analysis_uuid' => $mission->analysisJob?->uuid,
+            'analysis_uuid' => $analysisUuid,
+            'master_hd_manifest_url' => $analysisUuid ? route('campo.review.master.manifest', ['analysisUuid' => $analysisUuid]) : null,
             'crs' => $mission->crs,
             'bounds' => $mission->bounds,
             'original' => $source,
@@ -89,6 +91,62 @@ class SigmadReviewController extends Controller
             ],
             'preview_url' => route('campo.mission.preview', ['mission' => $mission->uuid]),
         ])->header('Cache-Control', 'private, no-store');
+    }
+
+
+    /** Ortofoto maestra por análisis: independiente de los recortes de cada brigada. */
+    private function masterMap(string $analysisUuid): array
+    {
+        abort_unless((bool) preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i', $analysisUuid), 404);
+        $folder = storage_path('app/sigmad_master_hd/'.$analysisUuid);
+        $file = $folder.'/manifest.json';
+        abort_unless(is_file($file), 404, 'El ortomosaico maestro HD no ha sido publicado.');
+        $raw = file_get_contents($file);
+        $m = is_string($raw) ? json_decode($raw, true) : null;
+        abort_unless(is_array($m) && ($m['schema'] ?? '') === 'sigmad-master-utm-v1'
+            && ($m['analysis_uuid'] ?? '') === $analysisUuid
+            && is_string($m['crs'] ?? null) && preg_match('/^EPSG:(326|327)\d{2}$/', $m['crs'])
+            && ($m['tile_size'] ?? 0) === 256
+            && ($m['format'] ?? '') === 'webp'
+            && is_array($m['extent'] ?? null) && count($m['extent']) === 4
+            && is_array($m['origin'] ?? null) && count($m['origin']) === 2
+            && is_array($m['resolutions'] ?? null)
+            && count($m['resolutions']) >= 1 && count($m['resolutions']) <= 20, 422,
+            'Manifiesto de ortomosaico maestro incompatible.');
+        foreach (array_merge($m['extent'], $m['origin'], $m['resolutions']) as $value) {
+            abort_unless(is_numeric($value) && is_finite((float)$value), 422);
+        }
+        foreach ($m['resolutions'] as $r) abort_unless((float)$r > 0, 422);
+        abort_unless($m['extent'][0] < $m['extent'][2] && $m['extent'][1] < $m['extent'][3], 422);
+        return $m;
+    }
+
+    public function masterManifest(Request $request, string $analysisUuid)
+    {
+        $this->admin($request);
+        $m = $this->masterMap($analysisUuid);
+        $m['tile_url_template'] = route('campo.review.master.tile', [
+            'analysisUuid' => $analysisUuid, 'z' => '__Z__', 'x' => '__X__', 'y' => '__Y__',
+        ]);
+        return response()->json($m)->header('Cache-Control', 'private, no-store');
+    }
+
+    public function masterTile(Request $request, string $analysisUuid, int $z, int $x, int $y)
+    {
+        $this->admin($request);
+        $m = $this->masterMap($analysisUuid);
+        abort_unless($z >= 0 && $z < count($m['resolutions']) && $x >= 0 && $y >= 0, 404);
+        $resolution = (float)$m['resolutions'][$z];
+        $maxX = (int)ceil(((float)$m['extent'][2] - (float)$m['extent'][0]) / (256*$resolution));
+        $maxY = (int)ceil(((float)$m['extent'][3] - (float)$m['extent'][1]) / (256*$resolution));
+        abort_unless($x < $maxX && $y < $maxY, 404);
+        $file = storage_path('app/sigmad_master_hd/'.$analysisUuid.'/tiles/'.$z.'/'.$x.'/'.$y.'.webp');
+        abort_unless(is_file($file), 404);
+        return response()->file($file, [
+            'Content-Type' => 'image/webp',
+            'Cache-Control' => 'private, max-age=86400',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /** Validación estructural estricta; nunca aceptar geometrías arbitrarias del cliente. */

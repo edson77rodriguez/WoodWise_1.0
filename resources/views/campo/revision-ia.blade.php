@@ -1,31 +1,41 @@
 @extends('layouts.uav')
-@section('title', 'SIGMAD · Revisión y corrección IA')
+@section('title', 'SIGMAD · Laboratorio de revisión IA')
 @push('styles')
 <link rel="stylesheet" href="{{ asset('sigmad-campo-assets/vendor/ol.css') }}">
-<link rel="stylesheet" href="{{ asset('sigmad-revision-assets/revision-ia.css') }}?v=080">
+<link rel="stylesheet" href="{{ asset('sigmad-revision-assets/revision-ia.css') }}?v=081">
 @endpush
 @section('content')
 <main id="review-app" class="rv-wrap">
   <div class="rv-header">
     <div>
       <p class="rv-eyebrow">SIGMAD / LABORATORIO FORESTAL</p>
-      <h1>Revisión y corrección IA</h1>
-      <p class="rv-muted">Editor georreferenciado de copas · predicciones originales protegidas</p>
+      <h1>Laboratorio de revisión IA</h1>
+      <p class="rv-muted">Edición geoespacial · ortomosaico maestro HD · trazabilidad científica</p>
     </div>
-    <div class="rv-header-right"><span class="rv-pill">V0.8.0 · Piloto</span><a href="{{ url('/campo') }}" class="rv-link">Volver a Campo</a></div>
+    <div class="rv-header-right"><span class="rv-pill">V0.8.1 · Master HD</span><a href="{{ url('/campo') }}" class="rv-link">Volver a Campo</a></div>
   </div>
 
   <div class="rv-topbar">
-    <label class="rv-field rv-grow"><span>Misión a revisar</span>
+    <label class="rv-field rv-grow"><span>Conjunto de anotaciones a revisar</span>
       <select id="rv-mission" aria-label="Seleccionar misión"><option value="">Elige una misión…</option></select>
     </label>
-    <button type="button" id="rv-load" class="rv-primary">Abrir misión</button>
+    <button type="button" id="rv-load" class="rv-primary">Abrir área de trabajo</button>
     <div class="rv-meta"><span id="rv-version">Sin revisión</span><small id="rv-dirty">Sin cambios</small></div>
   </div>
-  <div id="rv-alert" class="rv-alert" role="status" aria-live="polite">Elige una misión y pulsa «Abrir misión».</div>
+  <div id="rv-alert" class="rv-alert" role="status" aria-live="polite">Selecciona un conjunto de anotaciones. El mapa HD maestro se carga por análisis, independientemente de las misiones de campo.</div>
 
+  <div class="rv-overview" aria-label="Estado del laboratorio">
+    <div class="rv-overview-intro"><span class="rv-overview-icon">✦</span><div><b>Laboratorio geoespacial de precisión</b><span>Verifica, corrige y documenta cada copa con su evidencia original.</span></div></div>
+    <div class="rv-overview-stat"><strong id="rv-top-total">—</strong><span>Copas revisables</span></div>
+    <div class="rv-overview-stat"><strong id="rv-top-manual">—</strong><span>Marcas de campo</span></div>
+    <div class="rv-overview-stat"><strong id="rv-top-validated">—</strong><span>Validadas</span></div>
+  </div>
   <div class="rv-layout">
     <section class="rv-canvas-card" aria-label="Editor cartográfico">
+      <div class="rv-workspace-head">
+        <div><span class="rv-section-eyebrow">MAPA INTERACTIVO</span><h2>Visor de copas forestales</h2></div>
+        <div class="rv-map-status" id="rv-map-quality" data-quality="waiting">● Selecciona un conjunto</div>
+      </div>
       <div class="rv-tools">
         <div class="rv-tool-row">
           <button id="rv-accept" type="button" disabled>✓ Aceptar</button>
@@ -44,7 +54,14 @@
           <span id="rv-mode">Modo: seleccionar</span>
         </div>
       </div>
-      <div id="rv-map" class="rv-map" aria-label="Ortomosaico, predicciones y copas corregidas"></div>
+      <div class="rv-map-shell">
+        <div id="rv-map" class="rv-map" aria-label="Ortomosaico maestro, predicciones y copas corregidas"></div>
+        <div class="rv-floating-tools" aria-label="Navegación del mapa">
+          <button id="rv-fit-all" type="button" title="Ver área completa" disabled>⛶ <span>Área completa</span></button>
+          <button id="rv-focus" type="button" title="Enfocar la copa seleccionada" disabled>◎ <span>Enfocar copa</span></button>
+        </div>
+        <div class="rv-map-corner"><span id="rv-map-scale">Escala: —</span><span id="rv-map-position">UTM: —</span></div>
+      </div>
       <div class="rv-map-footer">
         <span><i class="rv-dot original"></i> IA original</span>
         <span><i class="rv-dot pending"></i> Pendiente</span>
@@ -55,6 +72,11 @@
     </section>
 
     <aside class="rv-side">
+      <section class="rv-panel rv-navigation-panel">
+        <div class="rv-panel-title"><h2>Buscar objetivo</h2><span>Localización rápida</span></div>
+        <label class="rv-field"><span>Marca manual a inspeccionar</span><select id="rv-jump-man" disabled><option value="">Seleccionar marca MAN…</option></select></label>
+        <p class="rv-hint">Selecciona una marca para centrar el mapa en su ubicación. Una marca MAN todavía no confirma un árbol omitido.</p>
+      </section>
       <section class="rv-panel">
         <div class="rv-panel-title"><h2>Detalle de copa</h2><span id="rv-selected">Ninguna seleccionada</span></div>
         <div class="rv-fields">
@@ -122,5 +144,5 @@
 </script>
 <script src="{{ asset('sigmad-campo-assets/vendor/proj4.js') }}" defer></script>
 <script src="{{ asset('sigmad-campo-assets/vendor/ol.js') }}" defer></script>
-<script src="{{ asset('sigmad-revision-assets/revision-ia.js') }}?v=080" defer></script>
+<script src="{{ asset('sigmad-revision-assets/revision-ia.js') }}?v=081" defer></script>
 @endsection

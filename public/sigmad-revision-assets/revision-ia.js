@@ -1,4 +1,4 @@
-/* SIGMAD Laboratorio de revisión IA · V0.8.0
+/* SIGMAD Laboratorio de revisión IA · V0.8.1
  * Copas originales inmutables, revisión de polígonos aislada, historial en servidor.
  * Sin IA asistida ni corrección automática; todo acto es humano y auditable. */
 (() => {
@@ -9,6 +9,7 @@
   const format = () => new ol.format.GeoJSON();
   let mission = null, map = null, originalSource = null, reviewSource = null, manualSource = null;
   let originalLayer = null, reviewLayer = null, manualLayer = null;
+  let fullMapExtent = null, mapQuality = 'waiting', currentMosaicGsd = null;
   let selection = null, modifier = null, drawer = null;
   let selected = null, selectedManual = null, mode = 'select';
   let splitSession = null, undo = [], dirty = false, busy = false, blockSave = false;
@@ -151,6 +152,9 @@
     $('rv-save').disabled = !loaded || busy || blockSave;
     for (const id of ['rv-accept','rv-edit','rv-split','rv-reject','rv-restore']) $(id).disabled = !selected || busy || mode !== 'select';
     $('rv-undo').disabled = !undo.length || busy || mode !== 'select';
+    $('rv-fit-all').disabled = !loaded || !map || busy;
+    $('rv-focus').disabled = !selected || !map || busy;
+    $('rv-jump-man').disabled = !loaded || !map || busy;
     if (!selected && modifier) modifier.setActive(false);
   }
   function updateCounts() {
@@ -158,6 +162,8 @@
     const features = reviewSource.getFeatures();
     const count = s => features.filter(f => f.get('review_status') === s).length;
     $('rv-kpi-total').textContent = features.length;
+    $('rv-top-total').textContent = features.length;
+    $('rv-top-validated').textContent = count('accepted')+count('edited');
     $('rv-kpi-pending').textContent = count('pending');
     $('rv-kpi-rejected').textContent = count('rejected')+count('superseded');
     $('rv-kpi-new').textContent = count('added')+count('split');
@@ -263,8 +269,53 @@
     loadReview(state);flagDirty();updateButtons();
     alertMsg('Se recuperó el estado anterior (todavía sin guardar en SIGMAD).');
   }
-  function mapFor(data) {
+  function setMapQuality(state, text) {
+    mapQuality = state;
+    const element = $('rv-map-quality');
+    element.dataset.quality = state;
+    element.textContent = text;
+  }
+  function focusExtent(extent, padding=52) {
+    if (!map || !Array.isArray(extent) || extent.length!==4) return;
+    map.getView().fit(extent, {size:map.getSize(),padding:[padding,padding,padding,padding],
+      maxZoom: Math.max(0, (map.getView().getResolutions()?.length||17)-2),duration:360});
+  }
+  function focusFeature(feature) {
+    if (!map || !feature) return;
+    const geom=feature.getGeometry();
+    if (!geom) return;
+    const center=ol.extent.getCenter(geom.getExtent());
+    const size=map.getSize()||[800,600];
+    const view=map.getView();
+    if (geom.getType()==='Point') {
+      view.animate({center,zoom:Math.min(view.getMaxZoom(),Math.max(view.getZoom()||0,view.getMaxZoom()-2)),duration:350});
+      return;
+    }
+    const ext=geom.getExtent();
+    const width=Math.max(ext[2]-ext[0],4), height=Math.max(ext[3]-ext[1],4);
+    const pad=Math.max(width,height)*2.2;
+    const expanded=[center[0]-pad,center[1]-pad,center[0]+pad,center[1]+pad];
+    view.fit(expanded,{size,padding:[50,50,50,50],duration:350});
+  }
+  function updateMapReadout() {
+    if (!map) return;
+    const resolution=map.getView().getResolution();
+    const gsd = Number.isFinite(currentMosaicGsd) ? ` · GSD ${Math.round(currentMosaicGsd*1000)/10} cm/px` : '';
+    $('rv-map-scale').textContent=Number.isFinite(resolution)
+      ? `Vista ${resolution.toFixed(resolution<1?3:1)} m/px${gsd}` : 'Escala: —';
+  }
+  function isValidMaster(manifest,data) {
+    return manifest && manifest.schema==='sigmad-master-utm-v1' &&
+      manifest.analysis_uuid===data.analysis_uuid && manifest.crs===data.crs &&
+      Array.isArray(manifest.extent) && manifest.extent.length===4 &&
+      Array.isArray(manifest.origin) && manifest.origin.length===2 &&
+      Array.isArray(manifest.resolutions) && manifest.resolutions.length>0 &&
+      manifest.tile_size===256 && typeof manifest.tile_url_template==='string';
+  }
+  async function mapFor(data) {
     if (map) {map.setTarget(null);map=null;}
+    fullMapExtent = null; currentMosaicGsd = null;
+    setMapQuality('loading','● Buscando ortomosaico HD maestro…');
     const m=/^EPSG:(326|327)(\d{2})$/.exec(data.crs);
     if (!m) throw new Error('Este editor requiere CRS UTM EPSG:326xx o EPSG:327xx.');
     proj4.defs(data.crs,`+proj=utm +zone=${Number(m[2])} ${m[1]==='327'?'+south ':''}+datum=WGS84 +units=m +no_defs +type=crs`);
@@ -273,34 +324,90 @@
       dataProjection:'EPSG:4326',featureProjection:data.crs}),wrapX:false});
     reviewSource=new ol.source.Vector({wrapX:false});
     manualSource=new ol.source.Vector({wrapX:false});
+    // Las marcas MAN llegan como puntos UTM. Nunca se tratan como lon/lat.
     manualSource.addFeatures(format().readFeatures({type:'FeatureCollection',
       features:data.manual_targets?.features||[]},{dataProjection:data.crs,featureProjection:data.crs}));
-    const layers = [];
+    const layers=[];
+    const missionExtent=data.bounds;
+    fullMapExtent=missionExtent;
+    // Vista previa: respaldo orientativo. No sirve para ajustes precisos a máximo zoom.
     if (data.preview_url && Array.isArray(data.bounds)) {
       layers.push(new ol.layer.Image({source:new ol.source.ImageStatic({
-        url:data.preview_url,projection:data.crs,imageExtent:data.bounds
-      })}));
+        url:data.preview_url,projection:data.crs,imageExtent:data.bounds,
+      }),zIndex:0}));
     }
-    originalLayer=new ol.layer.Vector({source:originalSource,style:f=>polygonStyle(f,true)});
-    reviewLayer=new ol.layer.Vector({source:reviewSource,style:f=>polygonStyle(f)});
-    manualLayer=new ol.layer.Vector({source:manualSource,style:manualStyle});
+    let manifest=null, hdError=null;
+    if (data.master_hd_manifest_url) {
+      try {
+        const response=await fetch(data.master_hd_manifest_url,{credentials:'same-origin',cache:'no-store',
+          headers:{Accept:'application/json'}});
+        if (response.ok) {
+          const candidate=await response.json();
+          if (!isValidMaster(candidate,data)) throw new Error('CRS o análisis no coincide con las máscaras de esta misión.');
+          manifest=candidate;
+        } else if (response.status!==404) hdError=`HTTP ${response.status}`;
+      } catch(e){ hdError=e.message; }
+    } else hdError='Sin identificador de análisis';
+    let viewOptions={projection:data.crs,center:ol.extent.getCenter(fullMapExtent),zoom:0};
+    if (manifest) {
+      fullMapExtent=manifest.extent;
+      currentMosaicGsd=Number(manifest.gsd_m);
+      if(!Number.isFinite(currentMosaicGsd)||currentMosaicGsd<=0) currentMosaicGsd=null;
+      const grid=new ol.tilegrid.TileGrid({extent:manifest.extent,origin:manifest.origin,
+        resolutions:manifest.resolutions,tileSize:256});
+      const source=new ol.source.TileImage({projection:data.crs,tileGrid:grid,interpolate:true,
+        tileUrlFunction:coord=> {
+          if(!coord) return undefined;
+          return manifest.tile_url_template.replace('__Z__',String(coord[0]))
+            .replace('__X__',String(coord[1])).replace('__Y__',String(coord[2]));
+        }});
+      let errors=0, rendered=0;
+      source.on('tileloadend',()=>{
+        if(!rendered++) setMapQuality('hd',`● Ortomosaico maestro HD · ${manifest.tile_count||'varias'} teselas`);
+      });
+      source.on('tileloaderror',()=>{
+        errors++;
+        setMapQuality('warning',`● HD parcial: ${errors} teselas sin cargar · revisa la conexión`);
+      });
+      layers.push(new ol.layer.Tile({source,zIndex:1}));
+      viewOptions={projection:data.crs,center:ol.extent.getCenter(fullMapExtent),zoom:0,
+        resolutions:manifest.resolutions};
+      setMapQuality('hd',`● HD maestro conectado · GSD ${Math.round((currentMosaicGsd||0)*1000)/10} cm`);
+    } else {
+      setMapQuality('preview',data.preview_url?'● Vista preliminar · resolución insuficiente para edición fina':'● Sin ortomosaico HD');
+      if(hdError) console.info('SIGMAD laboratorio: HD maestro no disponible:',hdError);
+    }
+    originalLayer=new ol.layer.Vector({source:originalSource,style:f=>polygonStyle(f,true),zIndex:10});
+    reviewLayer=new ol.layer.Vector({source:reviewSource,style:f=>polygonStyle(f),zIndex:11});
+    manualLayer=new ol.layer.Vector({source:manualSource,style:manualStyle,zIndex:12});
     layers.push(originalLayer,reviewLayer,manualLayer);
-    map=new ol.Map({target:'rv-map',layers,
-      view:new ol.View({projection:data.crs,center:ol.extent.getCenter(data.bounds),zoom:0}),
+    map=new ol.Map({target:'rv-map',layers,view:new ol.View(viewOptions),
       controls:ol.control.defaults.defaults({rotate:false})});
-    map.getView().fit(data.bounds,{size:map.getSize(),padding:[24,24,24,24]});
+    map.updateSize();
+    focusExtent(fullMapExtent,28);
     configureSelection();
+    map.getView().on('change:resolution',updateMapReadout);
+    map.on('pointermove',event=>{
+      if(event.dragging)return;
+      const coords=event.coordinate;
+      $('rv-map-position').textContent=`UTM ${coords[0].toFixed(1)} E · ${coords[1].toFixed(1)} N`;
+    });
     map.on('singleclick',evt=>{
       if (mode!=='select' || selected) return;
       const mark=map.forEachFeatureAtPixel(evt.pixel,f=>f.get('manual_target_uuid')?f:null,
         {layerFilter:layer=>layer===manualLayer,hitTolerance:10});
       if (mark) {
         selectedManual=mark.get('manual_target_uuid');
+        $('rv-jump-man').value=selectedManual;
         alertMsg(`${mark.get('manual_code')||'MAN'}: marca de revisión seleccionada. Pulsa «Agregar copa» solo si su contorno es visible.`);
       }
     });
     $('rv-show-original').onchange=()=>originalLayer.setVisible($('rv-show-original').checked);
     $('rv-show-manual').onchange=()=>manualLayer.setVisible($('rv-show-manual').checked);
+    originalLayer.setVisible($('rv-show-original').checked);
+    manualLayer.setVisible($('rv-show-manual').checked);
+    updateMapReadout();
+    return !!manifest;
   }
   async function getJSON(endpoint, options={}) {
     const response=await fetch(endpoint,{credentials:'same-origin',cache:'no-store',...options,
@@ -321,19 +428,22 @@
       const data=await getJSON(url('data',uuid));
       mission=data;blockSave=!!(data.review && data.review_source_sha256!==data.source_sha256);
       selected=null;selectedManual=null;mode='select';splitSession=null;undo=[];
-      mapFor(data);
+      const hdAvailable=await mapFor(data);
       const collection=data.review || originalToDraft(data.original);
       loadReview(collection);
       $('rv-version').textContent=`Revisión V${data.revision_no}`;
       $('rv-manual').replaceChildren(new Option('Sin vínculo MAN',''));
+      $('rv-jump-man').replaceChildren(new Option('Ir a una marca MAN…',''));
+      $('rv-top-manual').textContent=(data.manual_targets?.features||[]).length;
       for (const f of data.manual_targets?.features||[]) {
         const p=f.properties||{};
         $('rv-manual').add(new Option(`${p.manual_code} · ${p.reason||'pendiente'}`,p.manual_target_uuid));
+        $('rv-jump-man').add(new Option(`${p.manual_code} · ${p.reason||'por verificar'}`,p.manual_target_uuid));
       }
       flagDirty(false);
       await loadHistory();
       if (blockSave) alertMsg('La misión original cambió desde la última revisión. Puedes exportar, pero no guardar hasta reconciliar.',true);
-      else alertMsg(`Misión abierta · ${data.original.features.length} máscaras IA · ${data.manual_targets?.features.length||0} marcas MAN · Revisión V${data.revision_no}.`);
+      else alertMsg(`${data.title} · ${data.original.features.length} máscaras IA · ${data.manual_targets?.features.length||0} marcas MAN · ${hdAvailable?'ortomosaico maestro HD':'solo vista preliminar'} · Revisión V${data.revision_no}.`,!hdAvailable);
     } catch(e) {alertMsg('No se pudo abrir: '+e.message,true);}
     finally {busy=false;updateButtons();}
   }
@@ -434,7 +544,19 @@
     $('rv-save').addEventListener('click',()=>void save());
     $('rv-export').addEventListener('click',exportGeojson);
     $('rv-history-refresh').addEventListener('click',()=>void loadHistory().catch(e=>alertMsg(e.message,true)));
+    $('rv-fit-all').addEventListener('click',()=>focusExtent(fullMapExtent,30));
+    $('rv-focus').addEventListener('click',()=>focusFeature(selected));
+    $('rv-jump-man').addEventListener('change',e=>{
+      if(!manualSource||!e.target.value)return;
+      const target=manualSource.getFeatures().find(f=>f.get('manual_target_uuid')===e.target.value);
+      if(!target)return;
+      selectedManual=e.target.value;
+      focusFeature(target);
+      alertMsg(`${target.get('manual_code')||'MAN'} localizada. Verifica visualmente si hay copa segmentable antes de dibujar.`);
+    });
     window.addEventListener('beforeunload', e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+    const preferred=[...$('rv-mission').options].find(o=>o.textContent?.toLowerCase().includes('mision completa'));
+    if(preferred) $('rv-mission').value=preferred.value;
     if (!window.ol || !window.proj4) alertMsg('Faltan las librerías OpenLayers/proj4. Comprueba sus rutas.',true);
   }
   bind();
