@@ -1,4 +1,4 @@
-/* SIGMAD Campo V0.6.0: mapa de misión + GPS + teselas HD privadas offline.
+/* SIGMAD Campo V0.6.1: mapa de misión + GPS + teselas HD privadas offline.
    No altera la base de datos de observaciones ni asigna automáticamente TP/FP/FN. */
 (() => {
   'use strict';
@@ -138,7 +138,9 @@
   }
   function setMapVisible(){
     if(aiLayer)aiLayer.setVisible(group==='A');
-    if(manualLayer)manualLayer.setVisible(group==='H');
+    // Las marcas precampo se muestran en A y H, pero solo H puede vincularlas como hallazgos.
+    // B permanece ciego para preservar el censo independiente.
+    if(manualLayer)manualLayer.setVisible(group==='A'||group==='H');
     // Grupo B debe permanecer ciego a la IA; los parches HD de esta misión
     // fueron generados alrededor de copas seleccionadas, por lo que también
     // se ocultan en B para no revelar indirectamente los candidatos.
@@ -146,7 +148,7 @@
     if(group!=='A')activeCandidate=null;
     if(group!=='H')activeManualTarget=null;
     const b=$('map-choice');if(b){
-      b.textContent=group==='A'?(activeCandidate?`Copa elegida: ${activeCandidate}`:'Toca una copa para vincularla')
+      b.textContent=group==='A'?(activeCandidate?`Copa elegida: ${activeCandidate}`:'Toca una copa IA · etiquetas violetas son marcas precampo')
         :(group==='B'?'Censo independiente: IA, marcas manuales y parches HD ocultos':group==='H'?(activeManualTarget?`Marca manual elegida: ${activeManualTarget.slice(0,8)} · registra Tree ID en campo`:'Grupo H: toca una marca violeta o registra un hallazgo nuevo'):'Detecciones IA ocultas');
     }
   }
@@ -227,6 +229,45 @@
     layers.push(hdLayer);
     return true;
   }
+  // Las marcas son una capa precampo INDEPENDIENTE de las predicciones originales.
+  function loadManualFeatures(entry){
+    if(!manualSource)return 0;
+    manualSource.clear();
+    const collection=entry.manual_targets;
+    if(collection?.type==='FeatureCollection' && collection.crs===entry.crs && Array.isArray(collection.features)){
+      try{
+        const features=new ol.format.GeoJSON().readFeatures(collection,{dataProjection:entry.crs,featureProjection:entry.crs});
+        manualSource.addFeatures(features.filter(f=>Boolean(f.get('manual_target_uuid'))));
+      }catch(err){feedback('No se pudieron visualizar las etiquetas: '+err.message,true);}
+    }
+    return manualSource.getFeatures().length;
+  }
+  // Sincroniza SOLO etiquetas. No reemplaza el GeoJSON IA, los registros ni el raster local.
+  async function refreshManualTargets(entry){
+    if(!navigator.onLine||!window.SIGMAD_FIELD_BOOT||!ctx?.mission_url_template)return false;
+    const url=ctx.mission_url_template.replace('__UUID__',encodeURIComponent(entry.uuid));
+    const response=await fetch(url,{credentials:'same-origin',headers:{Accept:'application/json'},cache:'no-store'});
+    if(!response.ok)throw new Error('HTTP '+response.status);
+    const fresh=await response.json();
+    if(fresh.uuid!==entry.uuid||fresh.analysis_uuid!==entry.analysis_uuid||fresh.crs!==entry.crs){
+      throw new Error('El origen de la misión cambió. Pulsa «Descargar misión» para actualizarla.');
+    }
+    const collection=fresh.manual_targets;
+    if(collection?.type!=='FeatureCollection'||collection.crs!==entry.crs||
+        !Array.isArray(collection.features)||collection.features.length>200){
+      throw new Error('El servidor no entregó etiquetas de misión compatibles.');
+    }
+    const local=await savedMission(entry.uuid);
+    if(!local||!sameRaster(local,entry))return false;
+    if(JSON.stringify(local.manual_targets)===JSON.stringify(collection)){
+      entry.manual_targets=collection;
+      return false;
+    }
+    local.manual_targets=collection;
+    await storeMission(local);
+    entry.manual_targets=collection;
+    return true;
+  }
   function showMission(entry,checkHd=true){
     destroyMap();activeMission=entry;activeCandidate=null;
     if($('candidate_id'))$('candidate_id').value='';
@@ -240,13 +281,7 @@
     geoSource=new ol.source.Vector({features,wrapX:false});
     gpsSource=new ol.source.Vector({wrapX:false});
     manualSource=new ol.source.Vector({wrapX:false});
-    const manualCollection=entry.manual_targets;
-    if(manualCollection?.crs===entry.crs && Array.isArray(manualCollection.features)) {
-      try {
-        const manualFeatures=new ol.format.GeoJSON().readFeatures(manualCollection,{dataProjection:entry.crs,featureProjection:entry.crs});
-        manualSource.addFeatures(manualFeatures.filter(f=>Boolean(f.get('manual_target_uuid'))));
-      } catch(err) { feedback('Marcas manuales no compatibles: '+err.message,true); }
-    }
+    loadManualFeatures(entry);
     const layers=[];
     if(entry.preview_blob?.size){
       rasterUrl=URL.createObjectURL(entry.preview_blob);
@@ -282,8 +317,12 @@
         return;
       }
       if(group!=='A')return;
-      const f=map.forEachFeatureAtPixel(evt.pixel,x=>x.get('operational_id')?x:null,{hitTolerance:8});
-      if(!f)return;
+      const f=map.forEachFeatureAtPixel(evt.pixel,x=>x.get('operational_id')?x:null,{hitTolerance:8,layerFilter:l=>l===aiLayer});
+      if(!f){
+        const mf=map.forEachFeatureAtPixel(evt.pixel,x=>x.get('manual_target_uuid')?x:null,{hitTolerance:9,layerFilter:l=>l===manualLayer});
+        if(mf)feedback(`Etiqueta ${mf.get('manual_code')||'MAN'}: marca precampo, no predicción IA. Verifica en campo si corresponde a una copa IA o a un hallazgo sin detección.`,true);
+        return;
+      }
       const id=String(f.get('operational_id'));
       activeCandidate=id;$('candidate_id').value=id;$('localizado').value='si';
       $('tree-form').scrollIntoView({behavior:'smooth',block:'start'});
@@ -304,7 +343,20 @@
     if(entry && entry.user_id===ctx.user_id){
       try{await ensurePreview(entry);}catch(e){previewFeedback('No se pudo verificar el fondo: '+e.message,true);}
       if(token!==selectionToken||$('campo-mission')?.value!==uuid)return;
-      showMission(entry);return;
+      showMission(entry);
+      // Actualización automática de etiquetas al abrir, sin bajar otra vez el HD.
+      // Si no hay internet, usamos la última colección descargada de la misión.
+      void refreshManualTargets(entry).then(changed=>{
+        if(!changed||token!==selectionToken||activeMission!==entry)return;
+        const n=loadManualFeatures(entry);
+        setMapVisible();
+        feedback(`${entry.title} · ${n} etiquetas precampo sincronizadas · copas IA intactas.`);
+      }).catch(err=>{
+        if(token===selectionToken&&activeMission===entry){
+          console.warn('SIGMAD: actualización de etiquetas pendiente:',err.message);
+        }
+      });
+      return;
     }
     destroyMap();activeMission=null;feedback('Misión no descargada. Con internet pulsa «Descargar misión» antes de salir.',true);
   }

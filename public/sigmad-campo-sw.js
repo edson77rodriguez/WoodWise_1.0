@@ -1,6 +1,6 @@
-/* SIGMAD Campo V0.6.0: cachea SOLO los recursos estáticos del frontend.
+/* SIGMAD Campo V0.6.1: cachea SOLO los recursos estáticos del frontend.
    No elimina IndexedDB; no intercepta rutas de misiones, medidas o teselas privadas. */
-const CACHE = 'sigmad-campo-v0.6.0';
+const CACHE = 'sigmad-campo-v0.6.1';
 const ASSETS = [
   '/sigmad-campo-assets/offline.html',
   '/sigmad-campo-assets/campo.css',
@@ -27,7 +27,7 @@ self.addEventListener('fetch', event => {
     return;
   }
   if(ASSETS.includes(url.pathname)){
-    // El HTML añade ?v=0600 para actualizar navegadores sin SW.
+    // El HTML añade ?v=0610 para actualizar navegadores sin SW.
     // Buscar por ruta hace que la misma versión precargada sirva también offline.
     event.respondWith(caches.open(CACHE).then(cache=>cache.match(url.pathname))
       .then(hit=>hit||fetch(event.request)));
