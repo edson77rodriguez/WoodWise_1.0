@@ -236,9 +236,29 @@
     const collection=entry.manual_targets;
     if(collection?.type==='FeatureCollection' && collection.crs===entry.crs && Array.isArray(collection.features)){
       try{
-        const features=new ol.format.GeoJSON().readFeatures(collection,{dataProjection:entry.crs,featureProjection:entry.crs});
-        manualSource.addFeatures(features.filter(f=>Boolean(f.get('manual_target_uuid'))));
-      }catch(err){feedback('No se pudieron visualizar las etiquetas: '+err.message,true);}
+        // SIGMAD entrega crs como cadena: "EPSG:32614". OpenLayers espera un objeto
+        // CRS GeoJSON tradicional y puede rechazar la cadena como "Unknown CRS type".
+        // NO alteramos las geometrías ni las reproyectamos: ya están en UTM.
+        // Retirar SOLO la propiedad crs de la envoltura evita ese fallo de lectura.
+        const safeGeoJSON={type:'FeatureCollection',features:collection.features};
+        const features=new ol.format.GeoJSON().readFeatures(safeGeoJSON,{
+          dataProjection:entry.crs,featureProjection:entry.crs
+        });
+        const valid=features.filter(f=>Boolean(f.get('manual_target_uuid')) && Boolean(f.getGeometry()));
+        manualSource.addFeatures(valid);
+        const outside=valid.filter(f=>f.getGeometry().getType()==='Point' &&
+          !ol.extent.containsCoordinate(entry.bounds,f.getGeometry().getCoordinates()));
+        if(outside.length)console.warn(`SIGMAD: ${outside.length} marcas fuera del encuadre de misión`,entry.uuid);
+        if(valid.length!==collection.features.length){
+          console.warn(`SIGMAD: etiquetas renderizables ${valid.length}/${collection.features.length}`,entry.uuid);
+        }
+      }catch(err){
+        console.error('SIGMAD: falló lectura de marcas precampo',entry.uuid,err);
+        feedback('No se pudieron visualizar las etiquetas: '+err.message,true);
+      }
+    }else if(collection?.features?.length){
+      console.warn('SIGMAD: colección manual incompatible con CRS de misión',entry.uuid,collection.crs,entry.crs);
+      feedback('Las etiquetas no coinciden con el CRS de la misión.',true);
     }
     return manualSource.getFeatures().length;
   }
@@ -288,7 +308,7 @@
       layers.push(new ol.layer.Image({source:new ol.source.ImageStatic({url:rasterUrl,projection:entry.crs,imageExtent:entry.bounds})}));
     }
     const hd=addHdLayer(entry,layers);
-    manualLayer=new ol.layer.Vector({source:manualSource,visible:group==='H',style:f=>new ol.style.Style({
+    manualLayer=new ol.layer.Vector({source:manualSource,visible:group==='A'||group==='H',zIndex:20,style:f=>new ol.style.Style({
       stroke:new ol.style.Stroke({color:'#c658e3',width:2.4,lineDash:[6,4]}),
       fill:new ol.style.Fill({color:'rgba(198,88,227,.16)'}),
       image:new ol.style.Circle({radius:9,fill:new ol.style.Fill({color:'#b758d7'}),stroke:new ol.style.Stroke({color:'#fff',width:2.2})}),
@@ -297,7 +317,7 @@
     })});
     layers.push(manualLayer);
     aiLayer=new ol.layer.Vector({source:geoSource,style:featureStyle});layers.push(aiLayer);
-    layers.push(new ol.layer.Vector({source:gpsSource,style:()=>new ol.style.Style({
+    layers.push(new ol.layer.Vector({source:gpsSource,zIndex:30,style:()=>new ol.style.Style({
       stroke:new ol.style.Stroke({color:'#60a5fa',width:1.8}),
       fill:new ol.style.Fill({color:'rgba(79,157,244,.20)'}),
       image:new ol.style.Circle({radius:8,fill:new ol.style.Fill({color:'#2d91ff'}),stroke:new ol.style.Stroke({color:'#fff',width:2})})
@@ -333,7 +353,9 @@
     setMapVisible();startGPS();
     hdFeedback(hd?'Comprobando que las teselas locales sean utilizables…':'Sin paquete HD local. Descarga el mapa HD cuando esté disponible.');
     if(hd&&checkHd)void verifyCachedHD(entry,hdCheckToken);
-    feedback(`${entry.title} · ${features.length} copas IA · ${manualSource.getFeatures().length} objetivos manuales · ${entry.preview_blob?'fondo validado':'SIN fondo preliminar'} · ${hd?'HD local en verificación':'sin HD local'}.`,!entry.preview_blob&&!hd);
+    const manualRead=manualSource.getFeatures().length;
+    const manualExpected=entry.manual_targets?.features?.length||0;
+    feedback(`${entry.title} · ${features.length} copas IA · ${manualRead}/${manualExpected} marcas precampo · ${entry.preview_blob?'fondo validado':'SIN fondo preliminar'} · ${hd?'HD local en verificación':'sin HD local'}.`,manualRead!==manualExpected||(!entry.preview_blob&&!hd));
   }
   async function selectMission(uuid){
     const token=++selectionToken;
