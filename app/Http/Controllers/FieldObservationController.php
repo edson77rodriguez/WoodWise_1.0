@@ -67,9 +67,10 @@ class FieldObservationController extends Controller
             'id_parcela' => ['required', 'integer', 'exists:parcelas,id_parcela'],
             'grupo' => ['required', Rule::in(['A', 'B', 'C', 'H'])],
             'client_created_at' => ['required', 'date'],
-            'payload' => ['required', 'array:tree_id,candidate_id,localizado,especie,estado,dap_cm,altura_m,conf_altura,r_n_m,r_s_m,r_e_m,r_o_m,dominancia,solapamiento,visibilidad,latitud,longitud,gps_precision_m,gps_fecha,gps_metodo,observaciones,motivo_sin_medicion,mission_uuid,detection_ref'],
+            'payload' => ['required', 'array:tree_id,candidate_id,localizado,especie,estado,dap_cm,altura_m,conf_altura,r_n_m,r_s_m,r_e_m,r_o_m,dominancia,solapamiento,visibilidad,latitud,longitud,gps_precision_m,gps_fecha,gps_metodo,observaciones,motivo_sin_medicion,mission_uuid,detection_ref,manual_target_uuid'],
             'payload.mission_uuid' => ['nullable', 'uuid'],
             'payload.detection_ref' => ['nullable', 'string', 'max:220'],
+            'payload.manual_target_uuid' => ['nullable', 'uuid'],
             'payload.tree_id' => ['nullable', 'string', 'max:80'],
             'payload.candidate_id' => ['nullable', 'string', 'max:80'],
             'payload.localizado' => ['nullable', Rule::in(['si', 'no', 'dudoso'])],
@@ -110,6 +111,9 @@ class FieldObservationController extends Controller
         }
 
         $payload = $validated['payload'];
+        if (!empty($payload['manual_target_uuid']) && $validated['grupo'] !== 'H') {
+            return response()->json(['message'=>'La referencia manual solo puede registrarse en el grupo H.'],422);
+        }
         $treeId = $payload['tree_id'] ?? null;
         $candidateId = $payload['candidate_id'] ?? null;
         if ($validated['grupo'] === 'A' && !$candidateId) {
@@ -152,8 +156,19 @@ class FieldObservationController extends Controller
             } elseif (!empty($payload['detection_ref'])) {
                 return response()->json(['message' => 'Grupo B/C/H no debe asociarse a IA durante captura.'], 422);
             }
+            if (!empty($payload['manual_target_uuid'])) {
+                $isManualTarget = \App\Models\FieldMissionManualTarget::query()
+                    ->where('uuid', $payload['manual_target_uuid'])
+                    ->where('field_mission_id', $mission->id)
+                    ->exists(); // Permite sincronizar medición offline aunque la marca fuera retirada posteriormente.
+                if (!$isManualTarget) {
+                    return response()->json(['message'=>'La marca manual ya no existe o pertenece a otra misión. No se sincronizó.'],422);
+                }
+            }
         } elseif (!empty($payload['detection_ref'])) {
             return response()->json(['message' => 'La referencia IA requiere una misión.'], 422);
+        } elseif (!empty($payload['manual_target_uuid'])) {
+            return response()->json(['message' => 'La referencia manual requiere una misión.'], 422);
         }
 
         // El cuerpo se preserva como evidencia; el hash detecta reutilización del UUID

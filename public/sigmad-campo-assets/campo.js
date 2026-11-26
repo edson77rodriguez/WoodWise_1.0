@@ -152,6 +152,7 @@
       observaciones: String(fd.get('observaciones') || '').trim() || null,
       mission_uuid: window.SIGMAD_CAMPO_MAP?.association()?.mission_uuid || null,
       detection_ref: fd.get('grupo') === 'A' ? (window.SIGMAD_CAMPO_MAP?.association()?.detection_ref || null) : null,
+      manual_target_uuid: fd.get('grupo') === 'H' ? (window.SIGMAD_CAMPO_MAP?.association()?.manual_target_uuid || null) : null,
     };
     return p;
   }
@@ -168,7 +169,7 @@
       }
     }
     if (group === 'A' && !payload.candidate_id) return message('Grupo A requiere ID de candidato.', true);
-    if (group !== 'A' && !payload.tree_id) return message('Grupo B/C requiere Tree ID.', true);
+    if (group !== 'A' && !payload.tree_id) return message('Grupo B/C/H requiere Tree ID.', true);
     if (group === 'A' && !payload.localizado) return message('Indica si localizaste al candidato.', true);
     if (!(group === 'A' && payload.localizado === 'no') && (!payload.especie || !payload.estado)) return message('Selecciona especie y estado, o registra que no se pudieron determinar.', true);
     if (group === 'B' && payload.especie !== 'PL') {

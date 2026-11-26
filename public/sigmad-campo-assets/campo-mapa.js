@@ -9,6 +9,7 @@
   let ctx = null, mapDb=null, map=null, rasterUrl=null, geoSource=null;
   let gpsSource=null, aiLayer=null, gpsFeature=null, accuracyFeature=null;
   let hdLayer=null, hdSource=null, activeMission=null, activeCandidate=null;
+  let manualSource=null,manualLayer=null,activeManualTarget=null;
   let records=[], group='A', gpsWatch=null, gpsFollow=true, currentPosition=null;
   const $ = id => document.getElementById(id);
   function feedback(msg, warn=false) {const el=$('map-feedback');if(el){el.textContent=msg;el.dataset.warn=warn?'yes':'no';}}
@@ -38,14 +39,16 @@
   }
   function setMapVisible(){
     if(aiLayer)aiLayer.setVisible(group==='A');
+    if(manualLayer)manualLayer.setVisible(group==='H');
     // Grupo B debe permanecer ciego a la IA; los parches HD de esta misión
     // fueron generados alrededor de copas seleccionadas, por lo que también
     // se ocultan en B para no revelar indirectamente los candidatos.
     if(hdLayer)hdLayer.setVisible(group!=='B');
     if(group!=='A')activeCandidate=null;
+    if(group!=='H')activeManualTarget=null;
     const b=$('map-choice');if(b){
       b.textContent=group==='A'?(activeCandidate?`Copa elegida: ${activeCandidate}`:'Toca una copa para vincularla')
-        :(group==='B'?'Censo independiente: detecciones IA y parches HD ocultos':'Detecciones IA ocultas');
+        :(group==='B'?'Censo independiente: IA, marcas manuales y parches HD ocultos':group==='H'?(activeManualTarget?`Marca manual elegida: ${activeManualTarget.slice(0,8)} · registra Tree ID en campo`:'Grupo H: toca una marca violeta o registra un hallazgo nuevo'):'Detecciones IA ocultas');
     }
   }
   function accuracyGPS(pos){
@@ -73,6 +76,7 @@
     stopGPS();if(rasterUrl){URL.revokeObjectURL(rasterUrl);rasterUrl=null;}
     if(map){map.setTarget(null);map=null;}
     gpsFeature=null;accuracyFeature=null;geoSource=null;gpsSource=null;aiLayer=null;hdLayer=null;hdSource=null;
+    manualSource=null;manualLayer=null;activeManualTarget=null;
   }
   function featureStyle(f){
     const id=String(f.get('operational_id')||'');
@@ -134,12 +138,28 @@
     const features=new ol.format.GeoJSON().readFeatures(entry.geojson,{dataProjection:'EPSG:4326',featureProjection:entry.crs});
     geoSource=new ol.source.Vector({features,wrapX:false});
     gpsSource=new ol.source.Vector({wrapX:false});
+    manualSource=new ol.source.Vector({wrapX:false});
+    const manualCollection=entry.manual_targets;
+    if(manualCollection?.crs===entry.crs && Array.isArray(manualCollection.features)) {
+      try {
+        const manualFeatures=new ol.format.GeoJSON().readFeatures(manualCollection,{dataProjection:entry.crs,featureProjection:entry.crs});
+        manualSource.addFeatures(manualFeatures.filter(f=>Boolean(f.get('manual_target_uuid'))));
+      } catch(err) { feedback('Marcas manuales no compatibles: '+err.message,true); }
+    }
     const layers=[];
     if(entry.preview_blob?.size){
       rasterUrl=URL.createObjectURL(entry.preview_blob);
       layers.push(new ol.layer.Image({source:new ol.source.ImageStatic({url:rasterUrl,projection:entry.crs,imageExtent:entry.bounds})}));
     }
     const hd=addHdLayer(entry,layers);
+    manualLayer=new ol.layer.Vector({source:manualSource,visible:group==='H',style:f=>new ol.style.Style({
+      stroke:new ol.style.Stroke({color:'#c658e3',width:2.4,lineDash:[6,4]}),
+      fill:new ol.style.Fill({color:'rgba(198,88,227,.16)'}),
+      image:new ol.style.Circle({radius:9,fill:new ol.style.Fill({color:'#b758d7'}),stroke:new ol.style.Stroke({color:'#fff',width:2.2})}),
+      text:new ol.style.Text({text:String(f.get('manual_code')||'MAN'),font:'bold 11px sans-serif',offsetY:f.getGeometry()?.getType()==='Point'?-19:0,
+        fill:new ol.style.Fill({color:'#fff'}),backgroundFill:new ol.style.Fill({color:'rgba(89,31,108,.85)'}),padding:[3,4,3,4]})
+    })});
+    layers.push(manualLayer);
     aiLayer=new ol.layer.Vector({source:geoSource,style:featureStyle});layers.push(aiLayer);
     layers.push(new ol.layer.Vector({source:gpsSource,style:()=>new ol.style.Style({
       stroke:new ol.style.Stroke({color:'#60a5fa',width:1.8}),
@@ -151,6 +171,15 @@
     map=new ol.Map({target:'campo-map',layers,view:new ol.View(opts),controls:ol.control.defaults.defaults({rotate:false})});
     map.getView().fit(entry.bounds,{size:map.getSize(),padding:[24,24,24,24]});
     map.on('singleclick',evt=>{
+      if(group==='H') {
+        const mf=map.forEachFeatureAtPixel(evt.pixel,f=>f.get('manual_target_uuid')?f:null,{hitTolerance:9,layerFilter:l=>l===manualLayer});
+        if(!mf)return;
+        activeManualTarget=String(mf.get('manual_target_uuid'));
+        setMapVisible();manualSource.changed();
+        $('tree-form').scrollIntoView({behavior:'smooth',block:'start'});
+        feedback(`${mf.get('manual_code')||'MAN'} seleccionado como objetivo manual. Verifica el árbol y registra un Tree ID propio de campo.`);
+        return;
+      }
       if(group!=='A')return;
       const f=map.forEachFeatureAtPixel(evt.pixel,x=>x.get('operational_id')?x:null,{hitTolerance:8});
       if(!f)return;
@@ -164,7 +193,7 @@
     setMapVisible();startGPS();
     hdFeedback(hd?(entry.hd_complete?'Mapa HD descargado: listo para modo avión.':'Mapa HD disponible parcialmente; descarga las teselas pendientes.')
                  :'Para mejorar los detalles, prepara las teselas HD de esta misión.');
-    feedback(`${entry.title} · ${features.length} copas · ${hd?'capa HD':'vista previa'} · datos locales.`);
+    feedback(`${entry.title} · ${features.length} copas IA · ${manualSource.getFeatures().length} candidatos manuales · ${hd?'capa HD':'vista previa'} · datos locales.`);
   }
   async function selectMission(uuid){
     if(!uuid){destroyMap();activeMission=null;feedback('Selecciona una misión y descárgala antes de salir.');return;}
@@ -282,15 +311,17 @@
     }).catch(e=>feedback('No se pudo abrir almacenamiento local: '+e.message,true));
   }
   function association(){return {mission_uuid:activeMission?.uuid||null,
-    detection_ref:(group==='A'&&activeCandidate&&activeMission)?`${activeMission.analysis_uuid}:${activeCandidate}`:null};}
+    detection_ref:(group==='A'&&activeCandidate&&activeMission)?`${activeMission.analysis_uuid}:${activeCandidate}`:null,
+    manual_target_uuid:(group==='H'&&activeManualTarget&&activeMission)?activeManualTarget:null};}
   function updateGroup(next){group=next;setMapVisible();if(geoSource)geoSource.changed();}
   function setRecords(all){records=all||[];if(geoSource)geoSource.changed();}
-  function onReset(){activeCandidate=null;setMapVisible();if(geoSource)geoSource.changed();}
+  function onReset(){activeCandidate=null;activeManualTarget=null;setMapVisible();if(geoSource)geoSource.changed();}
   async function onEdit(rec){
     const uuid=rec.payload?.mission_uuid;if(!uuid)return;
     const select=$('campo-mission');if(select&&[...select.options].some(o=>o.value===uuid)){
       select.value=uuid;await selectMission(uuid);
       activeCandidate=rec.grupo==='A'?(rec.payload?.candidate_id||null):null;
+      activeManualTarget=rec.grupo==='H'?(rec.payload?.manual_target_uuid||null):null;
       if($('candidate_id')&&activeCandidate)$('candidate_id').value=activeCandidate;
       setMapVisible();if(geoSource)geoSource.changed();
     }

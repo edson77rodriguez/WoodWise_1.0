@@ -320,6 +320,7 @@ window.SIGMAD_MISSIONS_EDIT_IDS = @json($editIds);
     }
     function setMapEvents(){
         map.on('singleclick',evt=>{
+            if(window.SIGMAD_MISSIONS_MANUAL_DRAWING || Date.now()<(window.SIGMAD_MISSIONS_MANUAL_DRAWING_UNTIL||0))return;
             if(!polygonsVisible)return;
             const f=map.forEachFeatureAtPixel(evt.pixel,x=>x,{hitTolerance:5,layerFilter:layer=>layer===vectorLayer});
             if(!f)return;const id=String(f.get('operational_id')??'');if(id)toggleSelection(id);
@@ -366,6 +367,7 @@ window.SIGMAD_MISSIONS_EDIT_IDS = @json($editIds);
         layers.push(vectorLayer);
         map=new ol.Map({target:'mission-map',layers,view:new ol.View({projection:job.crs,center:ol.extent.getCenter(b.map(Number)),zoom:5,minZoom:0,maxZoom:26}),controls:ol.control.defaults.defaults({rotate:false,attribution:false}).extend([new ol.control.ScaleLine({units:'metric',minWidth:95})])});
         setMapEvents();map.updateSize();fitExtent(b.map(Number),19);
+        window.dispatchEvent(new Event('sigmad:missions-map-ready'));
         hideOverlay();
         abortGeo=new AbortController();
         try {
@@ -421,9 +423,19 @@ window.SIGMAD_MISSIONS_EDIT_IDS = @json($editIds);
         for(const id of selected){if(!registry.has(id)){e.preventDefault();status('Existe un ID no disponible en el análisis actual.','error');return;}}
         $('save-mission').disabled=true;$('save-mission').textContent='Guardando misión…';
     });
+    window.SIGMAD_MISSION_MAP_HOOK={getMap:()=>map,getJob:()=>currentJob};
     if(!ensureLibraries()){return;}
     if(select.value)loadAnalysis();else {renderSelected();renderCatalog();}
 })();
 </script>
 @endverbatim
+@if($editMission)
+<script>
+window.SIGMAD_MISSIONS_MANUAL_API = @json([
+    'index' => route('campo.missions.manual.index', ['mission' => $editMission->uuid]),
+    'store' => route('campo.missions.manual.store', ['mission' => $editMission->uuid]),
+]);
+</script>
+<script src="{{ asset('sigmad-campo-assets/misiones-manuales-v05.js') }}?v=0500"></script>
+@endif
 @endsection
