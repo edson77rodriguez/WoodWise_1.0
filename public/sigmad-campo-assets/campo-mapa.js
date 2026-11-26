@@ -1,4 +1,4 @@
-/* SIGMAD Campo V0.2.1: mapa de misión + GPS + teselas HD privadas offline.
+/* SIGMAD Campo V0.6.0: mapa de misión + GPS + teselas HD privadas offline.
    No altera la base de datos de observaciones ni asigna automáticamente TP/FP/FN. */
 (() => {
   'use strict';
@@ -11,9 +11,11 @@
   let hdLayer=null, hdSource=null, activeMission=null, activeCandidate=null;
   let manualSource=null,manualLayer=null,activeManualTarget=null;
   let records=[], group='A', gpsWatch=null, gpsFollow=true, currentPosition=null;
+  let hdCheckToken=0, selectionToken=0, hdDownloading=false;
   const $ = id => document.getElementById(id);
   function feedback(msg, warn=false) {const el=$('map-feedback');if(el){el.textContent=msg;el.dataset.warn=warn?'yes':'no';}}
   function hdFeedback(msg, warn=false) {const el=$('map-hd-status');if(el){el.textContent=msg;el.dataset.warn=warn?'yes':'no';}}
+  function previewFeedback(msg, warn=false) {const el=$('map-preview-status');if(el){el.textContent=msg;el.dataset.warn=warn?'yes':'no';}}
   function openDb(){return new Promise((resolve,reject)=>{
     const req=indexedDB.open(DB_NAME,2);
     req.onupgradeneeded=()=>{
@@ -30,6 +32,103 @@
   function tileKey(entry,cat,id){return `${ctx.user_id}|${entry.uuid}|${cat.tile_set_id}|${id}`;}
   function getTile(key){return requestPromise(mapDb.transaction(TILE_STORE).objectStore(TILE_STORE).get(key));}
   function putTile(key,blob){return requestPromise(mapDb.transaction(TILE_STORE,'readwrite').objectStore(TILE_STORE).put({key,blob,bytes:blob.size}));}
+  const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  async function normalizeRaster(blob,kind){
+    if(!window.SIGMAD_RASTER?.normalize)throw new Error('Falta el verificador de imágenes V0.6. Recarga SIGMAD conectado.');
+    return window.SIGMAD_RASTER.normalize(blob,kind);
+  }
+  function sameRaster(old,entry){
+    return old && old.user_id===ctx.user_id && old.analysis_uuid===entry.analysis_uuid &&
+      old.crs===entry.crs && JSON.stringify(old.bounds)===JSON.stringify(entry.bounds);
+  }
+  async function ensurePreview(entry){
+    let checked=null;
+    if(entry.preview_blob){
+      checked=await normalizeRaster(entry.preview_blob,'preview');
+      if(checked){
+        if(checked.repaired || checked.blob!==entry.preview_blob){
+          entry.preview_blob=checked.blob;
+          await storeMission(entry);
+        }
+        previewFeedback(checked.repaired?'Fondo recuperado automáticamente; disponible sin conexión.':'Fondo preliminar verificado; disponible sin conexión.');
+        return true;
+      }
+      // Solo retiramos la copia de imagen inválida. NUNCA tocamos registros de campo.
+      entry.preview_blob=null;
+      await storeMission(entry);
+    }
+    if(entry.preview_url && navigator.onLine && window.SIGMAD_FIELD_BOOT){
+      try{
+        previewFeedback('Recuperando el fondo cartográfico…');
+        const response=await fetch(entry.preview_url,{credentials:'same-origin',cache:'no-store'});
+        if(!response.ok)throw new Error('HTTP '+response.status);
+        checked=await normalizeRaster(await response.blob(),'preview');
+        if(!checked)throw new Error('Imagen incompleta o no decodificable.');
+        entry.preview_blob=checked.blob;
+        await storeMission(entry);
+        previewFeedback(checked.repaired?'Fondo recuperado. Aviso: la respuesta del servidor aún tenía un byte extra.':'Fondo descargado y verificado; disponible sin conexión.',checked.repaired);
+        return true;
+      }catch(error){
+        previewFeedback('No se pudo recuperar el fondo: '+error.message+' · Conéctate e intenta «Descargar misión».',true);
+        return false;
+      }
+    }
+    previewFeedback('Fondo no disponible sin conexión. Conservamos las copas y las mediciones; conecta el dispositivo para recuperarlo.',true);
+    return false;
+  }
+  async function repairStoredTile(entry,cat,id){
+    const key=tileKey(entry,cat,id);
+    const row=await getTile(key);
+    if(!row?.blob)return {ok:false,repaired:false};
+    const checked=await normalizeRaster(row.blob,'tile');
+    if(!checked)return {ok:false,repaired:false};
+    if(checked.repaired || checked.blob!==row.blob){await putTile(key,checked.blob);}
+    return {ok:true,repaired:checked.repaired,blob:checked.blob};
+  }
+  async function verifyCachedHD(entry,token){
+    const cat=entry.tile_manifest;
+    if(!usableCatalog(cat,entry)||hdDownloading)return;
+    const total=cat.tiles.length;
+    let valid=0,repaired=0;
+    hdFeedback(`Verificando el mapa HD almacenado: 0/${total}…`);
+    for(let i=0;i<total;i++){
+      if(token!==hdCheckToken||activeMission!==entry||hdDownloading)return;
+      try{
+        const result=await repairStoredTile(entry,cat,cat.tiles[i]);
+        if(result.ok)valid++;
+        if(result.repaired)repaired++;
+      }catch(err){console.warn('SIGMAD: tesela local inválida',cat.tiles[i],err.message);}
+      if((i+1)%30===0){hdFeedback(`Comprobando HD local: ${i+1}/${total}…`);await delay(0);}
+    }
+    if(token!==hdCheckToken||activeMission!==entry||hdDownloading)return;
+    entry.hd_complete=valid===total && total>0;
+    await storeMission(entry);
+    if(repaired&&hdSource)hdSource.refresh();
+    hdFeedback(entry.hd_complete
+      ? `Mapa HD verificado: ${valid}/${total} teselas; ${repaired} recuperadas. Preparado para probar sin conexión.`
+      : `HD parcial: ${valid}/${total} teselas válidas. ${total-valid} requieren descarga; pulsa «Descargar mapa HD» antes de salir.`,!entry.hd_complete);
+  }
+  async function fetchValidTile(cat,id){
+    let last=null;
+    for(let attempt=0;attempt<3;attempt++){
+      try{
+        const response=await fetch(tileUrl(cat,id),{credentials:'same-origin',cache:'no-store'});
+        if(!response.ok){
+          const error=new Error('HTTP '+response.status);
+          if([401,403,404,419].includes(response.status))throw Object.assign(error,{permanent:true});
+          throw error;
+        }
+        const checked=await normalizeRaster(await response.blob(),'tile');
+        if(!checked)throw new Error('WebP inválida o truncada');
+        return checked;
+      }catch(err){
+        last=err;
+        if(err.permanent||attempt===2)break;
+        await delay(350*(attempt+1));
+      }
+    }
+    throw last||new Error('No se pudo descargar la tesela');
+  }
   function getMissionList(){return (ctx?.missions||[]).filter(m=>String(m.id_parcela)===String($('parcela')?.value||''));}
   function updateOptions(){
     const input=$('campo-mission');if(!input)return;
@@ -73,7 +172,7 @@
   }
   function stopGPS(){if(gpsWatch!==null&&navigator.geolocation){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}}
   function destroyMap(){
-    stopGPS();if(rasterUrl){URL.revokeObjectURL(rasterUrl);rasterUrl=null;}
+    hdCheckToken++;stopGPS();if(rasterUrl){URL.revokeObjectURL(rasterUrl);rasterUrl=null;}
     if(map){map.setTarget(null);map=null;}
     gpsFeature=null;accuracyFeature=null;geoSource=null;gpsSource=null;aiLayer=null;hdLayer=null;hdSource=null;
     manualSource=null;manualLayer=null;activeManualTarget=null;
@@ -92,7 +191,8 @@
     if(!cat||cat.schema!=='sigmad-campo-utm-tiles-v1'||cat.mission_uuid!==entry.uuid||
        cat.analysis_uuid!==entry.analysis_uuid||cat.crs!==entry.crs||!Array.isArray(cat.tiles)||
        !Array.isArray(cat.resolutions)||!cat.resolutions.length||
-       cat.tile_size!==256||!cat.tile_set_id)return false;
+       cat.tile_size!==256||!cat.tile_set_id||!Array.isArray(cat.bounds)||cat.bounds.length!==4||
+       !Array.isArray(cat.origin)||cat.origin.length!==2||cat.tiles.length>2000)return false;
     return true;
   }
   function addHdLayer(entry,layers){
@@ -112,12 +212,13 @@
       tileLoadFunction:(tile,src)=>{
         const img=tile.getImage();
         const id=src.slice('sigmad-local:'.length);
-        getTile(tileKey(entry,cat,id)).then(row=>{
-          // No solicitamos la red en el render; sólo usamos las teselas descargadas.
-          if(!row?.blob){img.src=EMPTY_TILE;return;}
-          const url=URL.createObjectURL(row.blob);
-          img.addEventListener('load',()=>URL.revokeObjectURL(url),{once:true});
-          img.addEventListener('error',()=>URL.revokeObjectURL(url),{once:true});
+        // Lee y, cuando procede, repara el WebP local antes de entregarlo a OpenLayers.
+        repairStoredTile(entry,cat,id).then(result=>{
+          if(!result.ok){img.src=EMPTY_TILE;return;}
+          const url=URL.createObjectURL(result.blob);
+          const cleanup=()=>URL.revokeObjectURL(url);
+          img.addEventListener('load',cleanup,{once:true});
+          img.addEventListener('error',cleanup,{once:true});
           img.src=url;
         }).catch(()=>{img.src=EMPTY_TILE;});
       },
@@ -126,7 +227,7 @@
     layers.push(hdLayer);
     return true;
   }
-  function showMission(entry){
+  function showMission(entry,checkHd=true){
     destroyMap();activeMission=entry;activeCandidate=null;
     if($('candidate_id'))$('candidate_id').value='';
     group=$('grupo')?.value||'A';
@@ -191,14 +292,20 @@
     });
     map.on('pointerdrag',()=>{gpsFollow=false;});
     setMapVisible();startGPS();
-    hdFeedback(hd?(entry.hd_complete?'Mapa HD descargado: listo para modo avión.':'Mapa HD disponible parcialmente; descarga las teselas pendientes.')
-                 :'Para mejorar los detalles, prepara las teselas HD de esta misión.');
-    feedback(`${entry.title} · ${features.length} copas IA · ${manualSource.getFeatures().length} candidatos manuales · ${hd?'capa HD':'vista previa'} · datos locales.`);
+    hdFeedback(hd?'Comprobando que las teselas locales sean utilizables…':'Sin paquete HD local. Descarga el mapa HD cuando esté disponible.');
+    if(hd&&checkHd)void verifyCachedHD(entry,hdCheckToken);
+    feedback(`${entry.title} · ${features.length} copas IA · ${manualSource.getFeatures().length} objetivos manuales · ${entry.preview_blob?'fondo validado':'SIN fondo preliminar'} · ${hd?'HD local en verificación':'sin HD local'}.`,!entry.preview_blob&&!hd);
   }
   async function selectMission(uuid){
+    const token=++selectionToken;
     if(!uuid){destroyMap();activeMission=null;feedback('Selecciona una misión y descárgala antes de salir.');return;}
     const entry=await savedMission(uuid).catch(()=>null);
-    if(entry && entry.user_id===ctx.user_id){showMission(entry);return;}
+    if(token!==selectionToken||$('campo-mission')?.value!==uuid)return;
+    if(entry && entry.user_id===ctx.user_id){
+      try{await ensurePreview(entry);}catch(e){previewFeedback('No se pudo verificar el fondo: '+e.message,true);}
+      if(token!==selectionToken||$('campo-mission')?.value!==uuid)return;
+      showMission(entry);return;
+    }
     destroyMap();activeMission=null;feedback('Misión no descargada. Con internet pulsa «Descargar misión» antes de salir.',true);
   }
   async function downloadMission(){
@@ -215,22 +322,16 @@
       if(entry.uuid!==id||!Array.isArray(entry.geojson?.features))throw new Error('Misión inválida.');
       const old=await savedMission(id).catch(()=>null);
       entry.user_id=ctx.user_id;
-      // Conservar teselas HD descargadas de la misma versión de misión.
-      entry.tile_manifest=old?.user_id===ctx.user_id?old.tile_manifest:null;
-      entry.hd_complete=old?.user_id===ctx.user_id?Boolean(old.hd_complete):false;
-      entry.preview_blob=old?.user_id===ctx.user_id?old.preview_blob:null;
-      if(!entry.preview_blob && entry.preview_url){
-        try{
-          feedback('Descargando fondo cartográfico preliminar…');
-          const img=await fetch(entry.preview_url,{credentials:'same-origin'});
-          if(!img.ok)throw new Error(`HTTP ${img.status}`);
-          const blob=await img.blob();
-          if(blob.size>20*1024*1024||!blob.type.startsWith('image/'))throw new Error('Vista previa no apta.');
-          entry.preview_blob=blob;
-        }catch(e){feedback('Se descargaron las copas, pero NO el fondo preliminar: '+e.message,true);}
-      }
-      await storeMission(entry);showMission(entry);
-      feedback(entry.preview_blob?'Misión guardada. Para ver copas nítidas, pulsa «Descargar mapa HD».':'Misión guardada SIN imagen base. Revisa el fondo antes de salir.',!entry.preview_blob);
+      // Conservar imágenes HD SOLO si el origen raster y los límites siguen siendo idénticos.
+      const preserve=sameRaster(old,entry);
+      entry.tile_manifest=preserve?old.tile_manifest:null;
+      entry.hd_complete=false; // Se recalcula verificando todas las teselas existentes.
+      entry.preview_blob=preserve?old.preview_blob:null;
+      await storeMission(entry);
+      await ensurePreview(entry);
+      if($('campo-mission')?.value!==id)return;
+      showMission(entry);
+      feedback(entry.preview_blob?'Misión actualizada, fondo verificado. Valida el HD antes de ir a campo.':'Misión guardada SIN fondo cartográfico. Comprueba la conexión.',!entry.preview_blob);
     }catch(e){feedback('Error: '+e.message,true);}
     finally{btn.disabled=false;}
   }
@@ -243,6 +344,8 @@
     if(!entry){hdFeedback('Primero selecciona una misión descargada.',true);return;}
     if(!navigator.onLine||!window.SIGMAD_FIELD_BOOT){hdFeedback('Conéctate a internet para preparar el mapa HD.',true);return;}
     if(!entry.tile_manifest_url){hdFeedback('La misión no contiene el enlace de teselas. Actualiza el módulo Laravel.',true);return;}
+    if(hdDownloading){hdFeedback('Ya se está preparando el mapa HD.');return;}
+    hdDownloading=true;hdCheckToken++;
     const btn=$('map-download-hd');btn.disabled=true;
     try{
       hdFeedback('Consultando teselas disponibles…');
@@ -259,34 +362,37 @@
       await navigator.storage?.persist?.().catch(()=>false);
       entry.tile_manifest=cat;entry.hd_complete=false;
       await storeMission(entry);
-      // La descarga es reanudable: solo descarga teselas que no están en IndexedDB.
-      let cursor=0,complete=0,fresh=0,failed=[];
+      // Reanudable. Inspecciona primero cada tesela almacenada, la repara si tiene
+      // el byte 0A y solo solicita a internet las ausentes/irrecuperables.
+      let cursor=0,complete=0,fresh=0,repaired=0,failed=[];
       const worker=async()=>{
         while(cursor<cat.tiles.length){
           const id=cat.tiles[cursor++];
           try{
             const key=tileKey(entry,cat,id);
-            if(!(await getTile(key))){
-              const response=await fetch(tileUrl(cat,id),{credentials:'same-origin',cache:'no-store'});
-              if(!response.ok)throw new Error('HTTP '+response.status);
-              const blob=await response.blob();
-              if(!blob.size||blob.size>500_000||!blob.type.startsWith('image/webp'))throw new Error('Tesela inválida');
-              await putTile(key,blob);fresh++;
+            const previous=await repairStoredTile(entry,cat,id);
+            if(previous.repaired)repaired++;
+            if(!previous.ok){
+              const checked=await fetchValidTile(cat,id);
+              await putTile(key,checked.blob);
+              fresh++;
+              if(checked.repaired)repaired++;
             }
           }catch(err){failed.push(`${id}: ${err.message}`);}
           complete++;
           if(complete%10===0||complete===cat.tiles.length)
-            hdFeedback(`Mapa HD: ${complete}/${cat.tiles.length} teselas comprobadas · ${fresh} descargadas · ${failed.length} fallidas.`);
+            hdFeedback(`Verificando HD: ${complete}/${cat.tiles.length} · nuevas ${fresh} · reparadas ${repaired} · errores ${failed.length}`);
         }
       };
-      await Promise.all(Array.from({length:Math.min(4,cat.tiles.length)},()=>worker()));
+      // Dos conexiones simultáneas para reducir problemas de red en móviles.
+      await Promise.all(Array.from({length:Math.min(2,cat.tiles.length)},()=>worker()));
       entry.hd_complete=failed.length===0;
       await storeMission(entry);
-      showMission(entry);
-      if(failed.length)hdFeedback(`Mapa HD incompleto: ${failed.length} teselas fallaron. Repite «Descargar mapa HD» con conexión; no salgas aún.`,true);
-      else hdFeedback(`Mapa HD LISTO: ${cat.tiles.length} teselas y ${(cat.tile_bytes/1048576).toFixed(1)} MB · apto para prueba en modo avión.`);
+      if(activeMission===entry && $('campo-mission')?.value===entry.uuid)showMission(entry,false);
+      if(failed.length)hdFeedback(`HD incompleto: ${cat.tiles.length-failed.length}/${cat.tiles.length} válidas. Primera incidencia: ${failed[0]}. Puedes reanudar la descarga.`,true);
+      else hdFeedback(`Mapa HD verificado: ${cat.tiles.length} teselas válidas (${fresh} nuevas, ${repaired} recuperadas). Prueba el modo avión antes de salir.`);
     }catch(e){hdFeedback('No se pudo preparar mapa HD: '+e.message,true);}
-    finally{btn.disabled=false;}
+    finally{hdDownloading=false;btn.disabled=false;}
   }
   function initialize(context){
     ctx=context;if(!$('campo-map'))return;

@@ -1,4 +1,4 @@
-/* SIGMAD Campo V0.1.1: captura dasométrica offline con IndexedDB.
+/* SIGMAD Campo V0.6.0: captura dasométrica offline con IndexedDB.
    Sin dependencias externas. No interpreta una predicción IA como verdad de campo. */
 (() => {
   'use strict';
@@ -41,7 +41,9 @@
         <div class="campo-map-tools"><label>Parcela / misión <select id="campo-mission"><option value="">Elegir misión…</option></select></label><button type="button" class="secondary" id="map-download">Descargar misión</button><button type="button" class="secondary" id="map-download-hd">Descargar mapa HD</button><button type="button" class="secondary" id="map-follow">Centrar mi GPS</button></div>
         <div class="campo-map-canvas" id="campo-map" aria-label="Ubicación y copas asignadas"></div>
         <div class="campo-map-footer"><span id="map-gps">GPS: esperando permiso</span><span id="map-choice">Toca una copa para vincularla</span></div>
-        <div id="map-feedback" class="campo-map-feedback" role="status">Selecciona una misión descargable.</div><div id="map-hd-status" class="campo-map-feedback" role="status">Mapas HD: aún no preparados.</div>
+        <div id="map-feedback" class="campo-map-feedback" role="status">Selecciona una misión descargable.</div>
+        <div id="map-preview-status" class="campo-map-feedback" role="status" aria-live="polite">Fondo preliminar: pendiente de verificar.</div>
+        <div id="map-hd-status" class="campo-map-feedback" role="status" aria-live="polite">Mapa HD: pendiente de verificar.</div>
         <button type="button" id="map-manual" class="campo-manual-btn">+ Registrar árbol no detectado / registro independiente</button>
       </section>
       <div class="cards"><div>
@@ -189,6 +191,14 @@
     if (payload.latitud == null && !payload.motivo_sin_medicion) {
       if (!confirm('No registraste GPS. El árbol quedará pendiente de georreferenciación. ¿Guardar?')) return;
     }
+    // Control local de duplicados. NO compara registros de otros dispositivos.
+    const existing=(await myRecords()).find(r=>r.uuid!==editId && r.id_parcela===parcela && r.grupo===group &&
+      ((group==='A' && r.payload?.mission_uuid===payload.mission_uuid &&
+          r.payload?.candidate_id && r.payload.candidate_id===payload.candidate_id) ||
+       (group==='H' && payload.manual_target_uuid && r.payload?.mission_uuid===payload.mission_uuid &&
+          r.payload?.manual_target_uuid===payload.manual_target_uuid) ||
+       (group!=='A' && payload.tree_id && r.payload?.tree_id===payload.tree_id)));
+    if(existing && !confirm('Ya existe una ficha para este objetivo en este dispositivo. ¿Confirmas que NO estás duplicando la medición?'))return;
     const old = editId ? await reqPromise(store('records').get(editId)) : null;
     if (old?.status === 'synced') return message('No se permite editar un registro ya sincronizado en esta versión.', true);
     const rec = {

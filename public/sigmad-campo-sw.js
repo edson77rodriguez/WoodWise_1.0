@@ -1,9 +1,10 @@
-/* SIGMAD Campo V0.2.1 - Sólo recursos públicos estáticos y shell offline.
-   Las misiones y observaciones científicas NO se guardan en CacheStorage. */
-const CACHE = 'sigmad-campo-v0.2.1';
+/* SIGMAD Campo V0.6.0: cachea SOLO los recursos estáticos del frontend.
+   No elimina IndexedDB; no intercepta rutas de misiones, medidas o teselas privadas. */
+const CACHE = 'sigmad-campo-v0.6.0';
 const ASSETS = [
   '/sigmad-campo-assets/offline.html',
   '/sigmad-campo-assets/campo.css',
+  '/sigmad-campo-assets/campo-raster-integridad.js',
   '/sigmad-campo-assets/campo.js',
   '/sigmad-campo-assets/campo-mapa.js',
   '/sigmad-campo-assets/vendor/ol.css',
@@ -26,6 +27,9 @@ self.addEventListener('fetch', event => {
     return;
   }
   if(ASSETS.includes(url.pathname)){
-    event.respondWith(caches.match(event.request).then(hit=>hit||fetch(event.request)));
+    // El HTML añade ?v=0600 para actualizar navegadores sin SW.
+    // Buscar por ruta hace que la misma versión precargada sirva también offline.
+    event.respondWith(caches.open(CACHE).then(cache=>cache.match(url.pathname))
+      .then(hit=>hit||fetch(event.request)));
   }
 });
