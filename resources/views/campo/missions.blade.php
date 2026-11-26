@@ -430,11 +430,14 @@ window.SIGMAD_MISSIONS_EDIT_IDS = @json($editIds);
 </script>
 @endverbatim
 @if($editMission)
+@php
+    $sigmadManualApi = [
+        'index' => route('campo.missions.manual.index', ['mission' => $editMission->uuid]),
+        'store' => route('campo.missions.manual.store', ['mission' => $editMission->uuid]),
+    ];
+@endphp
 <script>
-window.SIGMAD_MISSIONS_MANUAL_API = @json([
-    'index' => route('campo.missions.manual.index', ['mission' => $editMission->uuid]),
-    'store' => route('campo.missions.manual.store', ['mission' => $editMission->uuid]),
-]);
+window.SIGMAD_MISSIONS_MANUAL_API = @json($sigmadManualApi);
 </script>
 <script src="{{ asset('sigmad-campo-assets/misiones-manuales-v05.js') }}?v=0500"></script>
 @endif
