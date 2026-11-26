@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\FieldMissionController;
 use App\Http\Controllers\FieldObservationController;
+use App\Http\Controllers\FieldMissionManualTargetController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:Administrador,Tecnico'])->group(function () {
@@ -16,11 +17,38 @@ Route::middleware(['auth', 'role:Administrador,Tecnico'])->group(function () {
     Route::get('/campo/misiones/{mission:uuid}/teselas/{z}/{x}/{y}', [FieldMissionController::class, 'tile'])->whereNumber(['z', 'x', 'y'])->name('campo.mission.tiles.tile');
 });
 
+
 Route::middleware(['auth', 'role:Administrador'])->group(function () {
-    Route::get('/campo/misiones', [FieldMissionController::class, 'create'])->name('campo.missions.create');
-    Route::post('/campo/misiones', [FieldMissionController::class, 'store'])->name('campo.missions.store');
-    Route::put('/campo/misiones/{mission:uuid}', [FieldMissionController::class, 'update'])->name('campo.missions.update');
+
+    // Misiones originales
+    Route::get('/campo/misiones', [FieldMissionController::class, 'create'])
+        ->name('campo.missions.create');
+
+    Route::post('/campo/misiones', [FieldMissionController::class, 'store'])
+        ->name('campo.missions.store');
+
+    Route::put('/campo/misiones/{mission:uuid}', [FieldMissionController::class, 'update'])
+        ->name('campo.missions.update');
+
+    // SIGMAD V0.5 — Árboles manuales omitidos por IA
+    Route::get('/campo/misiones/{mission:uuid}/manual-targets',
+        [FieldMissionManualTargetController::class, 'index'])
+        ->name('campo.missions.manual.index');
+
+    Route::post('/campo/misiones/{mission:uuid}/manual-targets',
+        [FieldMissionManualTargetController::class, 'store'])
+        ->name('campo.missions.manual.store');
+
+    Route::patch('/campo/misiones/{mission:uuid}/manual-targets/{target:uuid}',
+        [FieldMissionManualTargetController::class, 'update'])
+        ->name('campo.missions.manual.update');
+
+    Route::delete('/campo/misiones/{mission:uuid}/manual-targets/{target:uuid}',
+        [FieldMissionManualTargetController::class, 'destroy'])
+        ->name('campo.missions.manual.destroy');
+
 });
+
 
 // SIGMAD Campo V0.3 — administración de observaciones (mantener las rutas V0.2.1).
 \Illuminate\Support\Facades\Route::middleware(['auth', 'role:Administrador'])->group(function () {
