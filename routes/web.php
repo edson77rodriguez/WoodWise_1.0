@@ -233,6 +233,7 @@ Route::get('/analisis-uav/jobs/{analysisUuid}/v09u/estado',
     // SIGMAD SAM2-R1 — rutas dentro de auth + role:Administrador
     require __DIR__ . '/sam2.php';
     require __DIR__ . '/v08s.php';
+    require __DIR__ . '/sigmad_review_ia.php';
 
 });
 
