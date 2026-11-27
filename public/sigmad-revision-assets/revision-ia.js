@@ -1,4 +1,4 @@
-/* SIGMAD Smart Annotation Studio · V0.9.1 HOTFIX
+/* SIGMAD Smart Annotation Studio · V0.9.2 UX + borrado confirmado
  * Copas originales inmutables, revisión de polígonos aislada, historial en servidor.
  * Pinceles manuales georreferenciados sin GPU. SAM remoto aún NO integrado. */
 (() => {
@@ -15,6 +15,10 @@
   let splitSession = null, undo = [], redo = [], dirty = false, busy = false, blockSave = false;
   let brushMode = null, brushOverlay = null, brushActiveStroke = null, brushWorking = false, hdTilesReady = false;
   let mapGeneration = 0; // Ignorar descargas HD tardías de una misión que ya fue reemplazada.
+  let markedStrokes = [], markedFor = null, nativeGsdResolution = null;
+  let editorTip = '';
+  const editable = f => !!f && !['rejected','superseded'].includes(f.get('review_status'));
+  function targetId() { return selected?.get('annotation_uuid') || null; }
 
   const labels = {pending:'Pendiente',accepted:'Validada',edited:'Corregida',added:'Nueva',split:'Separación',superseded:'Fusionada reemplazada',rejected:'Descartada'};
   const colors = {pending:'#48c2c0',accepted:'#2dd39f',edited:'#6eb6f7',added:'#a592f2',split:'#7d8eff',superseded:'#efb65f',rejected:'#e7727b'};
@@ -110,14 +114,22 @@
         fill:new ol.style.Fill({color:'#fff'})})
     });
   }
+  function selectionStyle(f) {
+    return new ol.style.Style({
+      stroke:new ol.style.Stroke({color:'#fefefe',width:4}),
+      fill:new ol.style.Fill({color:'rgba(30,199,164,.31)'})
+    });
+  }
   function configureSelection() {
     selection = new ol.interaction.Select({layers:[reviewLayer],hitTolerance:7,
-      style:f => polygonStyle(f)});
+      style:f => selectionStyle(f)});
     map.addInteraction(selection);
     modifier = new ol.interaction.Modify({features:selection.getFeatures()});
     map.addInteraction(modifier);modifier.setActive(false);
     selection.on('select', () => {
-      selected = selection.getFeatures().item(0) || null;
+      const newSelected = selection.getFeatures().item(0) || null;
+      if (targetId() !== (newSelected?.get('annotation_uuid') || null)) clearMarkedStrokes(true);
+      selected = newSelected;
       selectedManual = null;
       populateAttributes();
       updateButtons();
@@ -132,6 +144,7 @@
     });
   }
   function unselect() {
+    clearMarkedStrokes(true);
     selected = null;
     if (selection) selection.getFeatures().clear();
     populateAttributes();updateButtons();
@@ -139,6 +152,10 @@
   function populateAttributes() {
     const p = selected ? props(selected) : null;
     $('rv-selected').textContent = p ? (p.source_operational_id || 'Nueva copa') : 'Ninguna seleccionada';
+    $('rv-selection-state').textContent = p ? `✓ ${p.source_operational_id || 'Copa nueva'} seleccionada` : 'Sin copa seleccionada';
+    $('rv-selection-state').dataset.ready=p?'yes':'no';
+    if (!p) brushInfo('Haz clic dentro de una copa turquesa del mapa para habilitar las herramientas.');
+    else if (!markedStrokes.length) brushInfo(`Copa ${p.source_operational_id || 'nueva'} seleccionada. Elige Agregar, Borrar directo o Marcar para borrar.`);
     for (const id of ['rv-status','rv-species','rv-visibility','rv-confidence','rv-origin','rv-manual','rv-tree','rv-note']) {
       $(id).disabled = !p;
     }
@@ -169,10 +186,16 @@
       !['rejected','superseded'].includes(selected.get('review_status'));
     $('rv-brush-add').disabled=!canBrush || (mode!=='select' && mode!=='brush');
     $('rv-brush-erase').disabled=!canBrush || (mode!=='select' && mode!=='brush');
+    $('rv-brush-mark').disabled=!canBrush || (mode!=='select' && mode!=='brush');
+    $('rv-delete-mark').disabled=!loaded || !editable(selected) || !hdTilesReady || !markedStrokes.length || markedFor!==targetId() || busy || brushWorking;
+    $('rv-clear-mark').disabled=!markedStrokes.length || busy || brushWorking;
     $('rv-brush-exit').disabled=mode!=='brush';
     $('rv-brush-size').disabled=!loaded || !hdTilesReady;
     $('rv-fit-all').disabled = !loaded || !map || busy;
     $('rv-focus').disabled = !selected || !map || busy;
+    $('rv-zoom-in').disabled=!loaded || !map || busy;
+    $('rv-zoom-out').disabled=!loaded || !map || busy;
+    $('rv-zoom-detail').disabled=!loaded || !map || busy;
     $('rv-jump-man').disabled = !loaded || !map || busy;
     if (!selected && modifier) modifier.setActive(false);
   }
@@ -320,9 +343,23 @@
     if(!brushOverlay)return;
     const c=brushOverlay.getContext('2d');
     c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,brushOverlay.width,brushOverlay.height);
-    if(mode!=='brush')return;
-    const r=brushOverlay.getBoundingClientRect();if(!r.width||!r.height)return;
+    const r=brushOverlay.getBoundingClientRect();
+    if(!r.width||!r.height)return;
     c.setTransform(brushOverlay.width/r.width,0,0,brushOverlay.height/r.height,0,0);
+    // Selección de borrado pendiente: se dibuja roja, SIN alterar la geometría todavía.
+    if (markedStrokes.length && map) {
+      for (const marked of markedStrokes) {
+        const pts=marked.world.map(p=>map.getPixelFromCoordinate(p)).filter(p=>Array.isArray(p));
+        if (!pts.length) continue;
+        c.beginPath();c.moveTo(...pts[0]);
+        for(let i=1;i<pts.length;i++)c.lineTo(...pts[i]);
+        c.strokeStyle='rgba(240,67,81,.58)';c.fillStyle='rgba(240,67,81,.58)';
+        c.lineWidth=2*marked.radiusM / (map.getView().getResolution() || 1);
+        c.lineCap='round';c.lineJoin='round';c.stroke();
+        if(pts.length===1){c.beginPath();c.arc(...pts[0],c.lineWidth/2,0,2*Math.PI);c.fill();}
+      }
+    }
+    if(mode!=='brush')return;
     const stroke=brushActiveStroke;
     if(stroke && stroke.pixels.length) {
       c.beginPath();c.moveTo(...stroke.pixels[0]);
@@ -340,13 +377,63 @@
       c.beginPath();c.arc(point[0],point[1],2,0,Math.PI*2);c.fillStyle='white';c.fill();
     }
   }
+  function updateMarkCount() {
+    const n=markedStrokes.length;
+    $('rv-mark-count').textContent=n ? `${n} trazo${n===1?'':'s'} marcados · nada eliminado aún` : 'Sin zona marcada';
+    $('rv-mark-count').dataset.active=n?'yes':'no';
+  }
+  function clearMarkedStrokes(silent=false) {
+    markedStrokes=[];markedFor=null;
+    if(brushActiveStroke?.kind==='mark') brushActiveStroke=null;
+    if($('rv-mark-count'))updateMarkCount();
+    if(brushOverlay)renderBrushCursor();
+    if(!silent)brushInfo('Marca cancelada. La máscara continúa intacta.');
+    if($('rv-delete-mark'))updateButtons();
+  }
+  function appendMarkedStroke(stroke) {
+    if(!selected || !stroke.world.length)return;
+    if(markedFor && markedFor!==targetId()) clearMarkedStrokes(true);
+    if(markedStrokes.length>=40) {brushInfo('Límite de 40 trazos. Borra la zona marcada antes de añadir más.',true);return;}
+    const resolution=map.getView().getResolution();
+    markedFor=targetId();
+    markedStrokes.push({world:stroke.world.map(p=>p.slice()),radiusM:Math.max(currentMosaicGsd/2,Number($('rv-brush-size').value)*resolution)});
+    updateMarkCount();renderBrushCursor();updateButtons();
+    brushInfo('Zona roja marcada, pero todavía NO borrada. Puedes seguir marcando o pulsar «Eliminar zona marcada».');
+  }
+  async function deleteMarkedZone() {
+    if(!markedStrokes.length||!editable(selected)||markedFor!==targetId()||!hdTilesReady||brushWorking||busy)return;
+    if(!confirm(`¿Eliminar de la copa seleccionada las ${markedStrokes.length} zona(s) marcadas en rojo? Puedes deshacer la acción después.`))return;
+    const target=selected,gsd=currentMosaicGsd;
+    brushWorking=true;updateButtons();brushInfo('Aplicando borrado a la máscara…');
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    try {
+      let working=target.getGeometry(),removed=0,added=0;
+      const originalCount=markedStrokes.length;
+      for(const stroke of markedStrokes){
+        const result=rasterBrush(working,stroke.world,stroke.radiusM,false,gsd);
+        if(result){working=result.geom;removed+=result.countRemove;added+=result.countAdd;}
+      }
+      if(!removed&&!added) {brushInfo('La zona marcada no intercepta la copa. No se modificó nada.');return;}
+      backupUndo();target.setGeometry(working);
+      if(['pending','accepted','edited'].includes(target.get('review_status')))target.set('review_status','edited');
+      target.set('edit_method',editMethod(target.get('edit_method'),'brush'));
+      target.set('brush_strokes',Math.min(100000,(Number(target.get('brush_strokes'))||0)+originalCount));
+      target.set('brush_removed_m2',(Number(target.get('brush_removed_m2'))||0)+removed*gsd*gsd);
+      target.set('brush_added_m2',(Number(target.get('brush_added_m2'))||0)+added*gsd*gsd);
+      markedStrokes=[];markedFor=null;updateMarkCount();
+      reviewSource.changed();flagDirty();populateAttributes();updateCounts();
+      alertMsg('Zona marcada eliminada de la copia V2. Utiliza Deshacer si es necesario y guarda la revisión.');
+      brushInfo(`✓ Eliminado: ${removed} píxeles nativos · aproximadamente ${(removed*gsd*gsd).toFixed(3)} m².`);
+    }catch(e){brushInfo('No se eliminó ninguna zona: '+e.message,true);alertMsg('Borrado cancelado: '+e.message,true);}
+    finally{brushWorking=false;turnBrushOff(true);renderBrushCursor();updateButtons();}
+  }
   function turnBrushOff(silent=false) {
     if(brushWorking)return;
     brushMode=null;brushActiveStroke=null;
     if(mode==='brush')mode='select';
     if(brushOverlay){brushOverlay.style.pointerEvents='none';brushOverlay.style.cursor='default';renderBrushCursor();}
     if(selection)selection.setActive(true);
-    $('rv-brush-add').dataset.active='false';$('rv-brush-erase').dataset.active='false';
+    $('rv-brush-add').dataset.active='false';$('rv-brush-erase').dataset.active='false';$('rv-brush-mark').dataset.active='false';
     $('rv-mode').textContent='Modo: seleccionar';
     if(!silent)brushInfo('Navegación activa. Selecciona otra copa o guarda la revisión.');
     updateButtons();
@@ -366,8 +453,9 @@
     brushOverlay.style.pointerEvents='auto';brushOverlay.style.cursor='crosshair';
     $('rv-brush-add').dataset.active=which==='add'?'true':'false';
     $('rv-brush-erase').dataset.active=which==='erase'?'true':'false';
-    $('rv-mode').textContent=which==='add'?'Modo: pincel agregar':'Modo: pincel borrar';
-    brushInfo(which==='add'?'PINTAR: arrastra sobre la copa faltante. Suelta para aplicar.':'BORRAR: arrastra sobre la vegetación sobrante. Suelta para aplicar.');
+    $('rv-brush-mark').dataset.active=which==='mark'?'true':'false';
+    $('rv-mode').textContent=which==='add'?'Modo: agregar copa':which==='erase'?'Modo: borrar directo':'Modo: marcar zona';
+    brushInfo(which==='add'?'Arrastra para añadir partes faltantes a la copa.':which==='erase'?'Arrastra para borrar directamente un borde sobrante.':'Pinta en rojo el área que quieres quitar; después pulsa «Eliminar zona marcada».');
     updateButtons();
   }
   function brushXY(e) {
@@ -473,6 +561,8 @@
     resizeBrushOverlay();
     brushOverlay.addEventListener('pointerdown',e=>{
       if(mode!=='brush'||brushWorking||!selected||e.button!==0)return;
+      const res=map?.getView().getResolution();
+      if(!res||!currentMosaicGsd||res>currentMosaicGsd*4){brushInfo('Acércate más para corregir a escala de píxel nativo.',true);return;}
       e.preventDefault();e.stopPropagation();
       brushOverlay.setPointerCapture(e.pointerId);
       brushActiveStroke={kind:brushMode,pixels:[],world:[]};pushBrushPixel(e);
@@ -486,7 +576,7 @@
       if(!brushActiveStroke)return;
       e.preventDefault();e.stopPropagation();pushBrushPixel(e);
       const stroke=brushActiveStroke;brushActiveStroke=null;renderBrushCursor();
-      void commitBrush(stroke);
+      if(stroke.kind==='mark')appendMarkedStroke(stroke);else void commitBrush(stroke);
     });
     brushOverlay.addEventListener('pointercancel',()=>{brushActiveStroke=null;renderBrushCursor();brushInfo('Trazo cancelado; no se modificó la máscara.');});
     brushOverlay.addEventListener('pointerleave',()=>{if(!brushActiveStroke)renderBrushCursor();});
@@ -521,10 +611,31 @@
     const expanded=[center[0]-pad,center[1]-pad,center[0]+pad,center[1]+pad];
     view.fit(expanded,{size,padding:[50,50,50,50],duration:350});
   }
+  function zoomBy(delta) {
+    if(!map||!mission)return;
+    const view=map.getView();
+    const current=view.getZoom()||0;
+    view.animate({zoom:Math.min(view.getMaxZoom(),Math.max(view.getMinZoom(),current+delta)),duration:180});
+  }
+  function zoomDetail() {
+    if(!map||!mission)return;
+    const view=map.getView();
+    const center=selected?ol.extent.getCenter(selected.getGeometry().getExtent()):view.getCenter();
+    const gsd=currentMosaicGsd;
+    if(!gsd)return alertMsg('El zoom de detalle requiere el ortomosaico maestro HD.',true);
+    const desired=gsd*0.5;
+    const resolutions=view.getResolutions()||[];
+    let index=resolutions.findIndex(r=>r<=desired);
+    if(index<0)index=resolutions.length-1;
+    view.animate({center,zoom:index,duration:230});
+    alertMsg('Zoom ampliado digitalmente. Puedes inspeccionar píxeles, pero no aumenta la resolución física del UAV.');
+  }
   function updateMapReadout() {
     if (!map) return;
     const resolution=map.getView().getResolution();
     const gsd = Number.isFinite(currentMosaicGsd) ? ` · GSD ${Math.round(currentMosaicGsd*1000)/10} cm/px` : '';
+    const zoomed=Number.isFinite(currentMosaicGsd)&&Number.isFinite(resolution)&&resolution<currentMosaicGsd*0.99;
+    $('rv-zoom-warning').hidden=!zoomed;
     $('rv-map-scale').textContent=Number.isFinite(resolution)
       ? `Vista ${resolution.toFixed(resolution<1?3:1)} m/px${gsd}` : 'Escala: —';
   }
@@ -540,7 +651,7 @@
     const generation = ++mapGeneration;
     if(mode==='brush')turnBrushOff(true);
     if (map) {map.setTarget(null);map=null;}
-    hdTilesReady=false;fullMapExtent = null; currentMosaicGsd = null;
+    hdTilesReady=false;fullMapExtent = null; currentMosaicGsd = null;nativeGsdResolution=null;clearMarkedStrokes(true);
     setMapQuality('loading','● Buscando ortomosaico HD maestro…');
     const m=/^EPSG:(326|327)(\d{2})$/.exec(data.crs);
     if (!m) throw new Error('Este editor requiere CRS UTM EPSG:326xx o EPSG:327xx.');
@@ -581,7 +692,7 @@
       if(!Number.isFinite(currentMosaicGsd)||currentMosaicGsd<=0) currentMosaicGsd=null;
       const grid=new ol.tilegrid.TileGrid({extent:manifest.extent,origin:manifest.origin,
         resolutions:manifest.resolutions,tileSize:256});
-      const source=new ol.source.TileImage({projection:data.crs,tileGrid:grid,interpolate:true,
+      const source=new ol.source.TileImage({projection:data.crs,tileGrid:grid,interpolate:false,
         tileUrlFunction:coord=> {
           if(!coord) return undefined;
           return manifest.tile_url_template.replace('__Z__',String(coord[0]))
@@ -605,8 +716,13 @@
         setMapQuality('warning',`● HD parcial: ${errors} teselas sin cargar · revisa la conexión`);
       });
       layers.push(new ol.layer.Tile({source,zIndex:1}));
+      // Los 3 niveles siguientes solo AGRANDAN píxeles existentes (2x, 4x, 8x).
+      // Las teselas solicitadas continúan limitadas al nivel nativo del GeoTIFF.
+      const nativeResolutions=manifest.resolutions.slice();
+      nativeGsdResolution=nativeResolutions[nativeResolutions.length-1];
+      const finer=[nativeGsdResolution/2,nativeGsdResolution/4,nativeGsdResolution/8];
       viewOptions={projection:data.crs,center:ol.extent.getCenter(fullMapExtent),zoom:0,
-        resolutions:manifest.resolutions};
+        resolutions:[...nativeResolutions,...finer]};
       setMapQuality('hd',`● HD maestro conectado · GSD ${Math.round((currentMosaicGsd||0)*1000)/10} cm`);
     } else {
       setMapQuality('preview',data.preview_url?'● Vista preliminar · resolución insuficiente para edición fina':'● Sin ortomosaico HD');
@@ -622,7 +738,8 @@
     map.on('change:size',resizeBrushOverlay);
     focusExtent(fullMapExtent,28);
     configureSelection();
-    map.getView().on('change:resolution',updateMapReadout);
+    map.getView().on('change:resolution',()=>{updateMapReadout();renderBrushCursor();});
+    map.getView().on('change:center',()=>renderBrushCursor());
     map.on('pointermove',event=>{
       if(event.dragging)return;
       const coords=event.coordinate;
@@ -663,7 +780,7 @@
     try {
       const data=await getJSON(url('data',uuid));
       mission=data;blockSave=!!(data.review && data.review_source_sha256!==data.source_sha256);
-      selected=null;selectedManual=null;mode='select';splitSession=null;undo=[];
+      selected=null;selectedManual=null;mode='select';splitSession=null;undo=[];redo=[];clearMarkedStrokes(true);
       const hdAvailable=await mapFor(data);
       const collection=data.review || originalToDraft(data.original);
       loadReview(collection);
@@ -704,7 +821,7 @@
     try {
       const data=await getJSON(url('revision',mission.uuid,version));
       if (data.source_sha256!==mission.source_sha256) return alertMsg('La versión anterior se creó con máscaras IA diferentes. Exporta antes de modificar.',true);
-      undo=[];loadReview(data.geojson);flagDirty(true);updateButtons();
+      undo=[];redo=[];clearMarkedStrokes(true);loadReview(data.geojson);flagDirty(true);updateButtons();
       alertMsg(`Versión V${version} cargada como BORRADOR. Si guardas, se creará V${mission.revision_no+1}, sin borrar el historial.`);
     }catch(e){alertMsg('No se pudo recuperar la revisión: '+e.message,true);}
   }
@@ -733,7 +850,7 @@
           source_sha256:mission.source_sha256,reason,features:data.features})});
       mission.revision_no=result.revision_no;
       $('rv-version').textContent=`Revisión V${result.revision_no}`;
-      $('rv-reason').value='';flagDirty(false);undo=[];
+      $('rv-reason').value='';flagDirty(false);undo=[];redo=[];clearMarkedStrokes(true);
       alertMsg(`Guardado correcto: V${result.revision_no} · ${result.saved_count} anotaciones, sin alterar IA original ni datos de campo.`);
       await loadHistory();
     }catch(e){alertMsg('No se pudo guardar: '+e.message+' · Exporta GeoJSON antes de recargar.',true);}
@@ -779,11 +896,17 @@
     $('rv-redo').addEventListener('click',doRedo);
     $('rv-brush-add').addEventListener('click',()=>toggleBrush('add'));
     $('rv-brush-erase').addEventListener('click',()=>toggleBrush('erase'));
+    $('rv-brush-mark').addEventListener('click',()=>toggleBrush('mark'));
+    $('rv-clear-mark').addEventListener('click',()=>clearMarkedStrokes());
+    $('rv-delete-mark').addEventListener('click',()=>void deleteMarkedZone());
+    $('rv-zoom-in').addEventListener('click',()=>zoomBy(1));
+    $('rv-zoom-out').addEventListener('click',()=>zoomBy(-1));
+    $('rv-zoom-detail').addEventListener('click',zoomDetail);
     $('rv-brush-exit').addEventListener('click',()=>turnBrushOff());
     $('rv-brush-size').addEventListener('input',()=>{
       $('rv-brush-size-value').textContent=$('rv-brush-size').value+' px';renderBrushCursor();
     });
-    bindBrushOverlay();
+    bindBrushOverlay();updateMarkCount();
     window.addEventListener('keydown',e=>{
       const t=e.target?.tagName?.toLowerCase();if(['input','textarea','select'].includes(t)||e.target?.isContentEditable)return;
       if(e.key==='Escape'&&mode==='brush'){turnBrushOff();e.preventDefault();return;}

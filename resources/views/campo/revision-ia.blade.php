@@ -2,17 +2,17 @@
 @section('title', 'SIGMAD · Smart Annotation Studio')
 @push('styles')
 <link rel="stylesheet" href="{{ asset('sigmad-campo-assets/vendor/ol.css') }}">
-<link rel="stylesheet" href="{{ asset('sigmad-revision-assets/revision-ia.css') }}?v=090">
+<link rel="stylesheet" href="{{ asset('sigmad-revision-assets/revision-ia.css') }}?v=092">
 @endpush
 @section('content')
 <main id="review-app" class="rv-wrap">
   <div class="rv-header">
     <div>
       <p class="rv-eyebrow">SIGMAD / LABORATORIO FORESTAL</p>
-      <h1>Smart Annotation Studio</h1>
-      <p class="rv-muted">Anotación forestal de precisión · ortomosaico maestro HD · revisión auditada</p>
+      <h1>Editor de copas forestales</h1>
+      <p class="rv-muted">Selecciona una copa, corrige su contorno y guarda la revisión</p>
     </div>
-    <div class="rv-header-right"><span class="rv-pill">V0.9.0 · Editor HD</span><a href="{{ url('/campo') }}" class="rv-link">Volver a Campo</a></div>
+    <div class="rv-header-right"><span class="rv-pill">V0.9.2 · Editor sencillo</span><a href="{{ url('/campo') }}" class="rv-link">Volver a Campo</a></div>
   </div>
 
   <div class="rv-topbar">
@@ -33,40 +33,51 @@
   <div class="rv-layout">
     <section class="rv-canvas-card" aria-label="Editor cartográfico">
       <div class="rv-workspace-head">
-        <div><span class="rv-section-eyebrow">MAPA INTERACTIVO</span><h2>Visor de copas forestales</h2></div>
+        <div><span class="rv-section-eyebrow">MAPA INTERACTIVO</span><h2>Ortomosaico maestro HD</h2></div>
         <div class="rv-map-status" id="rv-map-quality" data-quality="waiting">● Selecciona un conjunto</div>
       </div>
-      <div class="rv-tools">
-        <div class="rv-tool-row">
-          <button id="rv-accept" type="button" disabled>✓ Aceptar</button>
-          <button id="rv-edit" type="button" disabled>✎ Modificar vértices</button>
-          <button id="rv-split" type="button" disabled>⑂ Dividir</button>
-          <button id="rv-add" type="button" disabled>＋ Agregar copa</button>
-          <button id="rv-reject" type="button" disabled>✕ Rechazar</button>
-          <button id="rv-restore" type="button" disabled>↺ Restaurar</button>
-          <button id="rv-undo" type="button" disabled>↶ Deshacer</button>
-          <button id="rv-redo" type="button" disabled>↷ Rehacer</button>
+      <div class="rv-tools rv-simple-tools">
+        <div class="rv-workflow-step">
+          <span class="rv-step-number">1</span>
+          <div class="rv-step-description"><strong>Elige una copa</strong><small>Haz clic dentro de un contorno turquesa. Después selecciona cómo quieres corregirlo.</small></div>
+          <span class="rv-selection-state" data-ready="no" id="rv-selection-state">Sin copa seleccionada</span>
         </div>
-        <div class="rv-tool-row rv-tool-secondary">
-          <label><input id="rv-show-original" type="checkbox" checked> Mostrar IA original</label>
-          <label><input id="rv-show-manual" type="checkbox" checked> Mostrar marcas MAN</label>
-          <button id="rv-finish-draw" type="button" hidden>Terminar dibujo</button>
-          <button id="rv-cancel-draw" type="button" hidden>Cancelar dibujo</button>
-          <span id="rv-mode">Modo: seleccionar</span>
-        </div>
-        <div class="rv-brush-workbench" role="group" aria-label="Herramientas de pincel geoespacial">
-          <div class="rv-brush-heading"><div><strong>Corrección de máscara · Pincel HD</strong>
-            <small>Pinta sobre la copa seleccionada; cada trazo actualiza su geometría real, sin GPU.</small></div>
-            <span class="rv-brush-chip">LOCAL · SIN GPU</span></div>
-          <div class="rv-brush-controls">
-            <button id="rv-brush-add" type="button" class="rv-brush-add" disabled>✚ Pincel agregar</button>
-            <button id="rv-brush-erase" type="button" class="rv-brush-erase" disabled>− Pincel borrar</button>
-            <button id="rv-brush-exit" type="button" disabled>↖ Navegar / terminar</button>
-            <label class="rv-brush-size" for="rv-brush-size">Grosor <input id="rv-brush-size" type="range" min="3" max="45" value="12" step="1" disabled>
-            <output id="rv-brush-size-value">12 px</output></label>
+        <div class="rv-brush-workbench" role="group" aria-label="Editor visual de máscaras">
+          <div class="rv-brush-heading"><div class="rv-step-description"><span class="rv-step-number">2</span><div><strong>Corrige con un pincel</strong><small>Trabaja sobre la copa seleccionada. Sin GPU ni alterar la IA original.</small></div></div><span class="rv-brush-chip">HD · LOCAL</span></div>
+          <div class="rv-brush-controls rv-brush-primary">
+            <button id="rv-brush-add" type="button" class="rv-brush-add" title="Añadir parte faltante a la copa" disabled>＋ Agregar</button>
+            <button id="rv-brush-erase" type="button" class="rv-brush-erase" title="Borrar directamente una pequeña zona" disabled>− Borrar directo</button>
+            <button id="rv-brush-mark" type="button" class="rv-brush-mark" title="Marcar en rojo una zona sin borrarla todavía" disabled>▧ Marcar para borrar</button>
+            <button id="rv-brush-exit" type="button" disabled>↖ Terminar pincel</button>
+            <label class="rv-brush-size" for="rv-brush-size">Tamaño <input id="rv-brush-size" type="range" min="3" max="45" value="12" step="1" disabled><output id="rv-brush-size-value">12 px</output></label>
           </div>
-          <p id="rv-brush-status" class="rv-brush-status" role="status" aria-live="polite">Selecciona una copa y acerca el mapa hasta ver el detalle HD. Después activa un pincel.</p>
+          <div class="rv-mark-actions">
+            <span id="rv-mark-count" class="rv-mark-count">Sin zona marcada</span>
+            <button id="rv-delete-mark" type="button" class="rv-delete-mark" disabled>Eliminar zona marcada</button>
+            <button id="rv-clear-mark" type="button" disabled>Cancelar marca</button>
+          </div>
+          <p id="rv-brush-status" class="rv-brush-status" role="status" aria-live="polite">Selecciona una copa en el mapa para empezar.</p>
         </div>
+        <div class="rv-simple-utilities">
+          <div class="rv-tool-row"><button id="rv-undo" type="button" disabled>↶ Deshacer</button><button id="rv-redo" type="button" disabled>↷ Rehacer</button><span id="rv-mode">Modo: seleccionar</span></div>
+        </div>
+        <details class="rv-advanced">
+          <summary>Herramientas adicionales <span>Dividir, dibujar copas, etiquetas y capas</span></summary>
+          <div class="rv-tool-row">
+            <button id="rv-accept" type="button" disabled>✓ Validar copa</button>
+            <button id="rv-edit" type="button" disabled>✎ Mover vértices</button>
+            <button id="rv-split" type="button" disabled>⑂ Dividir</button>
+            <button id="rv-add" type="button" disabled>＋ Nueva copa</button>
+            <button id="rv-reject" type="button" disabled>✕ Descartar copa completa</button>
+            <button id="rv-restore" type="button" disabled>↺ Restaurar</button>
+          </div>
+          <div class="rv-tool-row rv-tool-secondary">
+            <label><input id="rv-show-original" type="checkbox"> Mostrar predicción IA original</label>
+            <label><input id="rv-show-manual" type="checkbox" checked> Mostrar marcas MAN</label>
+            <button id="rv-finish-draw" type="button" hidden>Terminar dibujo</button>
+            <button id="rv-cancel-draw" type="button" hidden>Cancelar dibujo</button>
+          </div>
+        </details>
       </div>
       <div class="rv-map-shell">
         <div id="rv-map" class="rv-map" aria-label="Ortomosaico maestro, predicciones y copas corregidas"></div>
@@ -74,8 +85,11 @@
         <div class="rv-floating-tools" aria-label="Navegación del mapa">
           <button id="rv-fit-all" type="button" title="Ver área completa" disabled>⛶ <span>Área completa</span></button>
           <button id="rv-focus" type="button" title="Enfocar la copa seleccionada" disabled>◎ <span>Enfocar copa</span></button>
+          <button id="rv-zoom-in" type="button" title="Acercar" disabled>＋ <span>Acercar</span></button>
+          <button id="rv-zoom-out" type="button" title="Alejar" disabled>− <span>Alejar</span></button>
+          <button id="rv-zoom-detail" type="button" title="Ampliar hasta inspeccionar píxeles nativos" disabled>⌕ <span>Zoom de detalle</span></button>
         </div>
-        <div class="rv-map-corner"><span id="rv-map-scale">Escala: —</span><span id="rv-map-position">UTM: —</span></div>
+        <div class="rv-map-corner"><span id="rv-zoom-warning" class="rv-zoom-warning" hidden>Ampliación digital · no añade detalle</span><span id="rv-map-scale">Escala: —</span><span id="rv-map-position">UTM: —</span></div>
       </div>
       <div class="rv-map-footer">
         <span><i class="rv-dot original"></i> IA original</span>
@@ -93,7 +107,8 @@
         <p class="rv-hint">Selecciona una marca para centrar el mapa en su ubicación. Una marca MAN todavía no confirma un árbol omitido.</p>
       </section>
       <section class="rv-panel">
-        <div class="rv-panel-title"><h2>Detalle de copa</h2><span id="rv-selected">Ninguna seleccionada</span></div>
+        <div class="rv-panel-title"><h2>Copa seleccionada</h2><span id="rv-selected">Ninguna seleccionada</span></div>
+        <details class="rv-attrs-details"><summary>Etiquetas, especie y atributos <span>Opcional</span></summary>
         <div class="rv-fields">
           <label class="rv-field"><span>Estado de revisión</span><select id="rv-status" disabled>
             <option value="pending">Pendiente</option><option value="accepted">IA correcta · aceptada</option>
@@ -119,14 +134,14 @@
           <label class="rv-field"><span>Vincular marca manual (opcional)</span><select id="rv-manual" disabled><option value="">Sin vínculo MAN</option></select></label>
           <label class="rv-field"><span>Tree ID de campo (opcional)</span><input id="rv-tree" maxlength="80" placeholder="Ej. P04-025-A" disabled></label>
           <label class="rv-field"><span>Observaciones / incertidumbre</span><textarea id="rv-note" rows="3" maxlength="1000" placeholder="Motivo de corrección, límites dudosos…" disabled></textarea></label>
-          <button id="rv-apply-attrs" type="button" class="rv-primary" disabled>Guardar atributos de esta copa</button>
-        </div>
+          <button id="rv-apply-attrs" type="button" class="rv-primary" disabled>Aplicar etiquetas</button>
+        </div></details>
         <p class="rv-brush-metrics" id="rv-brush-metrics">Selecciona una copa para editar su máscara.</p>
         <p class="rv-hint">Las marcas MAN son indicios precampo. No equivalen automáticamente a falsos negativos. Un árbol oculto no debe recibir una máscara inventada.</p>
       </section>
 
       <section class="rv-panel">
-        <div class="rv-panel-title"><h2>Control de calidad</h2></div>
+        <div class="rv-panel-title"><h2>3 · Guarda la revisión</h2></div>
         <div class="rv-kpis">
           <div><strong id="rv-kpi-total">—</strong><span>Copas V2</span></div>
           <div><strong id="rv-kpi-pending">—</strong><span>Pendientes</span></div>
@@ -142,7 +157,7 @@
       </section>
 
       <section class="rv-panel">
-        <div class="rv-panel-title"><h2>Historial</h2><button type="button" id="rv-history-refresh" disabled>Actualizar</button></div>
+        <div class="rv-panel-title"><h2>Historial de revisiones</h2><button type="button" id="rv-history-refresh" disabled>Actualizar</button></div>
         <div id="rv-history" class="rv-history"><p class="rv-muted">Sin misión abierta.</p></div>
       </section>
     </aside>
@@ -161,5 +176,5 @@
 <script src="{{ asset('sigmad-campo-assets/vendor/proj4.js') }}" defer></script>
 <script src="{{ asset('sigmad-campo-assets/vendor/ol.js') }}" defer></script>
 <script src="{{ asset('sigmad-revision-assets/mask-engine.js') }}?v=090" defer></script>
-<script src="{{ asset('sigmad-revision-assets/revision-ia.js') }}?v=091" defer></script>
+<script src="{{ asset('sigmad-revision-assets/revision-ia.js') }}?v=092" defer></script>
 @endsection
