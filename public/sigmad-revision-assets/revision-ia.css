@@ -160,3 +160,24 @@
 .rv-brush-workbench button:disabled{opacity:.48}
 @media(max-width:1190px){.rv-layout{grid-template-columns:1fr}.rv-map{height:64vh;min-height:425px}}
 @media(max-width:700px){.rv-wrap{padding:9px 10px 44px}.rv-header{padding:20px 16px}.rv-overview{grid-template-columns:repeat(3,1fr)}.rv-overview-intro{grid-column:1/-1}.rv-workflow-step{align-items:flex-start;flex-wrap:wrap}.rv-selection-state{margin-left:41px}.rv-brush-heading{align-items:flex-start;gap:6px}.rv-brush-controls>button{flex:1}.rv-brush-size{width:100%;flex:auto}.rv-mark-actions>button{flex:1}.rv-map{height:58vh;min-height:380px}.rv-floating-tools{max-width:48px}}
+
+/* SAM 2.1 visual assistant · v0.9.3 */
+.rv-sam-box{border:1px solid #c6e6dc;background:linear-gradient(120deg,#f5fcf8 0%,#eff7f3 100%);padding:16px 17px;border-radius:15px;display:grid;gap:11px;margin:12px 0}
+.rv-sam-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.rv-sam-head>div{display:flex;flex-direction:column;gap:3px}
+.rv-sam-head strong{font-size:14px;color:#134c42}
+.rv-sam-head small{font-size:11px;color:#557d71;max-width:550px;line-height:1.5}
+.rv-sam-chip{font-size:10px;color:#8d5815;background:#fff4de;border:1px solid #ecd4a7;padding:7px 9px;border-radius:999px;white-space:nowrap;font-weight:750}
+.rv-sam-chip[data-available=yes]{color:#146c4e;background:#dbf2e6;border-color:#b7dfca}
+.rv-sam-primary,.rv-sam-commit{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.rv-sam-commit{border-top:1px solid #d9e8e1;padding-top:11px}
+.rv-sam-count{font-size:11px;font-weight:780;color:#52796b;margin-right:auto}
+.rv-wrap button.rv-sam-launch{border-color:#80bdae;color:#0d6657;background:#e7f5ef;font-weight:800}
+.rv-wrap button.rv-sam-positive[data-active=true]{background:#c4f0dc;color:#096947;border-color:#6ecba3}
+.rv-wrap button.rv-sam-negative[data-active=true]{background:#fbe0e4;color:#a53a4a;border-color:#edb0b9}
+.rv-sam-info{font-size:12px;color:#416e61;margin:0;line-height:1.55}
+.rv-sam-info[data-warn=yes]{color:#a35c1a}
+.rv-sam-review{display:grid;grid-template-columns:minmax(170px,1fr) minmax(160px,1fr) auto;gap:10px;align-items:end;padding:12px;border:1px solid #d6eae1;border-radius:10px;background:#fff}
+.rv-sam-review[hidden]{display:none}
+.rv-sam-review .rv-hint{grid-column:1/-1;margin:0}
+@media(max-width:900px){.rv-sam-review{grid-template-columns:1fr}.rv-sam-review .rv-hint{grid-column:auto}}

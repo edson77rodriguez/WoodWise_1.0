@@ -1,0 +1,12 @@
+.rv-sam-panel{border-top:1px solid #d9e8df;background:#eef9f3;padding:13px 15px;display:grid;gap:9px}
+.rv-sam-head{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.rv-sam-head>div{display:grid;gap:3px}.rv-sam-head strong{font-size:14px;color:#195840}
+.rv-sam-head small{font-size:11px;color:#658575}.rv-sam-head>span{font-size:10px;font-weight:800;letter-spacing:.05em;background:#d7eee2;color:#116a47;border-radius:999px;padding:5px 9px;white-space:nowrap}
+.rv-sam-actions{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.rv-wrap button.rv-sam-main{background:#167b59;color:white;border-color:#167b59}
+.rv-wrap button.rv-sam-apply{background:#f2e4a0;color:#574d16;border-color:#e5cf68}
+.rv-sam-actions button{font-size:12px}.rv-sam-actions button[data-active="yes"]{background:#173f32;border-color:#173f32;color:white;box-shadow:0 0 0 2px #96d3b4}
+.rv-sam-status{font-size:11px;color:#46735a;font-weight:700;margin:0;line-height:1.45}.rv-sam-status[data-warn="yes"]{color:#a4483a}
+.rv-sam-disclaimer{font-size:10px;color:#758b7b;line-height:1.45}
+.rv-sam-options{display:flex;gap:7px;flex-wrap:wrap}.rv-sam-options button{font-size:11px;padding:7px 9px;background:white;border:1px solid #cfe2d8}.rv-sam-options button[data-active="yes"]{border-color:#9d8039;background:#fff1a9}
+@media(max-width:700px){.rv-sam-head{align-items:flex-start;flex-wrap:wrap}.rv-sam-actions>button{flex:1}.rv-sam-options{flex-direction:column}}

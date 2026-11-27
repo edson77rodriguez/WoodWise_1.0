@@ -2,7 +2,8 @@
 @section('title', 'SIGMAD · Smart Annotation Studio')
 @push('styles')
 <link rel="stylesheet" href="{{ asset('sigmad-campo-assets/vendor/ol.css') }}">
-<link rel="stylesheet" href="{{ asset('sigmad-revision-assets/revision-ia.css') }}?v=092">
+<link rel="stylesheet" href="{{ asset('sigmad-revision-assets/revision-ia.css') }}?v=093">
+<link rel="stylesheet" href="{{ asset('sigmad-revision-assets/sam-interactive.css') }}?v=010c">
 @endpush
 @section('content')
 <main id="review-app" class="rv-wrap">
@@ -12,7 +13,7 @@
       <h1>Editor de copas forestales</h1>
       <p class="rv-muted">Selecciona una copa, corrige su contorno y guarda la revisión</p>
     </div>
-    <div class="rv-header-right"><span class="rv-pill">V0.9.2 · Editor sencillo</span><a href="{{ url('/campo') }}" class="rv-link">Volver a Campo</a></div>
+    <div class="rv-header-right"><span class="rv-pill">V0.10 · SAM Interactive + Editor HD</span><a href="{{ url('/campo') }}" class="rv-link">Volver a Campo</a></div>
   </div>
 
   <div class="rv-topbar">
@@ -176,5 +177,6 @@
 <script src="{{ asset('sigmad-campo-assets/vendor/proj4.js') }}" defer></script>
 <script src="{{ asset('sigmad-campo-assets/vendor/ol.js') }}" defer></script>
 <script src="{{ asset('sigmad-revision-assets/mask-engine.js') }}?v=090" defer></script>
-<script src="{{ asset('sigmad-revision-assets/revision-ia.js') }}?v=092" defer></script>
+<script src="{{ asset('sigmad-revision-assets/revision-ia.js') }}?v=010c" defer></script>
+<script src="{{ asset('sigmad-revision-assets/sam-interactive.js') }}?v=010c" defer></script>
 @endsection

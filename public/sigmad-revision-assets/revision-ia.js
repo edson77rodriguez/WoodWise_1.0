@@ -1,6 +1,6 @@
-/* SIGMAD Smart Annotation Studio · V0.9.2 UX + borrado confirmado
+/* SIGMAD Smart Annotation Studio · V0.10 manual · Editor + SAM externo único
  * Copas originales inmutables, revisión de polígonos aislada, historial en servidor.
- * Pinceles manuales georreferenciados sin GPU. SAM remoto aún NO integrado. */
+ * Pinceles locales, historial, SAM 2.1 remoto mediante módulo externo. */
 (() => {
   'use strict';
   const boot = window.SIGMAD_REVIEW_BOOT;
@@ -17,6 +17,7 @@
   let mapGeneration = 0; // Ignorar descargas HD tardías de una misión que ya fue reemplazada.
   let markedStrokes = [], markedFor = null, nativeGsdResolution = null;
   let editorTip = '';
+
   const editable = f => !!f && !['rejected','superseded'].includes(f.get('review_status'));
   function targetId() { return selected?.get('annotation_uuid') || null; }
 
@@ -49,7 +50,8 @@
       edit_method: p.edit_method || 'original',
       brush_strokes: Number(p.brush_strokes) || 0,
       brush_added_m2: Number(p.brush_added_m2) || 0,
-      brush_removed_m2: Number(p.brush_removed_m2) || 0
+      brush_removed_m2: Number(p.brush_removed_m2) || 0,
+      sam_provenance: p.sam_provenance || null
     };
   }
   function reviewed() {
@@ -89,7 +91,8 @@
         annotation_uuid:'original:' + id, source_operational_id:id,
         review_status:'pending', species:'PL', visibility:'ND',
         boundary_confidence:'ND', manual_target_uuid:null, field_tree_id:'', note:'',
-        edit_method:'original',brush_strokes:0,brush_added_m2:0,brush_removed_m2:0
+        edit_method:'original',brush_strokes:0,brush_added_m2:0,brush_removed_m2:0,
+        sam_provenance:null
       }};
     })};
   }
@@ -176,9 +179,9 @@
   }
   function updateButtons() {
     const loaded = !!mission;
-    for (const id of ['rv-add','rv-export','rv-history-refresh']) $(id).disabled = !loaded || busy;
-    $('rv-save').disabled = !loaded || busy || brushWorking || blockSave;
-    $('rv-load').disabled = busy || brushWorking;
+    for (const id of ['rv-add','rv-export','rv-history-refresh']) $(id).disabled = !loaded || busy || mode==='sam_points';
+    $('rv-save').disabled = !loaded || busy || brushWorking || blockSave || mode==='sam_points';
+    $('rv-load').disabled = busy || brushWorking || mode==='sam_points';
     for (const id of ['rv-accept','rv-edit','rv-split','rv-reject','rv-restore']) $(id).disabled = !selected || busy || mode !== 'select';
     $('rv-undo').disabled = !undo.length || busy || brushWorking || mode !== 'select';
     $('rv-redo').disabled = !redo.length || busy || brushWorking || mode !== 'select';
@@ -191,7 +194,7 @@
     $('rv-clear-mark').disabled=!markedStrokes.length || busy || brushWorking;
     $('rv-brush-exit').disabled=mode!=='brush';
     $('rv-brush-size').disabled=!loaded || !hdTilesReady;
-    $('rv-fit-all').disabled = !loaded || !map || busy;
+    $('rv-fit-all').disabled = !loaded || !map || busy || mode==='sam_points';
     $('rv-focus').disabled = !selected || !map || busy;
     $('rv-zoom-in').disabled=!loaded || !map || busy;
     $('rv-zoom-out').disabled=!loaded || !map || busy;
@@ -322,6 +325,7 @@
   }
 
   function editMethod(previous, next) {
+    if(previous==='sam2' && next!=='sam2')return 'mixed';
     if(previous==='mixed' || (previous==='brush' && next==='vertices') ||
        (previous==='vertices' && next==='brush'))return 'mixed';
     if(previous==='manual_draw' && next==='brush')return 'mixed';
@@ -934,5 +938,70 @@
     if (!window.ol || !window.proj4 || !window.SigmadMaskEngine)
       alertMsg('Faltan OpenLayers, proj4 o el motor local de pinceles. Comprueba sus rutas.',true);
   }
+  // SIGMAD SAM V0.10: puente limitado entre el editor V0.9.2 y el módulo independiente.
+  // Mantener dentro del closure para NO exponer métodos de edición o credenciales fuera de la vista.
+  window.SIGMAD_SAM_HOST = Object.freeze({
+    snapshot() {
+      return {map,mission_uuid:mission?.uuid||null,analysis_uuid:mission?.analysis_uuid||null,
+        crs:mission?.crs||null,selected_id:selected?.get('annotation_uuid')||null,
+        selected_geometry:selected?.getGeometry()||null,hd_ready:!!hdTilesReady && !!currentMosaicGsd,
+        gsd_m:currentMosaicGsd};
+    },
+    beginPoints(){
+      if(mode==='brush')turnBrushOff(true);
+      if(mode!=='select'||!map||!mission||!selected||!hdTilesReady||busy||brushWorking||blockSave)
+        throw new Error('Elige una copa editable, termina otras herramientas y verifica el ortomosaico HD.');
+      if(markedStrokes.length) throw new Error('Cancela primero la zona roja marcada con el pincel manual.');
+      if(['rejected','superseded'].includes(selected.get('review_status')))
+        throw new Error('Restaurar primero la copa rechazada o reemplazada.');
+      mode='sam_points';
+      if(selection)selection.setActive(false);
+      if(modifier)modifier.setActive(false);
+      $('rv-mode').textContent='Modo: puntos SAM';
+      updateButtons();
+    },
+    endPoints(){
+      if(mode!=='sam_points')return;
+      mode='select';
+      if(selection)selection.setActive(true);
+      $('rv-mode').textContent='Modo: seleccionar';
+      updateButtons();
+    },
+    applyCandidate(geometry, metadata){
+      if(mode!=='sam_points'||!selected||!mission||!hdTilesReady||busy||brushWorking||blockSave)
+        throw new Error('La sesión SAM o el editor ya no permite aplicar cambios.');
+      if(!geometry || !['Polygon','MultiPolygon'].includes(geometry.getType()))
+        throw new Error('SAM devolvió una geometría incompatible.');
+      if (['rejected','superseded'].includes(selected.get('review_status')))
+        throw new Error('La copa fue rechazada o sustituida.');
+      const extent=geometry.getExtent();
+      if(extent.some(v=>!Number.isFinite(v))||extent[2]<=extent[0]||extent[3]<=extent[1])
+        throw new Error('Geometría SAM sin área válida.');
+      if(fullMapExtent && (extent[0]<fullMapExtent[0]-.5||extent[1]<fullMapExtent[1]-.5||
+            extent[2]>fullMapExtent[2]+.5||extent[3]>fullMapExtent[3]+.5))
+        throw new Error('La máscara propuesta queda fuera del ortomosaico.');
+      const score=Number(metadata?.score),hash=String(metadata?.image_sha256||'');
+      if(!Number.isFinite(score)||!/^[a-f0-9]{64}$/.test(hash))
+        throw new Error('Metadatos SAM incompletos.');
+      if (!Array.isArray(metadata?.points) || metadata.points.length>20)
+        throw new Error('Puntos SAM inválidos.');
+      const prompts=(metadata.points||[]).map(p=>`${p.label}:${Math.round(p.x)},${Math.round(p.y)}`).join('|');
+      const bounds=(metadata.bounds||[]).map(n=>Number(n).toFixed(3)).join(',');
+      const provenance=`[SAM-V010 model=facebook/sam2.1-hiera-small score_NO_CALIBRADO=${score.toFixed(4)} rank=${metadata.rank} sha256=${hash} crop_UTM=${bounds} gsd_m=${Number(metadata.gsd).toFixed(5)} pts=${prompts} source=HD_WEBP human_review=aplicacion_manual_pendiente_de_guardado]`;
+      const note=String(selected.get('note')||'');
+      const newNote=(note ? note+'\n' : '')+provenance;
+      if(newNote.length>1000)
+        throw new Error('La nota de esta copa supera 1000 caracteres al incorporar la evidencia SAM. Acórtala primero.');
+      backupUndo();
+      selected.setGeometry(geometry);
+      if(['pending','accepted','edited'].includes(selected.get('review_status')))
+        selected.set('review_status','edited');
+      selected.set('edit_method',editMethod(selected.get('edit_method'),'mixed'));
+      selected.set('note',newNote);
+      reviewSource.changed();flagDirty();populateAttributes();updateCounts();updateButtons();
+      alertMsg('SAM aplicado a la COPIA editable; revisa la geometría y guarda una nueva revisión. El score SAM no equivale a confianza de campo.');
+    }
+  });
+
   bind();
 })();

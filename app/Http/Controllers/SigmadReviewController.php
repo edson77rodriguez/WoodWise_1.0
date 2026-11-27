@@ -267,7 +267,7 @@ class SigmadReviewController extends Controller
                 }
                 // Metadatos de edición del editor local. No son una medida de precisión de IA.
                 $method = (string)($p['edit_method'] ?? 'original');
-                if (!in_array($method, ['original', 'manual_draw', 'vertices', 'brush', 'mixed'], true)) {
+                if (!in_array($method, ['original', 'manual_draw', 'vertices', 'brush', 'sam2', 'mixed'], true)) {
                     throw ValidationException::withMessages(['features' => 'Método de edición inválido.']);
                 }
                 $brushStrokes = $p['brush_strokes'] ?? 0;
@@ -280,6 +280,46 @@ class SigmadReviewController extends Controller
                     (float)$brushAdded < 0 || (float)$brushRemoved < 0 ||
                     (float)$brushAdded > 1000000 || (float)$brushRemoved > 1000000) {
                     throw ValidationException::withMessages(['features' => 'Métricas del pincel inválidas.']);
+                }
+                // Trazabilidad SAM opcional: no equivale a precisión frente a campo.
+                $sam = $p['sam_provenance'] ?? null;
+                if ($sam !== null) {
+                    $valid = is_array($sam)
+                        && ($sam['model_id'] ?? '') === 'sam2.1-hiera-small'
+                        && is_string($sam['image_sha256'] ?? null)
+                        && preg_match('/^[a-f0-9]{64}$/', $sam['image_sha256'])
+                        && is_array($sam['crop_utm'] ?? null) && count($sam['crop_utm']) === 3
+                        && (int)($sam['crop_px'] ?? 0) === 768
+                        && is_array($sam['points'] ?? null) && count($sam['points']) >= 1 && count($sam['points']) <= 25
+                        && isset($sam['proposal_index'], $sam['score'], $sam['human_approved_at'])
+                        && is_numeric($sam['score']) && (float)$sam['score'] >= 0 && (float)$sam['score'] <= 1
+                        && is_numeric($sam['proposal_index']) && (int)$sam['proposal_index'] >= 0 && (int)$sam['proposal_index'] < 3;
+                    if ($valid) {
+                        foreach ($sam['crop_utm'] as $item) {
+                            if (!is_numeric($item) || !is_finite((float)$item)) $valid = false;
+                        }
+                        foreach ($sam['points'] as $point) {
+                            if (!is_array($point) || count($point) !== 3 ||
+                                !is_numeric($point[0]) || !is_numeric($point[1]) ||
+                                (float)$point[0] < 0 || (float)$point[0] > 767 ||
+                                (float)$point[1] < 0 || (float)$point[1] > 767 ||
+                                !in_array((int)$point[2], [0, 1], true)) $valid = false;
+                        }
+                    }
+                    if (!$valid || !is_string($sam['human_approved_at'] ?? null) ||
+                        strlen($sam['human_approved_at']) > 40) {
+                        throw ValidationException::withMessages(['features' => 'Metadatos SAM inválidos.']);
+                    }
+                    $sam = [
+                        'model_id' => 'sam2.1-hiera-small',
+                        'image_sha256' => $sam['image_sha256'],
+                        'crop_utm' => array_map('floatval', $sam['crop_utm']),
+                        'crop_px' => 768,
+                        'points' => array_map(fn($pt) => [(float)$pt[0], (float)$pt[1], (int)$pt[2]], $sam['points']),
+                        'proposal_index' => (int)$sam['proposal_index'],
+                        'score' => (float)$sam['score'],
+                        'human_approved_at' => $sam['human_approved_at'],
+                    ];
                 }
                 $treeId = trim((string)($p['field_tree_id'] ?? ''));
                 $note = trim((string)($p['note'] ?? ''));
@@ -303,6 +343,7 @@ class SigmadReviewController extends Controller
                         'brush_strokes' => (int)$brushStrokes,
                         'brush_added_m2' => round((float)$brushAdded, 7),
                         'brush_removed_m2' => round((float)$brushRemoved, 7),
+                        'sam_provenance' => $sam,
                     ],
                 ];
             }
