@@ -1,4 +1,4 @@
-/* SIGMAD Smart Annotation Studio · V0.9.0
+/* SIGMAD Smart Annotation Studio · V0.9.1 HOTFIX
  * Copas originales inmutables, revisión de polígonos aislada, historial en servidor.
  * Pinceles manuales georreferenciados sin GPU. SAM remoto aún NO integrado. */
 (() => {
@@ -14,6 +14,7 @@
   let selected = null, selectedManual = null, mode = 'select';
   let splitSession = null, undo = [], redo = [], dirty = false, busy = false, blockSave = false;
   let brushMode = null, brushOverlay = null, brushActiveStroke = null, brushWorking = false, hdTilesReady = false;
+  let mapGeneration = 0; // Ignorar descargas HD tardías de una misión que ya fue reemplazada.
 
   const labels = {pending:'Pendiente',accepted:'Validada',edited:'Corregida',added:'Nueva',split:'Separación',superseded:'Fusionada reemplazada',rejected:'Descartada'};
   const colors = {pending:'#48c2c0',accepted:'#2dd39f',edited:'#6eb6f7',added:'#a592f2',split:'#7d8eff',superseded:'#efb65f',rejected:'#e7727b'};
@@ -536,6 +537,7 @@
       manifest.tile_size===256 && typeof manifest.tile_url_template==='string';
   }
   async function mapFor(data) {
+    const generation = ++mapGeneration;
     if(mode==='brush')turnBrushOff(true);
     if (map) {map.setTarget(null);map=null;}
     hdTilesReady=false;fullMapExtent = null; currentMosaicGsd = null;
@@ -587,9 +589,18 @@
         }});
       let errors=0, rendered=0;
       source.on('tileloadend',()=>{
+        if (generation !== mapGeneration) return;
         if(!rendered++) setMapQuality('hd',`● Ortomosaico maestro HD · ${manifest.tile_count||'varias'} teselas`);
+        // V0.9.0 omitió activar hdTilesReady: los pinceles quedaban siempre bloqueados.
+        // Una tesela descargada + GSD válido son la evidencia mínima de que HD funciona.
+        if (!hdTilesReady && Number.isFinite(currentMosaicGsd) && currentMosaicGsd > 0) {
+          hdTilesReady = true;
+          brushInfo('Mapa HD verificado. Selecciona una copa editable y activa el pincel verde o rojo.');
+          updateButtons();
+        }
       });
       source.on('tileloaderror',()=>{
+        if (generation !== mapGeneration) return;
         errors++;
         setMapQuality('warning',`● HD parcial: ${errors} teselas sin cargar · revisa la conexión`);
       });

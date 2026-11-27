@@ -161,5 +161,5 @@
 <script src="{{ asset('sigmad-campo-assets/vendor/proj4.js') }}" defer></script>
 <script src="{{ asset('sigmad-campo-assets/vendor/ol.js') }}" defer></script>
 <script src="{{ asset('sigmad-revision-assets/mask-engine.js') }}?v=090" defer></script>
-<script src="{{ asset('sigmad-revision-assets/revision-ia.js') }}?v=090" defer></script>
+<script src="{{ asset('sigmad-revision-assets/revision-ia.js') }}?v=091" defer></script>
 @endsection
