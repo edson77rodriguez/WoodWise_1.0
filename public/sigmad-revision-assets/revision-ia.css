@@ -79,3 +79,25 @@
 @media(max-width:1190px){.rv-overview{grid-template-columns:1fr repeat(3,minmax(96px,.36fr))}.rv-layout{grid-template-columns:1fr}.rv-canvas-card{position:static}.rv-map{height:65vh}}
 @media(max-width:780px){.rv-wrap{padding:14px 12px 54px}.rv-header{padding:24px 20px;min-height:140px;border-radius:17px}.rv-overview{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.rv-overview-intro{grid-column:1/-1}.rv-overview-stat{min-height:74px}.rv-overview-stat strong{font-size:23px}.rv-overview-stat span{font-size:10px}.rv-map{height:61vh;min-height:370px}.rv-floating-tools{top:10px;right:10px}.rv-map-corner{bottom:10px;left:10px}.rv-map-corner span{font-size:9px}.rv-panel{padding:15px}}
 @media(max-width:520px){.rv-header{gap:14px;flex-direction:column}.rv-header-right{flex-direction:row;align-items:center}.rv-header h1{font-size:28px}.rv-topbar .rv-meta{min-width:unset}.rv-map{height:55vh;min-height:340px}.rv-floating-tools button span{display:none}.rv-floating-tools button{min-width:42px;justify-content:center}.rv-workspace-head{padding:13px}.rv-map-status{font-size:10px}.rv-tools{padding:10px}.rv-tool-row button{font-size:11px;min-height:39px}.rv-overview-stat{padding:11px}}
+
+/* Smart Annotation Studio V0.9.0: pinceles realmente geoespaciales */
+.rv-brush-workbench{margin-top:12px;padding:14px 16px 12px;border:1px solid #daebe3;border-radius:14px;background:linear-gradient(135deg,#f7fcf9,#f0f9f5)}
+.rv-brush-heading{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.rv-brush-heading strong{font-size:13px;color:#204f40;font-weight:800}
+.rv-brush-heading small{display:block;margin-top:4px;font-size:11px;color:#718c7b;line-height:1.4}
+.rv-brush-chip{border:1px solid #c6e1d3;background:#e2f3e9;color:#247450;border-radius:999px;padding:6px 9px;font-size:10px;white-space:nowrap;font-weight:800;letter-spacing:.045em}
+.rv-brush-controls{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.rv-wrap button.rv-brush-add{background:#e5f8ee;border:1px solid #a4ddbd;color:#166b3d;font-weight:800}
+.rv-wrap button.rv-brush-erase{background:#fff0f0;border:1px solid #f0b1b7;color:#9b3643;font-weight:800}
+.rv-wrap button.rv-brush-add[data-active="true"]{background:#167a4d;color:#fff;box-shadow:0 0 0 3px rgba(29,162,91,.19)}
+.rv-wrap button.rv-brush-erase[data-active="true"]{background:#b73b4b;color:#fff;box-shadow:0 0 0 3px rgba(210,51,76,.19)}
+.rv-brush-size{display:flex;gap:9px;align-items:center;font-size:11px;color:#597269;font-weight:700;margin-left:auto}
+.rv-brush-size input{width:115px;accent-color:#178b62;cursor:pointer}
+.rv-brush-size output{min-width:35px;text-align:right;font-variant-numeric:tabular-nums}
+.rv-brush-status{font-size:11px;font-weight:650;color:#537b65;margin:11px 0 0;line-height:1.4}
+.rv-brush-status[data-warn="yes"]{color:#a55a21}
+.rv-brush-overlay{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:6;pointer-events:none;touch-action:none}
+.rv-map-shell .rv-floating-tools{z-index:8}
+.rv-map-shell .rv-map-corner{z-index:7}
+.rv-brush-metrics{font-size:11px;color:#37765a;background:#edf8f1;border:1px solid #d0eadb;border-radius:9px;padding:9px 10px;line-height:1.6;margin:10px 0}
+@media(max-width:760px){.rv-brush-workbench{padding:12px}.rv-brush-heading{flex-direction:column;gap:6px}.rv-brush-controls{gap:6px}.rv-brush-size{margin-left:0;width:100%;justify-content:space-between}.rv-brush-size input{flex:1}}

@@ -1,6 +1,6 @@
-/* SIGMAD Laboratorio de revisión IA · V0.8.1
+/* SIGMAD Smart Annotation Studio · V0.9.0
  * Copas originales inmutables, revisión de polígonos aislada, historial en servidor.
- * Sin IA asistida ni corrección automática; todo acto es humano y auditable. */
+ * Pinceles manuales georreferenciados sin GPU. SAM remoto aún NO integrado. */
 (() => {
   'use strict';
   const boot = window.SIGMAD_REVIEW_BOOT;
@@ -12,7 +12,8 @@
   let fullMapExtent = null, mapQuality = 'waiting', currentMosaicGsd = null;
   let selection = null, modifier = null, drawer = null;
   let selected = null, selectedManual = null, mode = 'select';
-  let splitSession = null, undo = [], dirty = false, busy = false, blockSave = false;
+  let splitSession = null, undo = [], redo = [], dirty = false, busy = false, blockSave = false;
+  let brushMode = null, brushOverlay = null, brushActiveStroke = null, brushWorking = false, hdTilesReady = false;
 
   const labels = {pending:'Pendiente',accepted:'Validada',edited:'Corregida',added:'Nueva',split:'Separación',superseded:'Fusionada reemplazada',rejected:'Descartada'};
   const colors = {pending:'#48c2c0',accepted:'#2dd39f',edited:'#6eb6f7',added:'#a592f2',split:'#7d8eff',superseded:'#efb65f',rejected:'#e7727b'};
@@ -39,7 +40,11 @@
       species: p.species || 'ND', visibility: p.visibility || 'ND',
       boundary_confidence: p.boundary_confidence || 'ND',
       manual_target_uuid: p.manual_target_uuid || null,
-      field_tree_id: p.field_tree_id || '', note: p.note || ''
+      field_tree_id: p.field_tree_id || '', note: p.note || '',
+      edit_method: p.edit_method || 'original',
+      brush_strokes: Number(p.brush_strokes) || 0,
+      brush_added_m2: Number(p.brush_added_m2) || 0,
+      brush_removed_m2: Number(p.brush_removed_m2) || 0
     };
   }
   function reviewed() {
@@ -55,7 +60,9 @@
     if (!mission || !reviewSource) return;
     undo.push(JSON.stringify(reviewed()));
     if (undo.length > 16) undo.shift();
+    redo = [];
     $('rv-undo').disabled = false;
+    $('rv-redo').disabled = true;
   }
   function loadReview(collection) {
     if (!mission || !reviewSource) return;
@@ -76,7 +83,8 @@
       return {type:'Feature',geometry:f.geometry,properties:{
         annotation_uuid:'original:' + id, source_operational_id:id,
         review_status:'pending', species:'PL', visibility:'ND',
-        boundary_confidence:'ND', manual_target_uuid:null, field_tree_id:'', note:''
+        boundary_confidence:'ND', manual_target_uuid:null, field_tree_id:'', note:'',
+        edit_method:'original',brush_strokes:0,brush_added_m2:0,brush_removed_m2:0
       }};
     })};
   }
@@ -135,7 +143,8 @@
     }
     $('rv-apply-attrs').disabled = !p;
     if (!p) {
-      $('rv-origin').value='';$('rv-tree').value='';$('rv-note').value='';$('rv-manual').value='';return;
+      $('rv-origin').value='';$('rv-tree').value='';$('rv-note').value='';$('rv-manual').value='';
+      $('rv-brush-metrics').textContent='Selecciona una copa para editar su máscara.';return;
     }
     $('rv-status').value=p.review_status;
     $('rv-species').value=p.species;
@@ -145,13 +154,22 @@
     $('rv-manual').value=p.manual_target_uuid || '';
     $('rv-tree').value=p.field_tree_id;
     $('rv-note').value=p.note;
+    $('rv-brush-metrics').textContent = `Trazos: ${p.brush_strokes} · Agregado: ${p.brush_added_m2.toFixed(3)} m² · Quitado: ${p.brush_removed_m2.toFixed(3)} m² (aprox.)`;
   }
   function updateButtons() {
     const loaded = !!mission;
     for (const id of ['rv-add','rv-export','rv-history-refresh']) $(id).disabled = !loaded || busy;
-    $('rv-save').disabled = !loaded || busy || blockSave;
+    $('rv-save').disabled = !loaded || busy || brushWorking || blockSave;
+    $('rv-load').disabled = busy || brushWorking;
     for (const id of ['rv-accept','rv-edit','rv-split','rv-reject','rv-restore']) $(id).disabled = !selected || busy || mode !== 'select';
-    $('rv-undo').disabled = !undo.length || busy || mode !== 'select';
+    $('rv-undo').disabled = !undo.length || busy || brushWorking || mode !== 'select';
+    $('rv-redo').disabled = !redo.length || busy || brushWorking || mode !== 'select';
+    const canBrush=loaded && !!selected && hdTilesReady && !busy && !brushWorking &&
+      !['rejected','superseded'].includes(selected.get('review_status'));
+    $('rv-brush-add').disabled=!canBrush || (mode!=='select' && mode!=='brush');
+    $('rv-brush-erase').disabled=!canBrush || (mode!=='select' && mode!=='brush');
+    $('rv-brush-exit').disabled=mode!=='brush';
+    $('rv-brush-size').disabled=!loaded || !hdTilesReady;
     $('rv-fit-all').disabled = !loaded || !map || busy;
     $('rv-focus').disabled = !selected || !map || busy;
     $('rv-jump-man').disabled = !loaded || !map || busy;
@@ -265,10 +283,215 @@
   }
   function doUndo() {
     if (!undo.length || !mission || mode!=='select') return;
+    redo.push(JSON.stringify(reviewed()));
+    if(redo.length>16)redo.shift();
     const state = JSON.parse(undo.pop());
     loadReview(state);flagDirty();updateButtons();
     alertMsg('Se recuperó el estado anterior (todavía sin guardar en SIGMAD).');
   }
+  function doRedo() {
+    if (!redo.length || !mission || mode!=='select') return;
+    undo.push(JSON.stringify(reviewed()));
+    if(undo.length>16) undo.shift();
+    loadReview(JSON.parse(redo.pop()));flagDirty();updateButtons();
+    alertMsg('Se recuperó el cambio rehecho; todavía falta guardarlo en SIGMAD.');
+  }
+
+  function editMethod(previous, next) {
+    if(previous==='mixed' || (previous==='brush' && next==='vertices') ||
+       (previous==='vertices' && next==='brush'))return 'mixed';
+    if(previous==='manual_draw' && next==='brush')return 'mixed';
+    return next;
+  }
+
+  function brushInfo(text, warn=false) {
+    $('rv-brush-status').textContent=text;
+    $('rv-brush-status').dataset.warn=warn?'yes':'no';
+  }
+  function resizeBrushOverlay() {
+    if(!brushOverlay)return;
+    const r=brushOverlay.getBoundingClientRect(),scale=Math.min(window.devicePixelRatio||1,2);
+    if(!r.width||!r.height)return;
+    const w=Math.ceil(r.width*scale),h=Math.ceil(r.height*scale);
+    if(brushOverlay.width!==w||brushOverlay.height!==h){brushOverlay.width=w;brushOverlay.height=h;}
+  }
+  function renderBrushCursor(pos=null) {
+    if(!brushOverlay)return;
+    const c=brushOverlay.getContext('2d');
+    c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,brushOverlay.width,brushOverlay.height);
+    if(mode!=='brush')return;
+    const r=brushOverlay.getBoundingClientRect();if(!r.width||!r.height)return;
+    c.setTransform(brushOverlay.width/r.width,0,0,brushOverlay.height/r.height,0,0);
+    const stroke=brushActiveStroke;
+    if(stroke && stroke.pixels.length) {
+      c.beginPath();c.moveTo(...stroke.pixels[0]);
+      for(let i=1;i<stroke.pixels.length;i++)c.lineTo(...stroke.pixels[i]);
+      c.lineWidth=Number($('rv-brush-size').value)*2;
+      c.lineCap='round';c.lineJoin='round';
+      c.strokeStyle=brushMode==='add'?'rgba(34,216,143,.62)':'rgba(239,88,103,.72)';
+      c.stroke();
+      if(stroke.pixels.length===1){c.beginPath();c.arc(...stroke.pixels[0],Number($('rv-brush-size').value),0,Math.PI*2);c.fillStyle=c.strokeStyle;c.fill();}
+    }
+    const point=pos||stroke?.pixels.at(-1);
+    if(point){
+      c.beginPath();c.arc(point[0],point[1],Number($('rv-brush-size').value),0,Math.PI*2);
+      c.lineWidth=2;c.strokeStyle=brushMode==='add'?'#26e09d':'#ff6675';c.stroke();
+      c.beginPath();c.arc(point[0],point[1],2,0,Math.PI*2);c.fillStyle='white';c.fill();
+    }
+  }
+  function turnBrushOff(silent=false) {
+    if(brushWorking)return;
+    brushMode=null;brushActiveStroke=null;
+    if(mode==='brush')mode='select';
+    if(brushOverlay){brushOverlay.style.pointerEvents='none';brushOverlay.style.cursor='default';renderBrushCursor();}
+    if(selection)selection.setActive(true);
+    $('rv-brush-add').dataset.active='false';$('rv-brush-erase').dataset.active='false';
+    $('rv-mode').textContent='Modo: seleccionar';
+    if(!silent)brushInfo('Navegación activa. Selecciona otra copa o guarda la revisión.');
+    updateButtons();
+  }
+  function toggleBrush(which) {
+    if(brushWorking)return;
+    if(mode==='brush' && brushMode===which){turnBrushOff();return;}
+    if(!selected||!mission||busy||brushWorking||!hdTilesReady||
+       (mode!=='select' && mode!=='brush'))return;
+    if(['rejected','superseded'].includes(selected.get('review_status')))
+      return alertMsg('No se puede pintar una máscara rechazada o reemplazada. Restáurala antes.',true);
+    if(!Number.isFinite(currentMosaicGsd)||currentMosaicGsd<=0)
+      return alertMsg('Falta GSD del mapa HD; evita correcciones de precisión sin escala nativa.',true);
+    brushMode=which;mode='brush';
+    if(modifier)modifier.setActive(false);
+    if(selection)selection.setActive(false);
+    brushOverlay.style.pointerEvents='auto';brushOverlay.style.cursor='crosshair';
+    $('rv-brush-add').dataset.active=which==='add'?'true':'false';
+    $('rv-brush-erase').dataset.active=which==='erase'?'true':'false';
+    $('rv-mode').textContent=which==='add'?'Modo: pincel agregar':'Modo: pincel borrar';
+    brushInfo(which==='add'?'PINTAR: arrastra sobre la copa faltante. Suelta para aplicar.':'BORRAR: arrastra sobre la vegetación sobrante. Suelta para aplicar.');
+    updateButtons();
+  }
+  function brushXY(e) {
+    const r=brushOverlay.getBoundingClientRect();
+    return [e.clientX-r.left,e.clientY-r.top];
+  }
+  function pushBrushPixel(e) {
+    if(!brushActiveStroke || !map)return;
+    const px=brushXY(e),last=brushActiveStroke.pixels.at(-1);
+    if(last && Math.hypot(last[0]-px[0],last[1]-px[1])<1.2)return;
+    const world=map.getCoordinateFromPixel(px);
+    if(!world || !world.every(Number.isFinite))return;
+    brushActiveStroke.pixels.push(px);brushActiveStroke.world.push(world);
+    renderBrushCursor(px);
+  }
+  function rasterBrush(geometry,worldPoints,radiusM,add,gsd) {
+    const bounds=geometry.getExtent().slice();
+    for(const p of worldPoints){bounds[0]=Math.min(bounds[0],p[0]-radiusM);bounds[1]=Math.min(bounds[1],p[1]-radiusM);
+      bounds[2]=Math.max(bounds[2],p[0]+radiusM);bounds[3]=Math.max(bounds[3],p[1]+radiusM);}
+    const minX=Math.floor((bounds[0]-gsd*3)/gsd)*gsd;
+    const maxY=Math.ceil((bounds[3]+gsd*3)/gsd)*gsd;
+    const w=Math.ceil((bounds[2]+gsd*3-minX)/gsd);
+    const h=Math.ceil((maxY-(bounds[1]-gsd*3))/gsd);
+    if(w<3||h<3||Math.max(w,h)>4096||w*h>9000000)
+      throw new Error(`La copa ocupa ${w}×${h} píxeles. Para evitar pérdida de precisión, usa Modificar vértices o una máscara más pequeña.`);
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+    const ctx=cv.getContext('2d',{willReadFrequently:true});
+    if(!ctx)throw new Error('El navegador no proporciona un lienzo de edición 2D.');
+    const pc=p=>[(p[0]-minX)/gsd,(maxY-p[1])/gsd];
+    const polys=geometry.getType()==='Polygon'?[geometry.getCoordinates()]:
+      geometry.getType()==='MultiPolygon'?geometry.getCoordinates():[];
+    if(!polys.length)throw new Error('Solo pueden corregirse polígonos o multipolígonos.');
+    ctx.fillStyle='#ffffff';
+    for(const poly of polys){
+      ctx.beginPath();
+      for(const ring of poly){if(ring.length<4)continue;
+        const xy=pc(ring[0]);ctx.moveTo(...xy);
+        for(let i=1;i<ring.length;i++)ctx.lineTo(...pc(ring[i]));
+        ctx.closePath();
+      }
+      ctx.fill('evenodd');
+    }
+    const beforeRGBA=ctx.getImageData(0,0,w,h).data;
+    const before=new Uint8Array(w*h);
+    for(let i=0;i<before.length;i++)before[i]=(beforeRGBA[i*4+3]>127)?1:0;
+    // Composición directa: agregar/blanquear o quitar/vaciar. No requiere GPU.
+    ctx.save();ctx.globalCompositeOperation=add?'source-over':'destination-out';
+    ctx.strokeStyle='#ffffff';ctx.fillStyle='#ffffff';
+    ctx.lineWidth=radiusM*2/gsd;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();
+    const first=pc(worldPoints[0]);ctx.moveTo(...first);
+    for(let i=1;i<worldPoints.length;i++)ctx.lineTo(...pc(worldPoints[i]));
+    ctx.stroke();
+    if(worldPoints.length===1){ctx.beginPath();ctx.arc(...first,radiusM/gsd,0,Math.PI*2);ctx.fill();}
+    ctx.restore();
+    const afterRGBA=ctx.getImageData(0,0,w,h).data;
+    const after=new Uint8Array(w*h);
+    let countAdd=0,countRemove=0;
+    for(let i=0;i<after.length;i++){
+      after[i]=afterRGBA[4*i+3]>127?1:0;
+      if(after[i]&&!before[i])countAdd++;
+      else if(!after[i]&&before[i])countRemove++;
+    }
+    if(!countAdd&&!countRemove)return null;
+    const {polygons}=window.SigmadMaskEngine.polygonize(after,w,h,{tolerance:0.35});
+    if(!polygons.length)throw new Error('El pincel borró toda la máscara. Utiliza Rechazar si no representa una copa real.');
+    const geoms=window.SigmadMaskEngine.geoMultiPolygon(polygons,minX,maxY,gsd);
+    const vertices=geoms.reduce((sum,poly)=>sum+poly.reduce((n,ring)=>n+ring.length,0),0);
+    if(vertices>28000)throw new Error(`La máscara resultó demasiado compleja (${vertices} vértices). Reduce el área de trabajo.`);
+    return {geom:geoms.length===1?new ol.geom.Polygon(geoms[0]):new ol.geom.MultiPolygon(geoms),
+      countAdd,countRemove,gsd};
+  }
+  async function commitBrush(stroke) {
+    if(!stroke||!selected||!map||brushWorking)return;
+    const target=selected;
+    const res=map.getView().getResolution(),gsd=currentMosaicGsd;
+    if(!Number.isFinite(res)||res>gsd*4){
+      brushInfo('Acércate más: necesitas una escala próxima al GSD nativo para editar con precisión.',true);
+      return;
+    }
+    brushWorking=true;updateButtons();
+    brushInfo('Convirtiendo trazos en un contorno georreferenciado…');
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    try{
+      const radiusM=Number($('rv-brush-size').value)*res;
+      const result=rasterBrush(target.getGeometry(),stroke.world,radiusM,stroke.kind==='add',gsd);
+      if(!result){brushInfo('No hubo cambios en la máscara.');return;}
+      backupUndo();
+      target.setGeometry(result.geom);
+      if(['pending','accepted','edited'].includes(target.get('review_status')))target.set('review_status','edited');
+      target.set('edit_method',editMethod(target.get('edit_method'),'brush'));
+      target.set('brush_strokes',Math.min(100000,(Number(target.get('brush_strokes'))||0)+1));
+      target.set('brush_added_m2',(Number(target.get('brush_added_m2'))||0)+result.countAdd*gsd*gsd);
+      target.set('brush_removed_m2',(Number(target.get('brush_removed_m2'))||0)+result.countRemove*gsd*gsd);
+      reviewSource.changed();flagDirty();populateAttributes();updateCounts();
+      brushInfo(`Cambio aplicado: +${result.countAdd} px / −${result.countRemove} px. Pulsa «Navegar» antes de guardar.`);
+      alertMsg('Pincel aplicado a la copia V2; la máscara IA original permanece intacta.');
+    }catch(e){brushInfo('No se aplicó el trazo: '+e.message,true);alertMsg('No se modificó la máscara: '+e.message,true);}
+    finally{brushWorking=false;updateButtons();}
+  }
+  function bindBrushOverlay() {
+    brushOverlay=$('rv-brush-overlay');if(!brushOverlay)return;
+    resizeBrushOverlay();
+    brushOverlay.addEventListener('pointerdown',e=>{
+      if(mode!=='brush'||brushWorking||!selected||e.button!==0)return;
+      e.preventDefault();e.stopPropagation();
+      brushOverlay.setPointerCapture(e.pointerId);
+      brushActiveStroke={kind:brushMode,pixels:[],world:[]};pushBrushPixel(e);
+    });
+    brushOverlay.addEventListener('pointermove',e=>{
+      if(mode!=='brush')return;
+      if(brushActiveStroke)pushBrushPixel(e);
+      else renderBrushCursor(brushXY(e));
+    });
+    brushOverlay.addEventListener('pointerup',e=>{
+      if(!brushActiveStroke)return;
+      e.preventDefault();e.stopPropagation();pushBrushPixel(e);
+      const stroke=brushActiveStroke;brushActiveStroke=null;renderBrushCursor();
+      void commitBrush(stroke);
+    });
+    brushOverlay.addEventListener('pointercancel',()=>{brushActiveStroke=null;renderBrushCursor();brushInfo('Trazo cancelado; no se modificó la máscara.');});
+    brushOverlay.addEventListener('pointerleave',()=>{if(!brushActiveStroke)renderBrushCursor();});
+    window.addEventListener('resize',resizeBrushOverlay);
+  }
+
   function setMapQuality(state, text) {
     mapQuality = state;
     const element = $('rv-map-quality');
@@ -313,8 +536,9 @@
       manifest.tile_size===256 && typeof manifest.tile_url_template==='string';
   }
   async function mapFor(data) {
+    if(mode==='brush')turnBrushOff(true);
     if (map) {map.setTarget(null);map=null;}
-    fullMapExtent = null; currentMosaicGsd = null;
+    hdTilesReady=false;fullMapExtent = null; currentMosaicGsd = null;
     setMapQuality('loading','● Buscando ortomosaico HD maestro…');
     const m=/^EPSG:(326|327)(\d{2})$/.exec(data.crs);
     if (!m) throw new Error('Este editor requiere CRS UTM EPSG:326xx o EPSG:327xx.');
@@ -383,7 +607,8 @@
     layers.push(originalLayer,reviewLayer,manualLayer);
     map=new ol.Map({target:'rv-map',layers,view:new ol.View(viewOptions),
       controls:ol.control.defaults.defaults({rotate:false})});
-    map.updateSize();
+    map.updateSize();resizeBrushOverlay();
+    map.on('change:size',resizeBrushOverlay);
     focusExtent(fullMapExtent,28);
     configureSelection();
     map.getView().on('change:resolution',updateMapReadout);
@@ -540,6 +765,21 @@
     $('rv-finish-draw').addEventListener('click',()=>finishDrawer(false));
     $('rv-cancel-draw').addEventListener('click',()=>finishDrawer(true));
     $('rv-undo').addEventListener('click',doUndo);
+    $('rv-redo').addEventListener('click',doRedo);
+    $('rv-brush-add').addEventListener('click',()=>toggleBrush('add'));
+    $('rv-brush-erase').addEventListener('click',()=>toggleBrush('erase'));
+    $('rv-brush-exit').addEventListener('click',()=>turnBrushOff());
+    $('rv-brush-size').addEventListener('input',()=>{
+      $('rv-brush-size-value').textContent=$('rv-brush-size').value+' px';renderBrushCursor();
+    });
+    bindBrushOverlay();
+    window.addEventListener('keydown',e=>{
+      const t=e.target?.tagName?.toLowerCase();if(['input','textarea','select'].includes(t)||e.target?.isContentEditable)return;
+      if(e.key==='Escape'&&mode==='brush'){turnBrushOff();e.preventDefault();return;}
+      if((e.ctrlKey||e.metaKey)&&mode==='select'&&e.key.toLowerCase()==='z'){
+        e.preventDefault();if(e.shiftKey)doRedo();else doUndo();
+      }else if((e.ctrlKey||e.metaKey)&&mode==='select'&&e.key.toLowerCase()==='y'){e.preventDefault();doRedo();}
+    });
     $('rv-apply-attrs').addEventListener('click',applyAttributes);
     $('rv-save').addEventListener('click',()=>void save());
     $('rv-export').addEventListener('click',exportGeojson);
@@ -557,7 +797,8 @@
     window.addEventListener('beforeunload', e=>{if(dirty){e.preventDefault();e.returnValue='';}});
     const preferred=[...$('rv-mission').options].find(o=>o.textContent?.toLowerCase().includes('mision completa'));
     if(preferred) $('rv-mission').value=preferred.value;
-    if (!window.ol || !window.proj4) alertMsg('Faltan las librerías OpenLayers/proj4. Comprueba sus rutas.',true);
+    if (!window.ol || !window.proj4 || !window.SigmadMaskEngine)
+      alertMsg('Faltan OpenLayers, proj4 o el motor local de pinceles. Comprueba sus rutas.',true);
   }
   bind();
 })();

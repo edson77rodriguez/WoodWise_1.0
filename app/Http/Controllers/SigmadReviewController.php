@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * SIGMAD Revisión IA · V0.8.1 con fondo maestro HD independiente.
+ * SIGMAD Revisión IA · V0.9.0 con fondo maestro HD independiente.
  * Se guardan revisiones aditivas, sin modificar predicciones ni mediciones de campo.
  */
 class SigmadReviewController extends Controller
@@ -265,6 +265,22 @@ class SigmadReviewController extends Controller
                     !in_array($confidence, ['alta', 'media', 'baja', 'ND'], true)) {
                     throw ValidationException::withMessages(['features' => 'Atributo de especie, visibilidad o confianza inválido.']);
                 }
+                // Metadatos de edición del editor local. No son una medida de precisión de IA.
+                $method = (string)($p['edit_method'] ?? 'original');
+                if (!in_array($method, ['original', 'manual_draw', 'vertices', 'brush', 'mixed'], true)) {
+                    throw ValidationException::withMessages(['features' => 'Método de edición inválido.']);
+                }
+                $brushStrokes = $p['brush_strokes'] ?? 0;
+                $brushAdded = $p['brush_added_m2'] ?? 0;
+                $brushRemoved = $p['brush_removed_m2'] ?? 0;
+                if (!is_numeric($brushStrokes) || (int)$brushStrokes != $brushStrokes ||
+                    (int)$brushStrokes < 0 || (int)$brushStrokes > 100000 ||
+                    !is_numeric($brushAdded) || !is_numeric($brushRemoved) ||
+                    !is_finite((float)$brushAdded) || !is_finite((float)$brushRemoved) ||
+                    (float)$brushAdded < 0 || (float)$brushRemoved < 0 ||
+                    (float)$brushAdded > 1000000 || (float)$brushRemoved > 1000000) {
+                    throw ValidationException::withMessages(['features' => 'Métricas del pincel inválidas.']);
+                }
                 $treeId = trim((string)($p['field_tree_id'] ?? ''));
                 $note = trim((string)($p['note'] ?? ''));
                 if (mb_strlen($treeId) > 80 || mb_strlen($note) > 1000) {
@@ -283,6 +299,10 @@ class SigmadReviewController extends Controller
                         'manual_target_uuid' => $manual,
                         'field_tree_id' => $treeId,
                         'note' => $note,
+                        'edit_method' => $method,
+                        'brush_strokes' => (int)$brushStrokes,
+                        'brush_added_m2' => round((float)$brushAdded, 7),
+                        'brush_removed_m2' => round((float)$brushRemoved, 7),
                     ],
                 ];
             }
